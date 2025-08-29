@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Materiais</title>
+</head>
+<body>
+    <h1>Lista de Materiais</h1>
+    <a href="{{ url_for('novo_material') }}"> Adicionar Material</a>
+    <ul>
+        {% for m in materiais %}
+            <li>{{ m.nome }} - {{ m.quantidade }}</li>
+        {% endfor %}
+    </ul>
+</body>
+</html>

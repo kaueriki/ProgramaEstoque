@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="../static/style.css">
+</head>
+    <body>
+        <canvas id="animated-background"></canvas>
+
+        <div class="login-container" id="login-screen">
+            <img src="{{ url_for('static', filename='assets/logo.png') }}">
+            <form id="login-form">
+            <div class="input-box">
+                <input type="text" id="operador" required>
+                <label>Operador</label>
+            </div>
+            <div class="input-box">
+                <input type="password" id="senha" required>
+                <label>Senha</label>
+            </div>
+            <button type="submit" class="btn">Entrar</button>
+            </form>
+        </div>
+
+        <script src="../static/background.js"></script>
+        </body>
+
+</html>
+
