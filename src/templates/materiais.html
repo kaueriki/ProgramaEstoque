@@ -1,17 +1,43 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Materiais</title>
-</head>
-<body>
+{% extends "base.html" %}
+{% block extra_css %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='materiais.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="materiais-container">
+  <div class="materiais-header">
     <h2>Lista de Materiais</h2>
-    <ul>
-        {% for m in materiais %}
-            <li>{{ m.nome }} - {{ m.quantidade }}</li>
-        {% endfor %}
-    </ul>
-    <a href="{{ url_for('novo_material') }}">Cadastrar Novo</a>
-</body>
-</html>
+    <a class="btn-novo" href="{{ url_for('novo_material') }}">+ Cadastrar Novo Material</a>
+  </div>
+
+  <table class="materiais-tabela">
+    <thead>
+      <tr>
+        <th>Nome</th>
+        <th>Quantidade</th>
+        <th>Lote</th>
+        <th>Est. Mín. (Chuva)</th>
+        <th>Est. Mín. (Seco)</th>
+        <th>Ações</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for m in materiais %}
+        <tr>
+          <td>{{ m.nome }}</td>
+          <td>{{ m.quantidade }}</td>
+          <td>{{ m.lote }}</td>
+          <td>{{ m.estoque_minimo_chuva }}</td>
+          <td>{{ m.estoque_minimo_seco }}</td>
+          <td>
+            <a class="action-btn edit" href="{{ url_for('editar_material', material_id=m.id) }}">Editar</a>
+            <form method="POST" action="{{ url_for('excluir_material', material_id=m.id) }}" style="display:inline;">
+              <button class="action-btn delete" type="submit" onclick="return confirm('Tem certeza que deseja excluir este material?');">Excluir</button>
+            </form>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

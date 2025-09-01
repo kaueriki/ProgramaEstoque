@@ -22,9 +22,7 @@ canvas#animated-background {
   background: #0d0d0d;
 }
 .login-container img {
-  width: 50%;
-  max-width: 150px;
-  margin-bottom: 20px;
+  width: 100%;
 }
 
 .login-container {

@@ -1,0 +1,113 @@
+:root {
+  --primary-color: #ff6600;
+  --primary-hover: #e65c00;
+  --sidebar-bg: #1c1c1c;
+  --text-dark: #222;
+  --text-light: #ddd;
+  --form-border: #ccc;
+  --form-focus: #ff6600;
+}
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", sans-serif;
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.sidebar {
+  height: 100%;
+  width: 240px;
+  background-color: var(--sidebar-bg);
+  color: white;
+  display: flex;
+  flex-direction: column;
+  padding: 30px 20px;
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+}
+
+.sidebar-logo {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.sidebar-logo img {
+  width: 160px;
+  height: auto;
+  margin-top: 30px;
+  margin-bottom: 10px;
+  filter: brightness(1.2);
+}
+
+.sidebar-logo h1 {
+  font-size: 18px;
+  margin: 0;
+  font-weight: 600;
+  color: var(--primary-color);
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-size: 15px;
+}
+
+.sidebar-nav a {
+  color: var(--text-light);
+  text-decoration: none;
+  padding: 10px 15px;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+}
+
+.sidebar-nav a:hover {
+  background-color: var(--primary-color);
+  color: #fff;
+}
+
+.main-content {
+  flex: 1;
+  padding: 40px;
+  overflow-y: auto;
+  background: url('../static/valltech.png') no-repeat center center fixed;
+  background-size: cover;
+  position: relative;
+}
+
+.main-content::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  backdrop-filter: blur(2px);
+  z-index: 0;
+}
+
+.main-content > * {
+  position: relative;
+  z-index: 1;
+}
+
+.flash-messages {
+  margin-bottom: 20px;
+}
+
+.flash-message {
+  padding: 12px 20px;
+  border-radius: 6px;
+  margin: 10px 0;
+  font-weight: 500;
+}
+
+.flash-message.error {
+  background-color: white;
+  color: black;
+}
+
+.flash-message.success {
+  background-color: white;
+  color: black;
+}

@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block extra_css %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='novomaterial.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="content-container">
+  <h2>Editar Material</h2>
+  <form method="POST">
+    <label for="nome">Nome:</label>
+    <input type="text" name="nome" id="nome" value="{{ material.nome }}" required>
+
+    <label for="quantidade">Quantidade:</label>
+    <input type="number" name="quantidade" id="quantidade" value="{{ material.quantidade }}" required>
+
+    <label for="lote">Lote:</label>
+    <input type="text" name="lote" id="lote" value="{{ material.lote }}" required>
+
+    <label for="estoque_minimo_chuva">Estoque Mínimo (Chuva):</label>
+    <input type="number" name="estoque_minimo_chuva" id="estoque_minimo_chuva" value="{{ material.estoque_minimo_chuva }}" required>
+
+    <label for="estoque_minimo_seco">Estoque Mínimo (Seco):</label>
+    <input type="number" name="estoque_minimo_seco" id="estoque_minimo_seco" value="{{ material.estoque_minimo_seco }}" required>
+
+    <input type="submit" value="Atualizar">
+  </form>
+</div>
+{% endblock %}

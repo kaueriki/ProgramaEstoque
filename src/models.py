@@ -41,10 +41,11 @@ class Material(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     nome = Column(String(150), nullable=False)
     quantidade = Column(Integer, nullable=False, default=0)
-    lote = Column(String(50))
-    estoque_minimo_chuva = Column(Integer, default=0)
+    lote = Column(String(50))  # 
+    estoque_minimo_chuva = Column(Integer, default=0) 
     estoque_minimo_seco = Column(Integer, default=0)
     criado_em = Column(DateTime, default=datetime.utcnow)
+
 
 
 class Movimentacao(Base):

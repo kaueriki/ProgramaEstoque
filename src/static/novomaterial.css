@@ -1,0 +1,73 @@
+.content-container {
+  width: 50%;
+  margin: 60px auto;
+  background: rgba(255, 255, 255, 0.85); 
+  padding: 40px 45px;
+  border-radius: 14px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.content-container h2 {
+  margin-top: 0;
+  font-size: 28px;
+  font-weight: 700;
+  color: #222;
+  border-bottom: 3px solid #ff6600;
+  padding-bottom: 12px;
+  letter-spacing: 0.02em;
+}
+
+form label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #444;
+  font-size: 16px;
+}
+
+form input[type="text"],
+form input[type="number"] {
+  width: 100%;
+  padding: 14px 16px;
+  margin-bottom: 24px;
+  border: 1.8px solid #ddd;
+  border-radius: 8px;
+  font-size: 17px;
+  font-weight: 400;
+  color: #333;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+form input[type="text"]:focus,
+form input[type="number"]:focus {
+  border-color: #ff6600;
+  box-shadow: 0 0 6px rgba(255, 102, 0, 0.45);
+  outline: none;
+}
+
+form input[type="submit"] {
+  display: inline-block;
+  background-color: #ff6600;
+  color: white;
+  border: none;
+  padding: 14px 30px;
+  border-radius: 8px;
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s ease, box-shadow 0.2s ease;
+  user-select: none;
+  letter-spacing: 0.03em;
+}
+
+form input[type="submit"]:hover {
+  background-color: #e65c00;
+  box-shadow: 0 4px 15px rgba(230, 92, 0, 0.5);
+}
+
+form input[type="submit"]:active {
+  background-color: #cc5200;
+  box-shadow: none;
+  transform: scale(0.98);
+}
