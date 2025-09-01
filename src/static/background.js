@@ -1,101 +1,74 @@
-const canvas = document.getElementById("animated-background");
-const ctx = canvas.getContext("2d");
+// Módulos do Matter.js
+const { Engine, Render, Runner, World, Bodies, Mouse, MouseConstraint } = Matter;
 
+// Criar engine
+const engine = Engine.create();
+const world = engine.world;
+
+// Canvas
+const canvas = document.getElementById("caixas");
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-window.addEventListener("resize", () => {
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
-});
-
-// Captura posição do mouse
-let mouse = {
-  x: null,
-  y: null,
-  radius: 100 // Raio de influência
-};
-
-window.addEventListener("mousemove", (e) => {
-  mouse.x = e.clientX;
-  mouse.y = e.clientY;
-});
-
-window.addEventListener("mouseout", () => {
-  mouse.x = null;
-  mouse.y = null;
-});
-
-const particles = [];
-const numParticles = 100;
-
-class Particle {
-  constructor() {
-    this.reset();
+const render = Render.create({
+  canvas: canvas,
+  engine: engine,
+  options: {
+    width: window.innerWidth,
+    height: window.innerHeight,
+    background: "transparent",
+    wireframes: false
   }
+});
 
-  reset() {
-    this.x = Math.random() * canvas.width;
-    this.y = Math.random() * canvas.height;
-    this.radius = Math.random() * 2 + 3;
-    this.baseX = this.x;
-    this.baseY = this.y;
-    this.speedX = (Math.random() - 0.9) * 0.9;
-    this.speedY = (Math.random() - 0.9) * 0.9;
-    this.alpha = Math.random() * 0.5 + 0.3;
-  }
+Render.run(render);
+Runner.run(Runner.create(), engine);
 
-  update() {
-    this.x += this.speedX;
-    this.y += this.speedY;
+// Paredes invisíveis (pra não cair pra fora)
+const paredes = [
+  Bodies.rectangle(window.innerWidth / 2, window.innerHeight + 20, window.innerWidth, 40, { isStatic: true }),
+  Bodies.rectangle(window.innerWidth / 2, -20, window.innerWidth, 40, { isStatic: true }),
+  Bodies.rectangle(-20, window.innerHeight / 2, 40, window.innerHeight, { isStatic: true }),
+  Bodies.rectangle(window.innerWidth + 20, window.innerHeight / 2, 40, window.innerHeight, { isStatic: true }),
+];
+World.add(world, paredes);
 
-    // Interação com mouse
-    if (mouse.x && mouse.y) {
-      const dx = mouse.x - this.x;
-      const dy = mouse.y - this.y;
-      const distance = Math.sqrt(dx * dx + dy * dy);
+// Criar pilhas de caixas organizadas
+function criarPilha(x, y, linhas, colunas) {
+  const tamanho = 80;
+  const espaco = 3;
 
-      if (distance < mouse.radius) {
-        const forceDirectionX = dx / distance;
-        const forceDirectionY = dy / distance;
-        const maxDistance = mouse.radius;
-        const force = (maxDistance - distance) / maxDistance;
-        const directionX = forceDirectionX * force * 2;
-        const directionY = forceDirectionY * force * 2;
-
-        this.x -= directionX;
-        this.y -= directionY;
-      }
-    }
-
-    // Se sair da tela, reposiciona
-    if (
-      this.x < 0 || this.x > canvas.width ||
-      this.y < 0 || this.y > canvas.height
-    ) {
-      this.reset();
+  for (let i = 0; i < linhas; i++) {
+    for (let j = 0; j < colunas; j++) {
+      const box = Bodies.rectangle(
+        x + j * (tamanho + espaco),
+        y - i * (tamanho + espaco),
+        tamanho,
+        tamanho,
+        {
+          restitution: 0.1,
+          friction: 0.1,
+          render: {
+            fillStyle: "#c9a36c"
+          }
+        }
+      );
+      World.add(world, box);
     }
   }
-
-  draw() {
-    ctx.beginPath();
-    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-    ctx.fillStyle = `rgba(255, 255, 255, ${this.alpha})`;
-    ctx.fill();
-  }
 }
 
-for (let i = 0; i < numParticles; i++) {
-  particles.push(new Particle());
-}
+// Esquerda
+criarPilha(10, window.innerHeight - 20, 5, 3);
+// Direita
+criarPilha(window.innerWidth - 150, window.innerHeight - 20, 5, 3);
 
-function animate() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  particles.forEach((p) => {
-    p.update();
-    p.draw();
-  });
-  requestAnimationFrame(animate);
-}
+// Mouse interativo
+const mouse = Mouse.create(canvas);
+const mouseConstraint = MouseConstraint.create(engine, {
+  mouse,
+  constraint: { stiffness: 0.1, render: { visible: false } }
+});
+World.add(world, mouseConstraint);
 
-animate();
+render.mouse = mouse;
