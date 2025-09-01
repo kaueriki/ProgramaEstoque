@@ -6,7 +6,7 @@ from urllib.parse import quote_plus
 
 DB_USER = "root"
 DB_PASSWORD = quote_plus("@vall1717") 
-DB_HOST = "localhost"
+DB_HOST = "127.0.0.1"
 DB_PORT = "3306"
 DB_NAME = "estoque_db"
 
@@ -79,10 +79,11 @@ session = Session()
 print("Banco de dados pronto")
 
 # novo_usuario = Usuario(
-#     nome="Teste",
+#     nome="admin",
 #     senha="1234" 
 # )
 # session.add(novo_usuario)
+# session.commit()
 
 # novo_cliente = Cliente(
 #     nome="Ceagesp",
