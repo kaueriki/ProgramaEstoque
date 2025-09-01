@@ -8,8 +8,7 @@
 </head>
 
 <body>
-    <!-- <canvas id="caixas"></canvas> -->
-
+    <canvas id="caixas"></canvas>
     <div class="login-container">
         <img src="{{ url_for('static', filename='assets/logo-branca.png') }}" alt="Logo" class="logo">
 
@@ -24,15 +23,9 @@
         {% endwith %}
 
         <form method="POST" action="{{ url_for('login') }}">
-            <div class="input-box">
-                <input type="text" name="operador" required>
-                <label>Operador</label>
-            </div>
-            <div class="input-box">
-                <input type="password" name="senha" required>
-                <label>Senha</label>
-            </div>
-            <input type="submit" value="Entrar" class="btn"/>
+            <input name="operador" type="text" placeholder="Usuário" required>
+      <input type="password" placeholder="Senha" required>
+            <input name="senha" type="submit" value="Entrar" class="btn"/>
         </form>
     </div>
     

@@ -117,6 +117,87 @@ def excluir_material(material_id):
         flash("Material não encontrado.", "error")
     return redirect(url_for("listar_materiais"))
 
+# LISTAR USUÁRIOS
+@app.route("/usuarios")
+def listar_usuarios():
+    if "usuario_id" not in session:
+        flash("Você precisa estar logado!", "error")
+        return redirect(url_for("index"))
+    
+    usuarios = db_session.query(Usuario).all()
+    return render_template("usuarios.html", usuarios=usuarios)
+
+
+# NOVO USUÁRIO
+@app.route("/usuarios/novo", methods=["GET", "POST"])
+def novo_usuario():
+    if "usuario_id" not in session:
+        flash("Você precisa estar logado!", "error")
+        return redirect(url_for("index"))
+    
+    if request.method == "POST":
+        nome = request.form["nome"]
+        email = request.form["email"]
+        perfil = request.form["perfil"]
+        senha = request.form["senha"]
+
+        # Aqui você pode adicionar validação, criptografia da senha, etc.
+
+        novo = Usuario(nome=nome, email=email, perfil=perfil, senha=senha)
+
+        db_session.add(novo)
+        db_session.commit()
+        
+        flash("Usuário cadastrado com sucesso!", "success")
+        return redirect(url_for("listar_usuarios"))
+    
+    return render_template("novo_usuario.html")
+
+
+# EDITAR USUÁRIO
+@app.route("/usuarios/<int:usuario_id>/editar", methods=["GET", "POST"])
+def editar_usuario(usuario_id):
+    if "usuario_id" not in session:
+        flash("Você precisa estar logado!", "error")
+        return redirect(url_for("index"))
+    
+    usuario = db_session.query(Usuario).get(usuario_id)
+    if not usuario:
+        flash("Usuário não encontrado.", "error")
+        return redirect(url_for("listar_usuarios"))
+    
+    if request.method == "POST":
+        usuario.nome = request.form["nome"]
+        usuario.email = request.form["email"]
+        usuario.perfil = request.form["perfil"]
+        # Se quiser permitir mudar senha, faça aqui. Caso contrário, remova.
+        nova_senha = request.form.get("senha")
+        if nova_senha:
+            usuario.senha = nova_senha
+        
+        db_session.commit()
+        flash("Usuário atualizado com sucesso!", "success")
+        return redirect(url_for("listar_usuarios"))
+    
+    return render_template("editar_usuario.html", usuario=usuario)
+
+
+# EXCLUIR USUÁRIO
+@app.route("/usuarios/<int:usuario_id>/excluir", methods=["POST"])
+def excluir_usuario(usuario_id):
+    if "usuario_id" not in session:
+        flash("Você precisa estar logado!", "error")
+        return redirect(url_for("index"))
+    
+    usuario = db_session.query(Usuario).get(usuario_id)
+    if usuario:
+        db_session.delete(usuario)
+        db_session.commit()
+        flash("Usuário excluído com sucesso!", "success")
+    else:
+        flash("Usuário não encontrado.", "error")
+    
+    return redirect(url_for("listar_usuarios"))
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)

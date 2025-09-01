@@ -42,9 +42,9 @@ document.addEventListener("DOMContentLoaded", () => {
                     tamanho,
                     tamanho,
                     {
-                        restitution: 0.1,
-                        friction: 0.1,
-                        render: { fillStyle: "#c9a36c" }
+                        restitution: 0.3,
+                        friction: 0.3,
+                        render: { fillStyle: "#ffcd88ff" }
                     }
                 );
                 World.add(world, box);
