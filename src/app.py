@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash, Blueprint
 from sqlalchemy.orm import sessionmaker
-from models import engine, Usuario, Material, Cliente
+from models import engine, Usuario, Material, Cliente, Movimentacao
 from sqlalchemy.exc import IntegrityError
 
 app = Flask(__name__)
@@ -26,7 +26,7 @@ def login():
     if user:
         session["usuario_id"] = user.id
         print("Login OK, redirecionando...")
-        return redirect(url_for("novo_material"))
+        return redirect(url_for("movimentacoes.listar_movimentacoes"))
     else:
         flash("Usuário ou senha inválidos!", "error")
         print("Login falhou")
@@ -182,9 +182,6 @@ def excluir_usuario(id):
 
     return redirect(url_for('listar_usuarios'))
 
-# ------------------------
-# BLUEPRINT: CLIENTES
-# ------------------------
 clientes_bp = Blueprint("clientes", __name__)
 
 @clientes_bp.route("/clientes")
@@ -249,6 +246,63 @@ def excluir_cliente(id):
 
 
 app.register_blueprint(clientes_bp)
+
+movimentacoes_bp = Blueprint("movimentacoes", __name__)
+@movimentacoes_bp.route("/movimentacoes")
+def listar_movimentacoes():
+    if "usuario_id" not in session:
+        flash("Você precisa estar logado!", "error")
+        return redirect(url_for("index"))
+    
+    movimentacoes = db.query(Movimentacao).order_by(Movimentacao.data_retirada.desc()).all()
+    return render_template("movimentacoes.html", movimentacoes=movimentacoes)
+
+@movimentacoes_bp.route("/movimentacoes/nova", methods=["GET", "POST"])
+def nova_movimentacao():
+    if "usuario_id" not in session:
+        flash("Você precisa estar logado!", "error")
+        return redirect(url_for("index"))
+    
+    materiais = db.query(Material).all()
+    clientes = db.query(Cliente).all()
+
+    if request.method == "POST":
+        nova = Movimentacao(
+            material_id=request.form["material_id"],
+            quantidade=request.form["quantidade"],
+            cliente_id=request.form.get("cliente_id") or None,
+            ordem_servico=request.form["ordem_servico"],
+            funcionario=request.form["funcionario"],
+            responsavel_id=session["usuario_id"],
+            data_retirada=datetime.utcnow(),
+            prazo_devolucao=request.form.get("prazo_devolucao") or None,
+            motivo=request.form.get("motivo") or None,
+            status=request.form.get("status") or "amarelo",
+            devolvido=False,
+            utilizado_cliente="utilizado_cliente" in request.form,
+            funcionando="funcionando" in request.form,
+            observacao=request.form["observacao"]
+        )
+        db.add(nova)
+        db.commit()
+        flash("Movimentação registrada com sucesso!", "success")
+        return redirect(url_for("movimentacoes.listar_movimentacoes"))
+
+    return render_template("nova_movimentacao.html", materiais=materiais, clientes=clientes)
+
+@movimentacoes_bp.route("/movimentacoes/<int:id>/devolver", methods=["POST"])
+def devolver_movimentacao(id):
+    movimentacao = db.query(Movimentacao).get(id)
+    if not movimentacao:
+        flash("Movimentação não encontrada.", "error")
+    else:
+        movimentacao.devolvido = True
+        db.commit()
+        flash("Movimentação marcada como devolvida.", "success")
+    return redirect(url_for("movimentacoes.listar_movimentacoes"))
+
+app.register_blueprint(movimentacoes_bp)
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)

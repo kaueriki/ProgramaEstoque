@@ -1,5 +1,5 @@
 .content-container {
-  width: 50%;
+  width: 60%;
   margin: 60px auto;
   background: rgb(255, 255, 255); 
   padding: 40px 45px;
@@ -28,7 +28,7 @@ form label {
 
 form input[type="text"],
 form input[type="number"] {
-  width: 100%;
+  width: 95%;
   padding: 14px 16px;
   margin-bottom: 24px;
   border: 1.8px solid #ddd;

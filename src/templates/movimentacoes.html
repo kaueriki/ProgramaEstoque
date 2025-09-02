@@ -1,44 +1,51 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gerenciador de Estoque - Login</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
+{% extends "base.html" %}
 
-<body>
-    <canvas id="caixas"></canvas>
-  
-    <div class="login-container">
-        <img src="{{ url_for('static', filename='assets/logo-branca.png') }}" alt="Logo" class="logo">
+{% block extra_css %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='movimentacoes.css') }}">
+{% endblock %}
 
-        {% with messages = get_flashed_messages(with_categories=true) %}
-          {% if messages %}
-            <div class="flash-messages">
-              {% for category, message in messages %}
-                <p class="flash {{ category }}">{{ message }}</p>
-              {% endfor %}
-            </div>
+{% block content %}
+<div class="movimentacoes-container">
+  <h2>Movimentações</h2>
+  <a href="{{ url_for('movimentacoes.nova_movimentacao') }}" class="btn-nova-movimentacao">+ Nova Movimentação</a>
+
+  <table class="movimentacoes-table">
+    <thead>
+      <tr>
+        <th>Material</th>
+        <th>Qtd</th>
+        <th>Funcionário</th>
+        <th>Cliente</th>
+        <th>Retirada</th>
+        <th>Prazo</th>
+        <th>Status</th>
+        <th>Devolvido</th>
+        <th>Ações</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for m in movimentacoes %}
+      <tr>
+        <td>{{ m.material.nome }}</td>
+        <td>{{ m.quantidade }}</td>
+        <td>{{ m.funcionario }}</td>
+        <td>{{ m.cliente.nome if m.cliente else '-' }}</td>
+        <td>{{ m.data_retirada.strftime('%d/%m/%Y') }}</td>
+        <td>{{ m.prazo_devolucao.strftime('%d/%m/%Y') if m.prazo_devolucao else '-' }}</td>
+        <td>{{ m.status }}</td>
+        <td>{{ 'Sim' if m.devolvido else 'Não' }}</td>
+        <td>
+          {% if not m.devolvido %}
+          <form method="POST" action="{{ url_for('movimentacoes.devolver_movimentacao', id=m.id) }}">
+            <button type="submit" class="btn-devolver">Devolver</button>
+          </form>
+          {% else %}
+          <span class="status-ok">?</span>
           {% endif %}
-        {% endwith %}
-
-        <form method="POST" action="{{ url_for('login') }}">
-            <div class="input-box">
-                <input type="text" name="operador" required>
-                <label>Operador</label>
-            </div>
-            <div class="input-box">
-                <input type="password" name="senha" required>
-                <label>Senha</label>
-            </div>
-            <input type="submit" value="Entrar" class="btn"/>
-        </form>
-    </div>
-    
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
-    <script src="{{ url_for('static', filename='background.js') }}" defer></script>
-</body>
-
-</html>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

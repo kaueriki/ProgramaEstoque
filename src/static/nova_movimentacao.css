@@ -1,0 +1,88 @@
+.form-movimentacao {
+  max-width: 650px;
+  height: 80vh;
+  overflow-y: auto;
+  margin: 2rem auto;
+  background-color: #fff;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  font-size: 0.95rem;
+  color: #333;
+  position: relative;
+  margin-bottom: 30px;
+}
+
+.form-movimentacao::-webkit-scrollbar {
+  width: 8px;
+}
+
+.form-movimentacao::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+.form-movimentacao h2 {
+  margin-bottom: 1.5rem;
+  font-size: 1.5rem;
+  color: #ffa600;
+  text-align: center;
+}
+
+.form-movimentacao label {
+  display: block;
+  margin: 1rem 0 0.3rem;
+  font-weight: bold;
+}
+
+.form-movimentacao input,
+.form-movimentacao select,
+.form-movimentacao textarea {
+  width: 100%;
+  padding: 10px;
+  font-size: 0.95rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+.form-movimentacao textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+
+.form-movimentacao input[type="checkbox"] {
+  width: auto;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+.form-movimentacao label input[type="checkbox"] {
+  display: inline-block;
+  margin-top: 0.5rem;
+  font-weight: normal;
+}
+
+.form-movimentacao button {
+  margin-top: 2rem;
+  background-color: #ffa02c;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  font-size: 1rem;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background 0.3s ease;
+  display: block;
+  width: 100%;
+}
+
+.form-movimentacao button:hover {
+  background-color: #cc7c02;
+}
+
+@media (max-width: 768px) {
+  .form-movimentacao {
+    padding: 1.2rem;
+  }
+}

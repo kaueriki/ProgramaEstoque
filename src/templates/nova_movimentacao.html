@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='nova_movimentacao.css') }}">
+{% endblock %}
+
+{% block content %}
+<form method="POST" class="form-movimentacao">
+  <label>Material:</label>
+  <select name="material_id" required>
+    {% for material in materiais %}
+      <option value="{{ material.id }}">{{ material.nome }}</option>
+    {% endfor %}
+  </select><br>
+
+  <label>Quantidade:</label>
+  <input type="number" name="quantidade" required><br>
+
+  <label>Cliente (opcional):</label>
+  <select name="cliente_id">
+    <option value="">-- Selecione --</option>
+    {% for cliente in clientes %}
+      <option value="{{ cliente.id }}">{{ cliente.nome }}</option>
+    {% endfor %}
+  </select><br>
+
+  <label>Ordem de Serviço:</label>
+  <input type="text" name="ordem_servico"><br>
+
+  <label>Funcionário:</label>
+  <input type="text" name="funcionario" required><br>
+
+  <label>Prazo de Devolução:</label>
+  <input type="date" name="prazo_devolucao"><br>
+
+  <label>Motivo:</label>
+  <select name="motivo">
+    <option value="">-- Selecione --</option>
+    <option value="manutenção">Manutenção</option>
+    <option value="preventiva">Preventiva</option>
+    <option value="teste">Teste</option>
+    <option value="instalação">Instalação</option>
+  </select><br>
+
+  <label>Status:</label>
+  <select name="status">
+    <option value="verde">Verde</option>
+    <option value="amarelo" selected>Amarelo</option>
+    <option value="vermelho">Vermelho</option>
+  </select><br>
+
+  <label><input type="checkbox" name="utilizado_cliente"> Utilizado pelo cliente</label><br>
+  <label><input type="checkbox" name="funcionando"> Funcionando</label><br>
+
+  <label>Observação:</label>
+  <textarea name="observacao"></textarea><br>
+
+  <button type="submit">Salvar</button>
+</form>
+{% endblock %}
