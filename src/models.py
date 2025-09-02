@@ -1,22 +1,18 @@
 from sqlalchemy import create_engine, Column, Integer, String, Boolean, Text, Date, DateTime, ForeignKey, Enum
 from sqlalchemy.orm import declarative_base, relationship, sessionmaker
-from datetime import datetime
-
+from datetime import datetime, date
 from urllib.parse import quote_plus
 
 DB_USER = "root"
-DB_PASSWORD = quote_plus("@vall1717") 
+DB_PASSWORD = quote_plus("@vall1717")
 DB_HOST = "127.0.0.1"
 DB_PORT = "3306"
 DB_NAME = "estoque_db"
 
 DATABASE_URL = f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 
-
 engine = create_engine(DATABASE_URL, echo=True)
-
 Base = declarative_base()
-
 
 class Usuario(Base):
     __tablename__ = "usuarios"
@@ -41,11 +37,10 @@ class Material(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     nome = Column(String(150), nullable=False)
     quantidade = Column(Integer, nullable=False, default=0)
-    lote = Column(String(50))  # 
-    estoque_minimo_chuva = Column(Integer, default=0) 
+    lote = Column(String(50))
+    estoque_minimo_chuva = Column(Integer, default=0)
     estoque_minimo_seco = Column(Integer, default=0)
     criado_em = Column(DateTime, default=datetime.utcnow)
-
 
 
 class Movimentacao(Base):
@@ -60,8 +55,8 @@ class Movimentacao(Base):
     responsavel_id = Column(Integer, ForeignKey("usuarios.id"), nullable=False)
     data_retirada = Column(DateTime, default=datetime.utcnow)
     prazo_devolucao = Column(Date)
-    motivo = Column(Enum("manutenção","preventiva","teste","instalação"), nullable=True)
-    status = Column(Enum("verde","amarelo","vermelho"), default="amarelo")
+    motivo = Column(Enum("manutenção", "preventiva", "teste", "instalação"), nullable=True)
+    status = Column(Enum("verde", "amarelo", "vermelho"), default="amarelo")
     devolvido = Column(Boolean, default=False)
     utilizado_cliente = Column(Boolean, default=False)
     funcionando = Column(Boolean)
@@ -71,13 +66,25 @@ class Movimentacao(Base):
     cliente = relationship("Cliente")
     responsavel = relationship("Usuario")
 
+    @property
+    def status_atual(self):
+        if self.status == "verde":
+            return "verde"
+        if (
+            self.prazo_devolucao
+            and self.prazo_devolucao < date.today()
+            and not self.devolvido
+            and not self.utilizado_cliente
+        ):
+            return "vermelho"
+        return "amarelo"
 
 Base.metadata.create_all(engine)
-
 Session = sessionmaker(bind=engine)
 session = Session()
 
 print("Banco de dados pronto")
+
 
 # novo_usuario = Usuario(
 #     nome="admin",
@@ -85,6 +92,7 @@ print("Banco de dados pronto")
 # )
 # session.add(novo_usuario)
 # session.commit()
+
 
 # novo_cliente = Cliente(
 #     nome="Ceagesp",
@@ -99,19 +107,16 @@ print("Banco de dados pronto")
 #     estoque_minimo_seco=30
 # )
 # session.add(novo_material)
-
 # session.commit()
 
-# print("Usuário, cliente e material inseridos com sucesso ✅")
-
 # nova_movimentacao = Movimentacao(
-#     material_id=1,         
+#     material_id=1,
 #     quantidade=10,
-#     cliente_id=1,        
+#     cliente_id=1,
 #     ordem_servico="43000",
 #     funcionario="Bidu",
-#     responsavel_id=1,     
-#     prazo_devolucao="2025-09-10",
+#     responsavel_id=1,
+#     prazo_devolucao=date(2025, 9, 10),
 #     motivo="manutenção",
 #     status="amarelo",
 #     devolvido=False,
@@ -119,8 +124,5 @@ print("Banco de dados pronto")
 #     funcionando=True,
 #     observacao="Material entregue em bom estado."
 # )
-
 # session.add(nova_movimentacao)
 # session.commit()
-
-# print("Movimentação registrada ")

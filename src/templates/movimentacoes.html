@@ -7,7 +7,7 @@
 {% block content %}
 <div class="movimentacoes-container">
   <h2>Movimentações</h2>
-  <a href="{{ url_for('movimentacoes.nova_movimentacao') }}" class="btn-nova-movimentacao">+ Nova Movimentação</a>
+  <a href="{{ url_for('movimentacoes.nova_movimentacao') }}" class="btn-nova-movimentacao">Nova Movimentação</a>
 
   <table class="movimentacoes-table">
     <thead>
@@ -25,22 +25,68 @@
     </thead>
     <tbody>
       {% for m in movimentacoes %}
-      <tr>
+      <tr class="status-{{ m.status_atual|lower }}">
         <td>{{ m.material.nome }}</td>
         <td>{{ m.quantidade }}</td>
         <td>{{ m.funcionario }}</td>
         <td>{{ m.cliente.nome if m.cliente else '-' }}</td>
         <td>{{ m.data_retirada.strftime('%d/%m/%Y') }}</td>
         <td>{{ m.prazo_devolucao.strftime('%d/%m/%Y') if m.prazo_devolucao else '-' }}</td>
-        <td>{{ m.status }}</td>
+        <td>
+          {% if m.status_atual is defined %}
+            {% if m.status_atual.lower() == 'verde' %}
+              Finalizado
+            {% elif m.status_atual.lower() == 'amarelo' %}
+              Pendente
+            {% elif m.status_atual.lower() == 'vermelho' %}
+              Atrasado
+            {% else %}
+              {{ m.status_atual }}
+            {% endif %}
+          {% else %}
+            {{ m.status }}
+          {% endif %}
+        </td>
         <td>{{ 'Sim' if m.devolvido else 'Não' }}</td>
         <td>
-          {% if not m.devolvido %}
-          <form method="POST" action="{{ url_for('movimentacoes.devolver_movimentacao', id=m.id) }}">
-            <button type="submit" class="btn-devolver">Devolver</button>
-          </form>
+          {% if not m.devolvido and not m.utilizado_cliente %}
+            <div class="acoes-intuitivas">
+              <div class="btn-group">
+                <button class="btn-acao" onclick="toggleDropdown('retorno-{{ m.id }}')">
+                  Retorno ▼
+                </button>
+                <div id="retorno-{{ m.id }}" class="dropdown-acoes">
+                  <form method="POST" action="{{ url_for('movimentacoes.finalizar_retorno', id=m.id) }}">
+                    <label>Funcionando?</label>
+                    <select name="funcionando" required>
+                      <option value="">-- Selecione --</option>
+                      <option value="sim">Sim</option>
+                      <option value="nao">Não</option>
+                    </select>
+                    <button type="submit" class="btn-finalizar">Confirmar</button>
+                  </form>
+                </div>
+              </div>
+
+              <div class="btn-group">
+                <button class="btn-acao" onclick="toggleDropdown('cliente-{{ m.id }}')">
+                  Ficou no Cliente ▼
+                </button>
+                <div id="cliente-{{ m.id }}" class="dropdown-acoes">
+                  <form method="POST" action="{{ url_for('movimentacoes.finalizar_cliente', id=m.id) }}">
+                    <label>Funcionando?</label>
+                    <select name="funcionando" required>
+                      <option value="">-- Selecione --</option>
+                      <option value="sim">Sim</option>
+                      <option value="nao">Não</option>
+                    </select>
+                    <button type="submit" class="btn-finalizar">Confirmar</button>
+                  </form>
+                </div>
+              </div>
+            </div>
           {% else %}
-          <span class="status-ok">?</span>
+            <span class="status-ok">✔</span>
           {% endif %}
         </td>
       </tr>
@@ -48,4 +94,25 @@
     </tbody>
   </table>
 </div>
+<script>
+  function toggleDropdown(id) {
+    document.querySelectorAll('.dropdown-acoes').forEach(el => {
+      if (el.id !== id) {
+        el.style.display = 'none';
+      }
+    });
+
+    const dropdown = document.getElementById(id);
+    dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+  }
+
+  document.addEventListener('click', function(event) {
+    if (!event.target.closest('.btn-group')) {
+      document.querySelectorAll('.dropdown-acoes').forEach(el => {
+        el.style.display = 'none';
+      });
+    }
+  });
+</script>
+
 {% endblock %}

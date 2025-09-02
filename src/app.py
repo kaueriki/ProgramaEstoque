@@ -1,7 +1,8 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash, Blueprint
 from sqlalchemy.orm import sessionmaker
-from models import engine, Usuario, Material, Cliente, Movimentacao
 from sqlalchemy.exc import IntegrityError
+from datetime import datetime
+from models import engine, Usuario, Material, Cliente, Movimentacao
 
 app = Flask(__name__)
 app.secret_key = "supersecret"
@@ -18,18 +19,13 @@ def login():
     operador = request.form["operador"]
     senha = request.form["senha"]
 
-    print(f"Tentando login com -> Operador: {operador}, Senha: {senha}")
-
     user = db.query(Usuario).filter_by(nome=operador, senha=senha).first()
-    print("Resultado query:", user)
 
     if user:
         session["usuario_id"] = user.id
-        print("Login OK, redirecionando...")
         return redirect(url_for("movimentacoes.listar_movimentacoes"))
     else:
         flash("Usuário ou senha inválidos!", "error")
-        print("Login falhou")
         return redirect(url_for("index"))
 
 @app.route("/logout")
@@ -244,10 +240,10 @@ def excluir_cliente(id):
 
     return redirect(url_for("clientes.listar_clientes"))
 
-
 app.register_blueprint(clientes_bp)
 
 movimentacoes_bp = Blueprint("movimentacoes", __name__)
+
 @movimentacoes_bp.route("/movimentacoes")
 def listar_movimentacoes():
     if "usuario_id" not in session:
@@ -290,19 +286,52 @@ def nova_movimentacao():
 
     return render_template("nova_movimentacao.html", materiais=materiais, clientes=clientes)
 
-@movimentacoes_bp.route("/movimentacoes/<int:id>/devolver", methods=["POST"])
-def devolver_movimentacao(id):
-    movimentacao = db.query(Movimentacao).get(id)
-    if not movimentacao:
-        flash("Movimentação não encontrada.", "error")
+@movimentacoes_bp.route("/movimentacoes/<int:id>/finalizar_retorno", methods=["POST"])
+def finalizar_retorno(id):
+    m = db.query(Movimentacao).get(id)
+    if not m:
+        flash("Movimentação não encontrada", "error")
+        return redirect(url_for("movimentacoes.listar_movimentacoes"))
+
+    funcionando = request.form.get("funcionando")
+    if funcionando == "sim":
+        m.funcionando = True
+    elif funcionando == "nao":
+        m.funcionando = False
     else:
-        movimentacao.devolvido = True
-        db.commit()
-        flash("Movimentação marcada como devolvida.", "success")
+        m.funcionando = None  
+
+    m.devolvido = True
+    m.status = "verde"
+
+    db.commit()
+    flash("Movimentação finalizada (retorno)!", "success")
+    return redirect(url_for("movimentacoes.listar_movimentacoes"))
+
+
+@movimentacoes_bp.route("/movimentacoes/<int:id>/finalizar_cliente", methods=["POST"])
+def finalizar_cliente(id):
+    m = db.query(Movimentacao).get(id)
+    if not m:
+        flash("Movimentação não encontrada", "error")
+        return redirect(url_for("movimentacoes.listar_movimentacoes"))
+
+    funcionando = request.form.get("funcionando")
+    if funcionando == "sim":
+        m.funcionando = True
+    elif funcionando == "nao":
+        m.funcionando = False
+    else:
+        m.funcionando = None
+
+    m.utilizado_cliente = True
+    m.status = "verde"
+
+    db.commit()
+    flash("Movimentação finalizada (ficou no cliente)!", "success")
     return redirect(url_for("movimentacoes.listar_movimentacoes"))
 
 app.register_blueprint(movimentacoes_bp)
-
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
