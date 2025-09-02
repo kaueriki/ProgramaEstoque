@@ -11,15 +11,21 @@
 <body>
   <aside class="sidebar">
     <div class="sidebar-logo">
-      <img src="{{ url_for('static', filename='./assets/logo-branca.png') }}" alt="Logo Valltech">
+      <img src="{{ url_for('static', filename='assets/logo-branca.png') }}" alt="Logo Valltech">
     </div>
-    <nav class="sidebar-nav">
-    <a href="{{ url_for('listar_materiais') }}">Materiais</a>
-    <a href="{{ url_for('novo_material') }}">Novo Material</a>
-    {# <a href="{{ url_for('usuarios') }}">Usuários</a> #}
-    <a href="{{ url_for('logout') }}">Logout</a>
-  </nav>
 
+    <nav class="sidebar-nav">
+      <a href="{{ url_for('listar_materiais') }}">Materiais</a>
+      <a href="{{ url_for('novo_material') }}">Novo Material</a>
+
+      <a href="{{ url_for('listar_usuarios') }}">Usuários</a>
+      <a href="{{ url_for('novo_usuario') }}">Novo Usuário</a>
+
+      <a href="{{ url_for('clientes.listar_clientes') }}">Clientes</a>
+      <a href="{{ url_for('clientes.novo_cliente') }}">Novo Cliente</a>
+
+      <a href="{{ url_for('logout') }}">Logout</a>
+    </nav>
   </aside>
 
   <main class="main-content">
@@ -36,6 +42,5 @@
     {% block content %}
     {% endblock %}
   </main>
-
 </body>
 </html>

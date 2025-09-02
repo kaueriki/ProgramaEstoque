@@ -1,18 +1,17 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash
+from flask import Flask, render_template, request, redirect, url_for, session, flash, Blueprint
 from sqlalchemy.orm import sessionmaker
-from models import engine, Usuario, Material
+from models import engine, Usuario, Material, Cliente
+from sqlalchemy.exc import IntegrityError
 
 app = Flask(__name__)
 app.secret_key = "supersecret"
 
 Session = sessionmaker(bind=engine)
-db_session = Session()
-
+db = Session()
 
 @app.route("/")
 def index():
     return render_template("login.html")
-
 
 @app.route("/login", methods=["POST"])
 def login():
@@ -21,7 +20,7 @@ def login():
 
     print(f"Tentando login com -> Operador: {operador}, Senha: {senha}")
 
-    user = db_session.query(Usuario).filter_by(nome=operador, senha=senha).first()
+    user = db.query(Usuario).filter_by(nome=operador, senha=senha).first()
     print("Resultado query:", user)
 
     if user:
@@ -38,7 +37,6 @@ def logout():
     session.clear()
     flash("Logout realizado com sucesso!", "success")
     return redirect(url_for("index"))
-
 
 @app.route("/materiais/novo", methods=["GET", "POST"])
 def novo_material():
@@ -61,14 +59,13 @@ def novo_material():
             estoque_minimo_seco=estoque_minimo_seco,
         )
 
-        db_session.add(novo)
-        db_session.commit()
+        db.add(novo)
+        db.commit()
 
         flash("Material cadastrado com sucesso!", "success")
         return redirect(url_for("listar_materiais"))
 
     return render_template("novo_material.html")
-
 
 @app.route("/materiais")
 def listar_materiais():
@@ -76,7 +73,7 @@ def listar_materiais():
         flash("Você precisa estar logado!", "error")
         return redirect(url_for("index"))
 
-    materiais = db_session.query(Material).all()
+    materiais = db.query(Material).all()
     return render_template("materiais.html", materiais=materiais)
 
 @app.route("/materiais/<int:material_id>/editar", methods=["GET", "POST"])
@@ -85,7 +82,7 @@ def editar_material(material_id):
         flash("Você precisa estar logado!", "error")
         return redirect(url_for("index"))
     
-    material = db_session.query(Material).get(material_id)
+    material = db.query(Material).get(material_id)
     if not material:
         flash("Material não encontrado.", "error")
         return redirect(url_for("listar_materiais"))
@@ -96,7 +93,7 @@ def editar_material(material_id):
         material.lote = request.form["lote"]
         material.estoque_minimo_chuva = int(request.form["estoque_minimo_chuva"])
         material.estoque_minimo_seco = int(request.form["estoque_minimo_seco"])
-        db_session.commit()
+        db.commit()
         flash("Material atualizado com sucesso!", "success")
         return redirect(url_for("listar_materiais"))
     
@@ -108,10 +105,10 @@ def excluir_material(material_id):
         flash("Você precisa estar logado!", "error")
         return redirect(url_for("index"))
     
-    material = db_session.query(Material).get(material_id)
+    material = db.query(Material).get(material_id)
     if material:
-        db_session.delete(material)
-        db_session.commit()
+        db.delete(material)
+        db.commit()
         flash("Material excluído com sucesso!", "success")
     else:
         flash("Material não encontrado.", "error")
@@ -123,79 +120,135 @@ def listar_usuarios():
         flash("Você precisa estar logado!", "error")
         return redirect(url_for("index"))
     
-    usuarios = db_session.query(Usuario).all()
+    usuarios = db.query(Usuario).all()
     return render_template("usuarios.html", usuarios=usuarios)
-
 
 @app.route("/usuarios/novo", methods=["GET", "POST"])
 def novo_usuario():
     if "usuario_id" not in session:
         flash("Você precisa estar logado!", "error")
         return redirect(url_for("index"))
-    
+
     if request.method == "POST":
         nome = request.form["nome"]
-        email = request.form["email"]
-        perfil = request.form["perfil"]
         senha = request.form["senha"]
 
-        # Aqui você pode adicionar validação, criptografia da senha, etc.
+        novo = Usuario(nome=nome, senha=senha)
+        db.add(novo)
+        db.commit()
 
-        novo = Usuario(nome=nome, email=email, perfil=perfil, senha=senha)
-
-        db_session.add(novo)
-        db_session.commit()
-        
         flash("Usuário cadastrado com sucesso!", "success")
         return redirect(url_for("listar_usuarios"))
-    
+
     return render_template("novo_usuario.html")
 
-
-# EDITAR USUÁRIO
 @app.route("/usuarios/<int:usuario_id>/editar", methods=["GET", "POST"])
 def editar_usuario(usuario_id):
     if "usuario_id" not in session:
         flash("Você precisa estar logado!", "error")
         return redirect(url_for("index"))
-    
-    usuario = db_session.query(Usuario).get(usuario_id)
+
+    usuario = db.query(Usuario).get(usuario_id)
     if not usuario:
         flash("Usuário não encontrado.", "error")
         return redirect(url_for("listar_usuarios"))
-    
+
     if request.method == "POST":
         usuario.nome = request.form["nome"]
-        usuario.email = request.form["email"]
-        usuario.perfil = request.form["perfil"]
-        # Se quiser permitir mudar senha, faça aqui. Caso contrário, remova.
         nova_senha = request.form.get("senha")
         if nova_senha:
             usuario.senha = nova_senha
-        
-        db_session.commit()
+
+        db.commit()
         flash("Usuário atualizado com sucesso!", "success")
         return redirect(url_for("listar_usuarios"))
-    
+
     return render_template("editar_usuario.html", usuario=usuario)
 
+@app.route('/usuarios/<int:id>/excluir', methods=['POST'])
+def excluir_usuario(id):
+    usuario = db.get(Usuario, id)
+    if not usuario:
+        flash("Usuário não encontrado.", "error")
+        return redirect(url_for('listar_usuarios'))
 
-# EXCLUIR USUÁRIO
-@app.route("/usuarios/<int:usuario_id>/excluir", methods=["POST"])
-def excluir_usuario(usuario_id):
+    try:
+        db.delete(usuario)
+        db.commit()
+        flash("Usuário excluído com sucesso.", "success")
+    except IntegrityError:
+        db.rollback()
+        flash("Não é possível excluir este usuário, pois ele está vinculado a movimentações.", "error")
+
+    return redirect(url_for('listar_usuarios'))
+
+# ------------------------
+# BLUEPRINT: CLIENTES
+# ------------------------
+clientes_bp = Blueprint("clientes", __name__)
+
+@clientes_bp.route("/clientes")
+def listar_clientes():
     if "usuario_id" not in session:
         flash("Você precisa estar logado!", "error")
         return redirect(url_for("index"))
-    
-    usuario = db_session.query(Usuario).get(usuario_id)
-    if usuario:
-        db_session.delete(usuario)
-        db_session.commit()
-        flash("Usuário excluído com sucesso!", "success")
+
+    clientes = db.query(Cliente).all()
+    return render_template("clientes.html", clientes=clientes)
+
+@clientes_bp.route("/clientes/novo", methods=["GET", "POST"])
+def novo_cliente():
+    if "usuario_id" not in session:
+        flash("Você precisa estar logado!", "error")
+        return redirect(url_for("index"))
+
+    if request.method == "POST":
+        nome = request.form["nome"]
+        cliente = Cliente(nome=nome)
+        db.add(cliente)
+        db.commit()
+        flash("Cliente cadastrado com sucesso!", "success")
+        return redirect(url_for("clientes.listar_clientes"))
+
+    return render_template("novo_cliente.html")
+
+@clientes_bp.route("/clientes/editar/<int:cliente_id>", methods=["GET", "POST"])
+def editar_cliente(cliente_id):
+    if "usuario_id" not in session:
+        flash("Você precisa estar logado!", "error")
+        return redirect(url_for("index"))
+
+    cliente = db.query(Cliente).get(cliente_id)
+    if not cliente:
+        flash("Cliente não encontrado.", "error")
+        return redirect(url_for("clientes.listar_clientes"))
+
+    if request.method == "POST":
+        cliente.nome = request.form["nome"]
+        db.commit()
+        flash("Cliente atualizado com sucesso!", "success")
+        return redirect(url_for("clientes.listar_clientes"))
+
+    return render_template("editar_cliente.html", cliente=cliente)
+
+@clientes_bp.route("/clientes/excluir/<int:id>", methods=["POST"])
+def excluir_cliente(id):
+    if "usuario_id" not in session:
+        flash("Você precisa estar logado!", "error")
+        return redirect(url_for("index"))
+
+    cliente = db.query(Cliente).get(id)
+    if cliente:
+        db.delete(cliente)
+        db.commit()
+        flash("Cliente excluído com sucesso!", "success")
     else:
-        flash("Usuário não encontrado.", "error")
-    
-    return redirect(url_for("listar_usuarios"))
+        flash("Cliente não encontrado.", "error")
+
+    return redirect(url_for("clientes.listar_clientes"))
+
+
+app.register_blueprint(clientes_bp)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)

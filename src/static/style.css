@@ -9,7 +9,6 @@ body {
   position: relative;
   overflow: hidden;
   background: url('../static/valltech.png') no-repeat center center fixed;
-  background-image: circular-gradient(rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.7)), url('../static/valltech.png');
 }
 
 canvas#animated-background {

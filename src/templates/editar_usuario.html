@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='editar_usuario.css') }}">
+{% endblock %}
+
+
+{% block content %}
+<div class="editar-usuario-container">
+  <h2>Editar Usuário</h2>
+  <form method="POST" class="editar-usuario-form">
+    <input type="text" name="nome" value="{{ usuario.nome }}" required>
+    <input type="password" name="senha" placeholder="Nova Senha (opcional)">
+    <button type="submit">Salvar</button>
+  </form>
+</div>
+{% endblock %}

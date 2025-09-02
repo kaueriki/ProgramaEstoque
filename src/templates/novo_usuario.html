@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='novo_usuario.css') }}">
+{% endblock %}
+
+
+{% block content %}
+<div class="content-container">
+ <h2>Cadastrar Usuário</h2>
+    <form method="POST">
+        <input type="text" name="nome" placeholder="Nome" required>
+        <input type="password" name="senha" placeholder="Senha" required>
+        <button type="submit">Salvar</button>
+    </form>
+
+</div>
+{% endblock %}

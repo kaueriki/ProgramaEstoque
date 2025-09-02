@@ -14,8 +14,6 @@
     <thead>
       <tr>
         <th>Nome</th>
-        <th>Email</th>
-        <th>Perfil</th>
         <th>Ações</th>
       </tr>
     </thead>
@@ -23,17 +21,16 @@
       {% for u in usuarios %}
         <tr>
           <td>{{ u.nome }}</td>
-          <td>{{ u.email }}</td>
-          <td>{{ u.perfil }}</td>
           <td>
             <a class="action-btn edit" href="{{ url_for('editar_usuario', usuario_id=u.id) }}">Editar</a>
-            <form method="POST" action="{{ url_for('excluir_usuario', usuario_id=u.id) }}" style="display:inline;">
+            <form method="POST" action="{{ url_for('excluir_usuario', id=u.id) }}" style="display:inline;">
               <button class="action-btn delete" type="submit" onclick="return confirm('Tem certeza que deseja excluir este usuário?');">Excluir</button>
             </form>
           </td>
         </tr>
       {% endfor %}
     </tbody>
+
   </table>
 </div>
 {% endblock %}

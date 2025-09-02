@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='usuarios.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="usuarios-container">
+  <div class="usuarios-header">
+    <h2>Lista de Clientes</h2>
+    <a class="btn-novo" href="{{ url_for('clientes.novo_cliente') }}">+ Cadastrar Novo Cliente</a>
+  </div>
+
+  <table class="usuarios-tabela">
+    <thead>
+      <tr>
+        <th>Nome</th>
+        <th>Ações</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for c in clientes %}
+        <tr>
+          <td>{{ c.nome }}</td>
+          <td>
+            <a class="action-btn edit" href="{{ url_for('clientes.editar_cliente', cliente_id=c.id) }}">Editar</a>
+            <form method="POST" action="{{ url_for('clientes.excluir_cliente', id=c.id) }}" style="display:inline;">
+              <button class="action-btn delete" type="submit" onclick="return confirm('Tem certeza que deseja excluir este cliente?');">Excluir</button>
+            </form>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
