@@ -26,7 +26,7 @@ canvas#animated-background {
 }
 
 .login-container {
-  background: rgba(0, 0, 0, 0.815);
+  background: rgba(255, 255, 255, 0.815);
   padding: 40px;
   width: 20%;
   border-radius: 12px;
@@ -48,7 +48,7 @@ canvas#animated-background {
   border: none;
   border-bottom: 2px solid #ff8c00;
   outline: none;
-  color: #ffffff;
+  color: #000000;
   font-size: 16px;
 }
 
@@ -57,7 +57,7 @@ canvas#animated-background {
   left: 0;
   top: 50%;
   transform: translateY(-50%);
-  color: #aaa;
+  color: #070707;
   pointer-events: none;
   transition: 0.3s ease;
 }

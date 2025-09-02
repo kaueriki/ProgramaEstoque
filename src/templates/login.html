@@ -1,37 +1,46 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gerenciador de Estoque - Login</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gerenciador de Estoque - Login</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 
 <body>
-    <canvas id="caixas"></canvas>
-    <div class="login-container">
-        <img src="{{ url_for('static', filename='assets/logo-branca.png') }}" alt="Logo" class="logo">
+  <!-- Canvas de fundo -->
+  <canvas id="caixas"></canvas>
 
-        {% with messages = get_flashed_messages(with_categories=true) %}
-          {% if messages %}
-            <div class="flash-messages">
-              {% for category, message in messages %}
-                <p class="flash {{ category }}">{{ message }}</p>
-              {% endfor %}
-            </div>
-          {% endif %}
-        {% endwith %}
+  <!-- Container do login -->
+  <div class="login-container">
+    <img src="{{ url_for('static', filename='assets/logo-branca.png') }}" alt="Logo" class="logo">
 
-        <form method="POST" action="{{ url_for('login') }}">
-            <input name="operador" type="text" placeholder="Usuário" required>
-      <input type="password" placeholder="Senha" required>
-            <input name="senha" type="submit" value="Entrar" class="btn"/>
-        </form>
-    </div>
-    
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="flash-messages">
+          {% for category, message in messages %}
+            <p class="flash {{ category }}">{{ message }}</p>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
-    <script src="{{ url_for('static', filename='background.js') }}" defer></script>
+    <form method="POST" action="{{ url_for('login') }}">
+      <div class="input-box">
+        <input type="text" name="operador" required>
+        <label>Usuário</label>
+      </div>
+
+      <div class="input-box">
+        <input type="password" name="senha" required>
+        <label>Senha</label>
+      </div>
+
+      <button type="submit" class="btn">Entrar</button>
+    </form>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+  <script src="{{ url_for('static', filename='background.js') }}" defer></script>
 </body>
-
 </html>

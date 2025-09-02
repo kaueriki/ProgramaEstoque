@@ -117,7 +117,6 @@ def excluir_material(material_id):
         flash("Material não encontrado.", "error")
     return redirect(url_for("listar_materiais"))
 
-# LISTAR USUÁRIOS
 @app.route("/usuarios")
 def listar_usuarios():
     if "usuario_id" not in session:
@@ -128,7 +127,6 @@ def listar_usuarios():
     return render_template("usuarios.html", usuarios=usuarios)
 
 
-# NOVO USUÁRIO
 @app.route("/usuarios/novo", methods=["GET", "POST"])
 def novo_usuario():
     if "usuario_id" not in session:
