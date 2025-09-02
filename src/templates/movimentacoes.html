@@ -6,8 +6,8 @@
 
 {% block content %}
 <div class="movimentacoes-container">
-  <h2>Movimentações</h2>
-  <a href="{{ url_for('movimentacoes.nova_movimentacao') }}" class="btn-nova-movimentacao">Nova Movimentação</a>
+  <h2>Histórico de Retiradas</h2>
+  <a href="{{ url_for('movimentacoes.nova_movimentacao') }}" class="btn-nova-movimentacao">Nova Retirada</a>
 
   <table class="movimentacoes-table">
     <thead>
@@ -25,7 +25,7 @@
     </thead>
     <tbody>
       {% for m in movimentacoes %}
-      <tr class="status-{{ m.status_atual|lower }}">
+      <tr class="status-{{ m.status|lower }}">
         <td>{{ m.material.nome }}</td>
         <td>{{ m.quantidade }}</td>
         <td>{{ m.funcionario }}</td>
@@ -33,16 +33,12 @@
         <td>{{ m.data_retirada.strftime('%d/%m/%Y') }}</td>
         <td>{{ m.prazo_devolucao.strftime('%d/%m/%Y') if m.prazo_devolucao else '-' }}</td>
         <td>
-          {% if m.status_atual is defined %}
-            {% if m.status_atual.lower() == 'verde' %}
-              Finalizado
-            {% elif m.status_atual.lower() == 'amarelo' %}
-              Pendente
-            {% elif m.status_atual.lower() == 'vermelho' %}
-              Atrasado
-            {% else %}
-              {{ m.status_atual }}
-            {% endif %}
+          {% if m.status.lower() == 'verde' %}
+            Finalizado
+          {% elif m.status.lower() == 'amarelo' %}
+            Pendente
+          {% elif m.status.lower() == 'vermelho' %}
+            Atrasado
           {% else %}
             {{ m.status }}
           {% endif %}
@@ -94,6 +90,7 @@
     </tbody>
   </table>
 </div>
+
 <script>
   function toggleDropdown(id) {
     document.querySelectorAll('.dropdown-acoes').forEach(el => {
@@ -114,5 +111,4 @@
     }
   });
 </script>
-
 {% endblock %}
