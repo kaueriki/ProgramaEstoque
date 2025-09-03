@@ -25,11 +25,11 @@ canvas#animated-background {
 }
 
 .login-container {
-  background: rgba(255, 255, 255, 0.815);
-  padding: 40px;
-  width: 20%;
+  background: rgba(0, 0, 0, 0.377);
+  padding: 35px;
+  width: 22%;
   border-radius: 12px;
-  box-shadow: 0px 8px 20px rgba(255, 94, 0, 0.8);
+  box-shadow: 0px 8px 20px rgb(255, 94, 0);
   text-align: center;
   animation: fadeIn 1s ease-in-out;
   border: 1px solid #ff6600;
@@ -37,17 +37,17 @@ canvas#animated-background {
 
 .input-box {
   position: relative;
-  margin: 20px 0;
+  margin: 21px 0;
 }
 
 .input-box input {
-  width: 100%;
+  width: 93%;
   padding: 10px;
   background: transparent;
   border: none;
   border-bottom: 2px solid #ff8c00;
   outline: none;
-  color: #000000;
+  color: #ffffff;
   font-size: 16px;
 }
 
@@ -56,9 +56,8 @@ canvas#animated-background {
   left: 0;
   top: 50%;
   transform: translateY(-50%);
-  color: #070707;
-  pointer-events: none;
-  transition: 0.3s ease;
+  color: white;
+  transition: 0.5s ease;
 }
 
 .input-box input:focus ~ label,
@@ -120,8 +119,8 @@ canvas {
 .login-container {
   position: relative;
   z-index: 10; 
-  background: rgb(255, 255, 255);
+  background: rgba(0, 0, 0, 0.281);
   padding: 30px;
   border-radius: 12px;
-  box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+  box-shadow: 0 8px 20px rgb(255, 115, 0);
 }
