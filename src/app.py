@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash, Blueprint
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import IntegrityError
-from datetime import datetime
+from datetime import datetime, timezone
 from models import engine, Usuario, Material, Cliente, Movimentacao
 
 app = Flask(__name__)
@@ -275,8 +275,8 @@ def listar_movimentacoes():
     material_nome = request.args.get("material", "").strip()
     status = request.args.get("status", "").strip().lower()
 
-    page = request.args.get("page", 1, type=int)  # página atual, default 1
-    per_page = 10  # itens por página
+    page = request.args.get("page", 1, type=int) 
+    per_page = 10 
 
     query = db.query(Movimentacao).join(Material)
 
@@ -284,7 +284,7 @@ def listar_movimentacoes():
         query = query.filter(Material.nome.ilike(f"%{material_nome}%"))
 
     if status:
-        query = query.filter(Movimentacao.status_atual.ilike(f"%{status}%"))
+        query = query.filter(Movimentacao.status.ilike(f"%{status}%"))
 
     total = query.count()
 
@@ -304,29 +304,62 @@ def nova_movimentacao():
     if "usuario_id" not in session:
         flash("Você precisa estar logado!", "error")
         return redirect(url_for("index"))
+
     materiais = db.query(Material).all()
     clientes = db.query(Cliente).all()
+
     if request.method == "POST":
-        nova = Movimentacao(
-            material_id=request.form["material_id"],
-            quantidade=int(request.form["quantidade"]),
-            cliente_id=request.form.get("cliente_id") or None,
-            ordem_servico=request.form["ordem_servico"],
-            funcionario=request.form["funcionario"],
-            responsavel_id=session["usuario_id"],
-            data_retirada=datetime.utcnow(),
-            prazo_devolucao=request.form.get("prazo_devolucao") or None,
-            motivo=request.form.get("motivo") or None,
-            status="amarelo",
-            devolvido=False,
-            utilizado_cliente=False,
-            funcionando=None,
-            observacao=request.form.get("observacao", "")
-        )
-        db.add(nova)
-        db.commit()
-        flash("Movimentação registrada com sucesso!", "success")
-        return redirect(url_for("movimentacoes.listar_movimentacoes"))
+        try:
+            material_id = int(request.form["material_id"])
+            quantidade = int(request.form["quantidade"])
+            cliente_id = request.form.get("cliente_id")
+            if not cliente_id:
+                cliente_id = None
+            else:
+                cliente_id = int(cliente_id)
+
+            ordem_servico = request.form["ordem_servico"].strip()
+            funcionario = request.form["funcionario"].strip()
+
+            prazo_str = request.form.get("prazo_devolucao", "").strip()
+            prazo_devolucao = None
+            if prazo_str:
+                try:
+                    prazo_devolucao = datetime.strptime(prazo_str, "%Y-%m-%d")
+                except ValueError:
+                    flash("Formato inválido para Prazo de Devolução. Use AAAA-MM-DD.", "error")
+                    return render_template("nova_movimentacao.html", materiais=materiais, clientes=clientes)
+
+            motivo = request.form.get("motivo", "").strip()
+            observacao = request.form.get("observacao", "").strip()
+
+            nova = Movimentacao(
+                material_id=material_id,
+                quantidade=quantidade,
+                cliente_id=cliente_id,
+                ordem_servico=ordem_servico,
+                funcionario=funcionario,
+                responsavel_id=session["usuario_id"],
+                data_retirada=datetime.now(timezone.utc),
+                prazo_devolucao=prazo_devolucao,
+                motivo=motivo or None,
+                status="amarelo",
+                devolvido=False,
+                utilizado_cliente=False,
+                funcionando=None,
+                observacao=observacao
+            )
+
+            db.add(nova)
+            db.commit()
+            flash("Movimentação registrada com sucesso!", "success")
+            return redirect(url_for("movimentacoes.listar_movimentacoes"))
+
+        except Exception as e:
+            db.rollback()
+            flash(f"Erro ao cadastrar movimentação: {str(e)}", "error")
+            return render_template("nova_movimentacao.html", materiais=materiais, clientes=clientes)
+
     return render_template("nova_movimentacao.html", materiais=materiais, clientes=clientes)
 
 @movimentacoes_bp.route("/movimentacoes/<int:id>/finalizar", methods=["POST"])
