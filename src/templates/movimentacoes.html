@@ -19,74 +19,75 @@
     <button type="submit" class="btn-filtrar">Filtrar</button>
     <a href="{{ url_for('movimentacoes.listar_movimentacoes') }}" class="btn-limpar">Limpar</a>
   </form>
-
-  <table class="movimentacoes-table">
-    <thead>
-      <tr>
-        <th>Material</th>
-        <th>Qtd</th>
-        <th>Funcionário</th>
-        <th>Cliente</th>
-        <th>Retirada</th>
-        <th>Prazo</th>
-        <th>Status</th>
-        <th>Observação</th>
-        <th>Funcionando</th>
-        <th>Ações</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for m in movimentacoes %}
-      <tr class="status-{{ m.status_atual|lower|replace(' ', '-') }}">
-        <td>{{ m.material.nome }}</td>
-        <td>{{ m.quantidade }}</td>
-        <td>{{ m.funcionario }}</td>
-        <td>{{ m.cliente.nome if m.cliente else '-' }}</td>
-        <td>{{ m.data_retirada.strftime('%d/%m/%Y') }}</td>
-        <td>{{ m.prazo_devolucao.strftime('%d/%m/%Y') if m.prazo_devolucao else '-' }}</td>
-        <td>{{ m.status_atual }}</td>
-        <td>{{ m.observacao or '-' }}</td>
-        <td>
-          {% if m.funcionando is none %}
-            -
-          {% elif m.funcionando %}
-            Sim
-          {% else %}
-            Não
-          {% endif %}
-        </td>
-        <td>
-          {% if not m.devolvido and not m.utilizado_cliente %}
-          <div class="btn-group">
-            <button class="btn-acao" onclick="toggleDropdown('finalizar-{{ m.id }}')">
-              Finalizar ▼
-            </button>
-            <div id="finalizar-{{ m.id }}" class="dropdown-acoes" style="display:none;">
-              <form method="POST" action="{{ url_for('movimentacoes.finalizar', id=m.id) }}">
-                <label>Funcionando?</label>
-                <select name="funcionando" required>
-                  <option value="">-- Selecione --</option>
-                  <option value="sim">Sim</option>
-                  <option value="nao">Não</option>
-                </select>
-                <label>Destino final</label>
-                <select name="destino" required>
-                  <option value="">-- Selecione --</option>
-                  <option value="retorno">Retornou</option>
-                  <option value="cliente">Ficou no cliente</option>
-                </select>
-                <button type="submit" class="btn-finalizar">Confirmar</button>
-              </form>
+  <div class="table-wrapper">
+    <table class="movimentacoes-table">
+      <thead>
+        <tr>
+          <th>Material</th>
+          <th>Qtd</th>
+          <th>Funcionário</th>
+          <th>Cliente</th>
+          <th>Retirada</th>
+          <th>Prazo</th>
+          <th>Status</th>
+          <th>Observação</th>
+          <th>Funcionando</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for m in movimentacoes %}
+        <tr class="status-{{ m.status_atual|lower|replace(' ', '-') }}">
+          <td>{{ m.material.nome }}</td>
+          <td>{{ m.quantidade }}</td>
+          <td>{{ m.funcionario }}</td>
+          <td>{{ m.cliente.nome if m.cliente else '-' }}</td>
+          <td>{{ m.data_retirada.strftime('%d/%m/%Y') }}</td>
+          <td>{{ m.prazo_devolucao.strftime('%d/%m/%Y') if m.prazo_devolucao else '-' }}</td>
+          <td>{{ m.status_atual }}</td>
+          <td>{{ m.observacao or '-' }}</td>
+          <td>
+            {% if m.funcionando is none %}
+              -
+            {% elif m.funcionando %}
+              Sim
+            {% else %}
+              Não
+            {% endif %}
+          </td>
+          <td>
+            {% if not m.devolvido and not m.utilizado_cliente %}
+            <div class="btn-group">
+              <button class="btn-acao" onclick="toggleDropdown('finalizar-{{ m.id }}')">
+                Finalizar ▼
+              </button>
+              <div id="finalizar-{{ m.id }}" class="dropdown-acoes" style="display:none;">
+                <form method="POST" action="{{ url_for('movimentacoes.finalizar', id=m.id) }}">
+                  <label>Funcionando?</label>
+                  <select name="funcionando" required>
+                    <option value="">-- Selecione --</option>
+                    <option value="sim">Sim</option>
+                    <option value="nao">Não</option>
+                  </select>
+                  <label>Destino final</label>
+                  <select name="destino" required>
+                    <option value="">-- Selecione --</option>
+                    <option value="retorno">Retornou</option>
+                    <option value="cliente">Ficou no cliente</option>
+                  </select>
+                  <button type="submit" class="btn-finalizar">Confirmar</button>
+                </form>
+              </div>
             </div>
-          </div>
-          {% else %}
-            <span class="status-ok">Finalizado</span>
-          {% endif %}
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+            {% else %}
+              <span class="status-ok">Finalizado</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
 
   <div class="pagination">
     {% if page > 1 %}
