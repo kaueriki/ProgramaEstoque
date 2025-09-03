@@ -59,7 +59,7 @@ class Movimentacao(Base):
     status = Column(Enum("verde", "amarelo", "vermelho"), default="amarelo")
     devolvido = Column(Boolean, default=False)
     utilizado_cliente = Column(Boolean, default=False)
-    funcionando = Column(Boolean)
+    funcionando = Column(Boolean, default = True)
     observacao = Column(Text)
 
     material = relationship("Material")
@@ -68,16 +68,14 @@ class Movimentacao(Base):
 
     @property
     def status_atual(self):
-        if self.status == "verde":
-            return "verde"
-        if (
-            self.prazo_devolucao
-            and self.prazo_devolucao < date.today()
-            and not self.devolvido
-            and not self.utilizado_cliente
-        ):
-            return "vermelho"
-        return "amarelo"
+        if self.devolvido:
+            return "Devolvido"
+        if self.utilizado_cliente:
+            return "Ficou no Cliente"
+        if self.prazo_devolucao and self.prazo_devolucao < date.today():
+            return "Atrasado"
+        return "Pendente"
+
 
 Base.metadata.create_all(engine)
 Session = sessionmaker(bind=engine)

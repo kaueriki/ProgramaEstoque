@@ -276,7 +276,7 @@ def nova_movimentacao():
             status=request.form.get("status") or "amarelo",
             devolvido=False,
             utilizado_cliente="utilizado_cliente" in request.form,
-            funcionando="funcionando" in request.form,
+            funcionando=True,
             observacao=request.form["observacao"]
         )
         db.add(nova)

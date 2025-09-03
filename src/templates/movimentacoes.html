@@ -10,40 +10,40 @@
   <a href="{{ url_for('movimentacoes.nova_movimentacao') }}" class="btn-nova-movimentacao">Nova Retirada</a>
 
   <table class="movimentacoes-table">
-    <thead>
-      <tr>
-        <th>Material</th>
-        <th>Qtd</th>
-        <th>Funcionário</th>
-        <th>Cliente</th>
-        <th>Retirada</th>
-        <th>Prazo</th>
-        <th>Status</th>
-        <th>Devolvido</th>
-        <th>Ações</th>
-      </tr>
-    </thead>
+   <thead>
+    <tr>
+      <th>Material</th>
+      <th>Qtd</th>
+      <th>Funcionário</th>
+      <th>Cliente</th>
+      <th>Retirada</th>
+      <th>Prazo</th>
+      <th>Status</th>
+      <th>Observação</th>
+      <th>Funcionando</th>
+      <th>Ações</th>
+    </tr>
+  </thead>
     <tbody>
       {% for m in movimentacoes %}
-      <tr class="status-{{ m.status_atual }}">
+      <tr class="status-{{ m.status_atual|lower|replace(' ', '-') }}">
         <td>{{ m.material.nome }}</td>
         <td>{{ m.quantidade }}</td>
         <td>{{ m.funcionario }}</td>
         <td>{{ m.cliente.nome if m.cliente else '-' }}</td>
         <td>{{ m.data_retirada.strftime('%d/%m/%Y') }}</td>
         <td>{{ m.prazo_devolucao.strftime('%d/%m/%Y') if m.prazo_devolucao else '-' }}</td>
+        <td>{{ m.status_atual }}</td>
+        <td>{{ m.observacao or '-' }}</td>
         <td>
-          {% if m.status_atual == 'verde' %}
-            Finalizado
-          {% elif m.status_atual == 'amarelo' %}
-            Pendente
-          {% elif m.status_atual == 'vermelho' %}
-            Atrasado
+          {% if m.funcionando is none %}
+            -
+          {% elif m.funcionando %}
+            Sim
           {% else %}
-            {{ m.status_atual }}
+            Não
           {% endif %}
         </td>
-        <td>{{ 'Sim' if m.devolvido else 'Não' }}</td>
         <td>
           {% if not m.devolvido and not m.utilizado_cliente %}
             <div class="acoes-intuitivas">
@@ -82,10 +82,11 @@
               </div>
             </div>
           {% else %}
-            <span class="status-ok">✔</span>
+            <span class="status-ok">Finalizado</span>
           {% endif %}
         </td>
       </tr>
+
       {% endfor %}
     </tbody>
   </table>
