@@ -249,7 +249,6 @@ def listar_movimentacoes():
     if "usuario_id" not in session:
         flash("Você precisa estar logado!", "error")
         return redirect(url_for("index"))
-    
     movimentacoes = db.query(Movimentacao).order_by(Movimentacao.data_retirada.desc()).all()
     return render_template("movimentacoes.html", movimentacoes=movimentacoes)
 
@@ -258,14 +257,12 @@ def nova_movimentacao():
     if "usuario_id" not in session:
         flash("Você precisa estar logado!", "error")
         return redirect(url_for("index"))
-    
     materiais = db.query(Material).all()
     clientes = db.query(Cliente).all()
-
     if request.method == "POST":
         nova = Movimentacao(
             material_id=request.form["material_id"],
-            quantidade=request.form["quantidade"],
+            quantidade=int(request.form["quantidade"]),
             cliente_id=request.form.get("cliente_id") or None,
             ordem_servico=request.form["ordem_servico"],
             funcionario=request.form["funcionario"],
@@ -273,50 +270,28 @@ def nova_movimentacao():
             data_retirada=datetime.utcnow(),
             prazo_devolucao=request.form.get("prazo_devolucao") or None,
             motivo=request.form.get("motivo") or None,
-            status=request.form.get("status") or "amarelo",
+            status="amarelo",
             devolvido=False,
-            utilizado_cliente="utilizado_cliente" in request.form,
-            funcionando=True,
-            observacao=request.form["observacao"]
+            utilizado_cliente=False,
+            funcionando=None,
+            observacao=request.form.get("observacao", "")
         )
         db.add(nova)
         db.commit()
         flash("Movimentação registrada com sucesso!", "success")
         return redirect(url_for("movimentacoes.listar_movimentacoes"))
-
     return render_template("nova_movimentacao.html", materiais=materiais, clientes=clientes)
 
-@movimentacoes_bp.route("/movimentacoes/<int:id>/finalizar_retorno", methods=["POST"])
-def finalizar_retorno(id):
+@movimentacoes_bp.route("/movimentacoes/<int:id>/finalizar", methods=["POST"])
+def finalizar(id):
     m = db.query(Movimentacao).get(id)
     if not m:
         flash("Movimentação não encontrada", "error")
         return redirect(url_for("movimentacoes.listar_movimentacoes"))
 
     funcionando = request.form.get("funcionando")
-    if funcionando == "sim":
-        m.funcionando = True
-    elif funcionando == "nao":
-        m.funcionando = False
-    else:
-        m.funcionando = None  
+    destino = request.form.get("destino")
 
-    m.devolvido = True
-    m.status = "verde"
-
-    db.commit()
-    flash("Movimentação finalizada (retorno)!", "success")
-    return redirect(url_for("movimentacoes.listar_movimentacoes"))
-
-
-@movimentacoes_bp.route("/movimentacoes/<int:id>/finalizar_cliente", methods=["POST"])
-def finalizar_cliente(id):
-    m = db.query(Movimentacao).get(id)
-    if not m:
-        flash("Movimentação não encontrada", "error")
-        return redirect(url_for("movimentacoes.listar_movimentacoes"))
-
-    funcionando = request.form.get("funcionando")
     if funcionando == "sim":
         m.funcionando = True
     elif funcionando == "nao":
@@ -324,11 +299,17 @@ def finalizar_cliente(id):
     else:
         m.funcionando = None
 
-    m.utilizado_cliente = True
-    m.status = "verde"
+    if destino == "retorno":
+        m.devolvido = True
+    elif destino == "cliente":
+        m.utilizado_cliente = True
+    else:
+        flash("Destino inválido", "error")
+        return redirect(url_for("movimentacoes.listar_movimentacoes"))
 
+    m.status = "verde"
     db.commit()
-    flash("Movimentação finalizada (ficou no cliente)!", "success")
+    flash("Movimentação finalizada com sucesso!", "success")
     return redirect(url_for("movimentacoes.listar_movimentacoes"))
 
 app.register_blueprint(movimentacoes_bp)
