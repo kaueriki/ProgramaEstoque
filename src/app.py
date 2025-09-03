@@ -69,7 +69,13 @@ def listar_materiais():
         flash("Você precisa estar logado!", "error")
         return redirect(url_for("index"))
 
-    materiais = db.query(Material).all()
+    nome_filtro = request.args.get("nome", "").strip()
+
+    if nome_filtro:
+        materiais = db.query(Material).filter(Material.nome.ilike(f"%{nome_filtro}%")).all()
+    else:
+        materiais = db.query(Material).all()
+
     return render_template("materiais.html", materiais=materiais)
 
 @app.route("/materiais/<int:material_id>/editar", methods=["GET", "POST"])
@@ -110,14 +116,22 @@ def excluir_material(material_id):
         flash("Material não encontrado.", "error")
     return redirect(url_for("listar_materiais"))
 
+
 @app.route("/usuarios")
 def listar_usuarios():
     if "usuario_id" not in session:
         flash("Você precisa estar logado!", "error")
         return redirect(url_for("index"))
-    
-    usuarios = db.query(Usuario).all()
+
+    nome_filtro = request.args.get("nome", "").strip()
+
+    if nome_filtro:
+        usuarios = db.query(Usuario).filter(Usuario.nome.ilike(f"%{nome_filtro}%")).all()
+    else:
+        usuarios = db.query(Usuario).all()
+
     return render_template("usuarios.html", usuarios=usuarios)
+
 
 @app.route("/usuarios/novo", methods=["GET", "POST"])
 def novo_usuario():
@@ -180,13 +194,21 @@ def excluir_usuario(id):
 
 clientes_bp = Blueprint("clientes", __name__)
 
+from sqlalchemy import or_
+
 @clientes_bp.route("/clientes")
 def listar_clientes():
     if "usuario_id" not in session:
         flash("Você precisa estar logado!", "error")
         return redirect(url_for("index"))
 
-    clientes = db.query(Cliente).all()
+    filtro_nome = request.args.get("filtro_nome", "").strip()
+
+    if filtro_nome:
+        clientes = db.query(Cliente).filter(Cliente.nome.ilike(f"%{filtro_nome}%")).all()
+    else:
+        clientes = db.query(Cliente).all()
+
     return render_template("clientes.html", clientes=clientes)
 
 @clientes_bp.route("/clientes/novo", methods=["GET", "POST"])
@@ -249,8 +271,33 @@ def listar_movimentacoes():
     if "usuario_id" not in session:
         flash("Você precisa estar logado!", "error")
         return redirect(url_for("index"))
-    movimentacoes = db.query(Movimentacao).order_by(Movimentacao.data_retirada.desc()).all()
-    return render_template("movimentacoes.html", movimentacoes=movimentacoes)
+
+    material_nome = request.args.get("material", "").strip()
+    status = request.args.get("status", "").strip().lower()
+
+    page = request.args.get("page", 1, type=int)  # página atual, default 1
+    per_page = 10  # itens por página
+
+    query = db.query(Movimentacao).join(Material)
+
+    if material_nome:
+        query = query.filter(Material.nome.ilike(f"%{material_nome}%"))
+
+    if status:
+        query = query.filter(Movimentacao.status_atual.ilike(f"%{status}%"))
+
+    total = query.count()
+
+    movimentacoes = query.order_by(Movimentacao.data_retirada.desc())\
+                        .offset((page - 1) * per_page)\
+                        .limit(per_page)\
+                        .all()
+
+    total_pages = (total + per_page - 1) // per_page  # cálculo de total de páginas
+
+    return render_template("movimentacoes.html", movimentacoes=movimentacoes,
+                           page=page, total_pages=total_pages,
+                           material_nome=material_nome, status=status)
 
 @movimentacoes_bp.route("/movimentacoes/nova", methods=["GET", "POST"])
 def nova_movimentacao():

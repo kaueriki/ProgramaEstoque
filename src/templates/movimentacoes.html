@@ -6,8 +6,19 @@
 
 {% block content %}
 <div class="movimentacoes-container">
-  <h2>Histórico de Retiradas</h2>
-  <a href="{{ url_for('movimentacoes.nova_movimentacao') }}" class="btn-nova-movimentacao">Nova Retirada</a>
+  <div class="movimentacoes-header">
+    <h2>Histórico de Retiradas</h2>
+    <div class="acoes-superiores">
+      <a href="{{ url_for('movimentacoes.nova_movimentacao') }}" class="btn-nova-movimentacao">Nova Retirada</a>
+    </div>
+  </div>
+
+  <form method="get" class="filtro-form">
+    <input type="text" name="material" placeholder="Filtrar por material" value="{{ request.args.get('material', '') }}">
+    <input type="text" name="status" placeholder="Filtrar por status" value="{{ request.args.get('status', '') }}">
+    <button type="submit" class="btn-filtrar">Filtrar</button>
+    <a href="{{ url_for('movimentacoes.listar_movimentacoes') }}" class="btn-limpar">Limpar</a>
+  </form>
 
   <table class="movimentacoes-table">
     <thead>
@@ -50,7 +61,7 @@
             <button class="btn-acao" onclick="toggleDropdown('finalizar-{{ m.id }}')">
               Finalizar ▼
             </button>
-            <div id="finalizar-{{ m.id }}" class="dropdown-acoes">
+            <div id="finalizar-{{ m.id }}" class="dropdown-acoes" style="display:none;">
               <form method="POST" action="{{ url_for('movimentacoes.finalizar', id=m.id) }}">
                 <label>Funcionando?</label>
                 <select name="funcionando" required>
@@ -76,6 +87,18 @@
       {% endfor %}
     </tbody>
   </table>
+
+  <div class="pagination">
+    {% if page > 1 %}
+      <a href="{{ url_for('movimentacoes.listar_movimentacoes', page=page-1, material=request.args.get('material', ''), status=request.args.get('status', '')) }}" class="page-link">← Anterior</a>
+    {% endif %}
+
+    <span>Página {{ page }} de {{ total_pages }}</span>
+
+    {% if page < total_pages %}
+      <a href="{{ url_for('movimentacoes.listar_movimentacoes', page=page+1, material=request.args.get('material', ''), status=request.args.get('status', '')) }}" class="page-link">Próxima →</a>
+    {% endif %}
+  </div>
 </div>
 
 <script>
@@ -86,6 +109,7 @@
     const dropdown = document.getElementById(id);
     dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
   }
+
   document.addEventListener('click', function(event) {
     if (!event.target.closest('.btn-group')) {
       document.querySelectorAll('.dropdown-acoes').forEach(el => el.style.display = 'none');

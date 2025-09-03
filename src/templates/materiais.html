@@ -10,6 +10,12 @@
     <a class="btn-novo" href="{{ url_for('novo_material') }}">Cadastrar Novo Material</a>
   </div>
 
+  <!-- Filtro -->
+  <form method="GET" action="{{ url_for('listar_materiais') }}" class="filtro-form">
+    <input type="text" name="nome" placeholder="Filtrar por nome" value="{{ request.args.get('nome', '') }}">
+    <button type="submit">Filtrar</button>
+  </form>
+
   <table class="materiais-tabela">
     <thead>
       <tr>

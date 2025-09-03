@@ -10,6 +10,11 @@
     <h2>Lista de Clientes</h2>
     <a class="btn-novo" href="{{ url_for('clientes.novo_cliente') }}">Cadastrar Novo Cliente</a>
   </div>
+  <form method="GET" action="{{ url_for('clientes.listar_clientes') }}" class="filtro-form">
+    <input type="text" name="filtro_nome" placeholder="Filtrar por nome" value="{{ request.args.get('filtro_nome', '') }}">
+    <button type="submit">Filtrar</button>
+  </form>
+
 
   <table class="usuarios-tabela">
     <thead>
