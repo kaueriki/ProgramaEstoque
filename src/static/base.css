@@ -8,10 +8,10 @@
   --form-focus: #ff6600;
   --transition-speed: 0.3s;
 }
+
 * {
   box-sizing: border-box;
 }
-
 body {
   flex: 1;
   margin-left: 240px;
@@ -19,6 +19,27 @@ body {
   overflow-y: auto;
   background: linear-gradient(135deg, #000000 0%, #ff8800 100%);
   position: relative;
+  transition: margin-left var(--transition-speed) ease;
+}
+body.sidebar-collapsed {
+  margin-left: 70px;
+}
+
+.sidebar-toggle {
+  display: block;
+  position: fixed;
+  top: 15px;
+  left: 15px;
+  z-index: 1200;
+  background: var(--primary-color);
+  color: #fff;
+  border: none;
+  padding: 12px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  user-select: none;
 }
 
 .sidebar {
@@ -34,24 +55,47 @@ body {
   left: 0;
   top: 0;
   z-index: 1000;
-  transition: left var(--transition-speed) ease;
+  transition: width var(--transition-speed) ease, left var(--transition-speed) ease;
+}
+
+.sidebar.collapsed {
+  width: 5%;
+}
+.sidebar.collapsed .sidebar-header img {
+  width: 0;
+  margin-bottom: 15px;
+}
+.sidebar.collapsed .item-menu a,
+.sidebar.collapsed .menu-toggle,
+.sidebar.collapsed .submenu a {
+  font-size: 0;
+  padding-left: 12px;
+  padding-right: 12px;
+  justify-content: center;
+}
+.sidebar.collapsed .logout-wrapper {
+  display: none; 
+}
+.sidebar.collapsed i {
+  font-size: 18px;
 }
 
 .sidebar-header img {
-  width: 180px;
+  width: 150px;
   height: auto;
   margin-bottom: 25px;
   filter: brightness(1.2);
   user-select: none;
+  margin-left: 30%;
 }
 
+/* MENU */
 .item-menu {
   display: flex;
   flex-direction: column;
   gap: 10px;
   margin-bottom: 20px;
 }
-
 .item-menu a {
   background-color: transparent;
   color: var(--text-light);
@@ -65,16 +109,15 @@ body {
   gap: 12px;
   transition: background-color 0.3s ease, color 0.3s ease;
 }
-
 .item-menu a:hover {
   background-color: var(--primary-hover);
   color: #fff;
 }
 
+/* SUBMENU */
 .menu-section {
   margin-bottom: 20px;
 }
-
 .menu-toggle {
   background: none;
   border: none;
@@ -91,12 +134,10 @@ body {
   border-radius: 6px;
   transition: background-color 0.3s ease;
 }
-
 .menu-toggle:hover {
   background-color: var(--primary-hover);
   color: #fff;
 }
-
 .menu-toggle .arrow {
   margin-left: auto;
   transition: transform 0.3s ease;
@@ -225,6 +266,9 @@ body {
   color: #1565c0;
 }
 
+/* RESPONSIVO */
+
+/* Até 1024px: sidebar menor */
 @media (max-width: 1024px) {
   .sidebar {
     width: 200px;
@@ -242,6 +286,7 @@ body {
   }
 }
 
+/* Até 768px: sidebar minimalista, sem logout, só ícones, toggle para abrir */
 @media (max-width: 768px) {
   body {
     flex-direction: column;
@@ -250,23 +295,65 @@ body {
   .sidebar {
     position: fixed;
     top: 0;
-    left: -240px;
-    width: 240px;
+    left: 0;
+    width: 70px; 
     height: 100%;
     padding-top: 60px;
-    transition: left var(--transition-speed) ease;
-    box-shadow: 2px 0 12px rgba(0,0,0,0.25);
+    transition: width var(--transition-speed) ease, left var(--transition-speed) ease;
+    box-shadow: none;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
+    justify-content: flex-start;
+    overflow-x: hidden;
+  }
+
+  .sidebar:not(.active) {
+    width: 70px;
+    overflow-x: hidden;
+  }
+
+  .sidebar:not(.active) .sidebar-header {
+    display: none;
+  }
+
+  .sidebar .item-menu a,
+  .sidebar .menu-toggle,
+  .sidebar .submenu a {
+    font-size: 0;
+    padding-left: 12px;
+    padding-right: 12px;
+    justify-content: center;
+  }
+
+  .logout-wrapper {
+    display: none;
   }
 
   .sidebar.active {
-    left: 0;
+    width: 240px;
+    box-shadow: 2px 0 12px rgba(0,0,0,0.25);
+    overflow-x: visible;
   }
 
+  .sidebar.active .sidebar-header {
+    display: block;
+  }
+
+  .sidebar.active .item-menu a,
+  .sidebar.active .menu-toggle,
+  .sidebar.active .submenu a {
+    font-size: 15px;
+    padding-left: 16px;
+    padding-right: 16px;
+    justify-content: flex-start;
+  }
+
+  .sidebar.active .logout-wrapper {
+    display: block;
+  }
+  
   .main-content {
-    margin-left: 0;
+    margin-left: 70px;
     padding: 20px 20px;
     min-height: 100vh;
   }
