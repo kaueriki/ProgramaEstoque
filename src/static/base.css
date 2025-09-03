@@ -17,6 +17,7 @@ body {
   margin-left: 240px;
   padding: 40px 50px;
   overflow-y: auto;
+  background-image: "../static/valltech.png";
   background: linear-gradient(135deg, #000000 0%, #ff8800 100%);
   position: relative;
 }

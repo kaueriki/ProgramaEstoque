@@ -1,25 +1,29 @@
 .form-movimentacao {
-  max-width: 650px;
-  height: 80vh;
+  max-width: 703px;
+  height: 90vh;
   overflow-y: auto;
   margin: 2rem auto;
-  background-color: #fff;
+  background-color: #0000007c;
   padding: 2rem;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  border: 1px solid #ffffff;
+  border-radius: 9px;
+  box-shadow: 0 2px 8px rgb(255, 255, 255);
   font-size: 0.95rem;
-  color: #333;
+  color: #ffffff;
   position: relative;
   margin-bottom: 30px;
 }
 
 .form-movimentacao::-webkit-scrollbar {
-  width: 8px;
+  width: 6px;
+  height: auto;
+  color: white
 }
 
 .form-movimentacao::-webkit-scrollbar-thumb {
-  background-color: rgba(0, 0, 0, 0.2);
+  background-color: rgb(255, 255, 255);
   border-radius: 4px;
+  height: auto;
 }
 
 .form-movimentacao h2 {
