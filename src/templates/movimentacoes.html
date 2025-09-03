@@ -25,7 +25,7 @@
     </thead>
     <tbody>
       {% for m in movimentacoes %}
-      <tr class="status-{{ m.status|lower }}">
+      <tr class="status-{{ m.status_atual }}">
         <td>{{ m.material.nome }}</td>
         <td>{{ m.quantidade }}</td>
         <td>{{ m.funcionario }}</td>
@@ -33,14 +33,14 @@
         <td>{{ m.data_retirada.strftime('%d/%m/%Y') }}</td>
         <td>{{ m.prazo_devolucao.strftime('%d/%m/%Y') if m.prazo_devolucao else '-' }}</td>
         <td>
-          {% if m.status.lower() == 'verde' %}
+          {% if m.status_atual == 'verde' %}
             Finalizado
-          {% elif m.status.lower() == 'amarelo' %}
+          {% elif m.status_atual == 'amarelo' %}
             Pendente
-          {% elif m.status.lower() == 'vermelho' %}
+          {% elif m.status_atual == 'vermelho' %}
             Atrasado
           {% else %}
-            {{ m.status }}
+            {{ m.status_atual }}
           {% endif %}
         </td>
         <td>{{ 'Sim' if m.devolvido else 'Não' }}</td>

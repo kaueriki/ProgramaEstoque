@@ -14,25 +14,49 @@
 </head>
 <body>
   <aside class="sidebar">
-    <div class="sidebar-logo">
+    <div class="sidebar-header">
       <img src="{{ url_for('static', filename='assets/logo-branca.png') }}" alt="Logo Valltech">
     </div>
 
-    <nav class="sidebar-nav">
-      <a href="{{ url_for('movimentacoes.listar_movimentacoes') }}">Histórico</a>
-      <a href="{{ url_for('movimentacoes.nova_movimentacao') }}">Cadastrar Retirada</a>
+    <nav class="item-menu">
 
-      <a href="{{ url_for('listar_materiais') }}">Materiais</a>
-      <a href="{{ url_for('novo_material') }}">Novo Material</a>
+      <div class="menu-section">
+        <a href="{{ url_for('movimentacoes.listar_movimentacoes') }}"><i class="fas fa-list"></i> Histórico</a>
+      </div>
 
-      <a href="{{ url_for('listar_usuarios') }}">Usuários</a>
-      <a href="{{ url_for('novo_usuario') }}">Novo Usuário</a>
+      <div class="item-menu">
+        <a href="{{ url_for('movimentacoes.nova_movimentacao') }}"><i class="fas fa-plus-circle"></i> Cadastrar Retirada</a>
+      </div>
 
-      <a href="{{ url_for('clientes.listar_clientes') }}">Clientes</a>
-      <a href="{{ url_for('clientes.novo_cliente') }}">Novo Cliente</a>
+      <div class="menu-section">
+        <button class="menu-toggle"><i class="fas fa-boxes"></i> Materiais <span class="arrow">▼</span></button>
+        <div class="submenu">
+          <a href="{{ url_for('listar_materiais') }}"><i class="fas fa-boxes"></i> Materiais</a>
+          <a href="{{ url_for('novo_material') }}"><i class="fas fa-box"></i> Novo Material</a>
+        </div>
+      </div>
 
-      <a href="{{ url_for('logout') }}">Logout</a>
+      <div class="menu-section">
+        <button class="menu-toggle"><i class="fas fa-users"></i> Usuários <span class="arrow">▼</span></button>
+        <div class="submenu">
+          <a href="{{ url_for('listar_usuarios') }}"><i class="fas fa-users"></i> Usuários</a>
+          <a href="{{ url_for('novo_usuario') }}"><i class="fas fa-user-plus"></i> Novo Usuário</a>
+        </div>
+      </div>
+
+      <div class="menu-section">
+        <button class="menu-toggle"><i class="fas fa-address-book"></i> Clientes <span class="arrow">▼</span></button>
+        <div class="submenu">
+          <a href="{{ url_for('clientes.listar_clientes') }}"><i class="fas fa-address-book"></i> Clientes</a>
+          <a href="{{ url_for('clientes.novo_cliente') }}"><i class="fas fa-user-tie"></i> Novo Cliente</a>
+        </div>
+      </div>
+
+      
     </nav>
+    <div class="logout-wrapper">
+      <a href="{{ url_for('logout') }}" class="logout-link"><i class="fas fa-sign-out-alt"></i> Logout</a>
+    </div>
   </aside>
 
   <main class="main-content">
@@ -49,6 +73,7 @@
     {% block content %}
     {% endblock %}
   </main>
+
   <script>
     setTimeout(() => {
       document.querySelectorAll('.flash-message').forEach(el => {
@@ -56,8 +81,14 @@
         el.style.opacity = '0';
         setTimeout(() => el.remove(), 500);
       });
-    }, 5000); 
-  </script>
+    }, 5000);
 
+    document.querySelectorAll('.menu-toggle').forEach(toggle => {
+      toggle.addEventListener('click', () => {
+        const section = toggle.closest('.menu-section');
+        section.classList.toggle('open');
+      });
+    });
+  </script>
 </body>
 </html>
