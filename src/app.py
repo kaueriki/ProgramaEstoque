@@ -44,7 +44,7 @@ def novo_material():
     if request.method == "POST":
         nome = request.form["nome"]
         quantidade = int(request.form["quantidade"])
-        lote = request.form["lote"]
+        lote = request.form.get("lote", "")  # Agora opcional
         estoque_minimo_chuva = int(request.form["estoque_minimo_chuva"])
         estoque_minimo_seco = int(request.form["estoque_minimo_seco"])
 
@@ -84,22 +84,22 @@ def editar_material(material_id):
     if "usuario_id" not in session:
         flash("Você precisa estar logado!", "error")
         return redirect(url_for("index"))
-    
+
     material = db.query(Material).get(material_id)
     if not material:
         flash("Material não encontrado.", "error")
         return redirect(url_for("listar_materiais"))
-    
+
     if request.method == "POST":
         material.nome = request.form["nome"]
         material.quantidade = int(request.form["quantidade"])
-        material.lote = request.form["lote"]
+        material.lote = request.form.get("lote", "")
         material.estoque_minimo_chuva = int(request.form["estoque_minimo_chuva"])
         material.estoque_minimo_seco = int(request.form["estoque_minimo_seco"])
         db.commit()
         flash("Material atualizado com sucesso!", "success")
         return redirect(url_for("listar_materiais"))
-    
+
     return render_template("editar_material.html", material=material)
 
 @app.route("/materiais/<int:material_id>/excluir", methods=["POST"])
@@ -107,7 +107,7 @@ def excluir_material(material_id):
     if "usuario_id" not in session:
         flash("Você precisa estar logado!", "error")
         return redirect(url_for("index"))
-    
+
     material = db.query(Material).get(material_id)
     if material:
         db.delete(material)
@@ -116,7 +116,6 @@ def excluir_material(material_id):
     else:
         flash("Material não encontrado.", "error")
     return redirect(url_for("listar_materiais"))
-
 
 @app.route("/usuarios")
 def listar_usuarios():
@@ -132,7 +131,6 @@ def listar_usuarios():
         usuarios = db.query(Usuario).all()
 
     return render_template("usuarios.html", usuarios=usuarios)
-
 
 @app.route("/usuarios/novo", methods=["GET", "POST"])
 def novo_usuario():
@@ -194,8 +192,6 @@ def excluir_usuario(id):
     return redirect(url_for('listar_usuarios'))
 
 clientes_bp = Blueprint("clientes", __name__)
-
-from sqlalchemy import or_
 
 @clientes_bp.route("/clientes")
 def listar_clientes():
@@ -265,7 +261,6 @@ def excluir_cliente(id):
 
 app.register_blueprint(clientes_bp)
 
-
 movimentacoes_bp = Blueprint("movimentacoes", __name__)
 
 @movimentacoes_bp.route("/movimentacoes")
@@ -277,8 +272,8 @@ def listar_movimentacoes():
     material_nome = request.args.get("material", "").strip()
     status = request.args.get("status", "").strip().lower()
 
-    page = request.args.get("page", 1, type=int) 
-    per_page = 10 
+    page = request.args.get("page", 1, type=int)
+    per_page = 10
 
     query = db.query(Movimentacao).join(Material)
 
@@ -290,10 +285,8 @@ def listar_movimentacoes():
 
     total = query.count()
 
-    movimentacoes = query.order_by(Movimentacao.data_retirada.desc())\
-                        .offset((page - 1) * per_page)\
-                        .limit(per_page)\
-                        .all()
+    movimentacoes = query.order_by(Movimentacao.data_retirada.desc()) \
+        .offset((page - 1) * per_page).limit(per_page).all()
 
     total_pages = (total + per_page - 1) // per_page
 
@@ -315,25 +308,23 @@ def nova_movimentacao():
             material_id = int(request.form["material_id"])
             quantidade = int(request.form["quantidade"])
             cliente_id = request.form.get("cliente_id")
-            if not cliente_id:
-                cliente_id = None
-            else:
-                cliente_id = int(cliente_id)
+            cliente_id = int(cliente_id) if cliente_id else None
 
             ordem_servico = request.form["ordem_servico"].strip()
             funcionario = request.form["funcionario"].strip()
 
             prazo_str = request.form.get("prazo_devolucao", "").strip()
-            prazo_devolucao = None
-            if prazo_str:
-                try:
-                    prazo_devolucao = datetime.strptime(prazo_str, "%Y-%m-%d")
-                except ValueError:
-                    flash("Formato inválido para Prazo de Devolução. Use AAAA-MM-DD.", "error")
-                    return render_template("nova_movimentacao.html", materiais=materiais, clientes=clientes)
+            prazo_devolucao = datetime.strptime(prazo_str, "%Y-%m-%d") if prazo_str else None
 
             motivo = request.form.get("motivo", "").strip()
             observacao = request.form.get("observacao", "").strip()
+
+            material = db.query(Material).get(material_id)
+            if material.quantidade < quantidade:
+                flash(f"Estoque insuficiente! Estoque atual: {material.quantidade}", "error")
+                return render_template("nova_movimentacao.html", materiais=materiais, clientes=clientes)
+
+            material.quantidade -= quantidade  # Subtrai estoque
 
             nova = Movimentacao(
                 material_id=material_id,
@@ -371,18 +362,16 @@ def finalizar(id):
         flash("Movimentação não encontrada", "error")
         return redirect(url_for("movimentacoes.listar_movimentacoes"))
 
+    material = db.query(Material).get(m.material_id)
     funcionando = request.form.get("funcionando")
     destino = request.form.get("destino")
 
-    if funcionando == "sim":
-        m.funcionando = True
-    elif funcionando == "nao":
-        m.funcionando = False
-    else:
-        m.funcionando = None
+    m.funcionando = True if funcionando == "sim" else False if funcionando == "nao" else None
 
     if destino == "retorno":
-        m.devolvido = True
+        if not m.devolvido:
+            material.quantidade += m.quantidade  # Retorna ao estoque
+            m.devolvido = True
     elif destino == "cliente":
         m.utilizado_cliente = True
     else:
@@ -421,9 +410,7 @@ def alterar(id):
     if acao == "adicionar":
         material.quantidade += valor
     elif acao == "remover":
-        material.quantidade -= valor
-        if material.quantidade < 0:
-            material.quantidade = 0
+        material.quantidade = max(material.quantidade - valor, 0)
 
     db.commit()
     flash("Estoque atualizado com sucesso!", "success")

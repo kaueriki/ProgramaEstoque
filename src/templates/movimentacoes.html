@@ -27,6 +27,7 @@
           <th>Qtd</th>
           <th>Funcionário</th>
           <th>Cliente</th>
+          <th>OS</th>
           <th>Retirada</th>
           <th>Prazo</th>
           <th>Status</th>
@@ -42,6 +43,7 @@
           <td>{{ m.quantidade }}</td>
           <td>{{ m.funcionario }}</td>
           <td>{{ m.cliente.nome if m.cliente else '-' }}</td>
+          <td>{{ m.ordem_servico }}</td>
           <td>{{ m.data_retirada.strftime('%d/%m/%Y') }}</td>
           <td>{{ m.prazo_devolucao.strftime('%d/%m/%Y') if m.prazo_devolucao else '-' }}</td>
           <td>{{ m.status_atual }}</td>
