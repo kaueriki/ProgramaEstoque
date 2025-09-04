@@ -7,12 +7,19 @@
 {% endblock %}
 
 {% block content %}
-  <h1 class="titulo">Controle de Estoque</h1>
+  
   <div class="estoque-container">
+    <div class="header-estoque">
+      <h1>Controle de Estoque</h1>
+      <form method="GET" action="{{ url_for('estoque.controle') }}" class="filtro-form">
+        <input type="text" name="filtro" placeholder="Buscar material..." value="{{ filtro }}">
+        <button type="submit">Filtrar</button>
+      </form>
+    </div>
 
     {% for lote, materiais in lotes.items() %}
     <div class="card">
-      <h3>Lote: {{ lote }}</h3>
+      <h3>Lote: {{ lote if lote else "Sem lote" }}</h3>
 
       <table class="tabela-estoque">
         <thead>

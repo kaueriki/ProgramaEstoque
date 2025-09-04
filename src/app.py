@@ -324,7 +324,7 @@ def nova_movimentacao():
                 flash(f"Estoque insuficiente! Estoque atual: {material.quantidade}", "error")
                 return render_template("nova_movimentacao.html", materiais=materiais, clientes=clientes)
 
-            material.quantidade -= quantidade  # Subtrai estoque
+            material.quantidade -= quantidade 
 
             nova = Movimentacao(
                 material_id=material_id,
@@ -370,7 +370,7 @@ def finalizar(id):
 
     if destino == "retorno":
         if not m.devolvido:
-            material.quantidade += m.quantidade  # Retorna ao estoque
+            material.quantidade += m.quantidade 
             m.devolvido = True
     elif destino == "cliente":
         m.utilizado_cliente = True
@@ -389,13 +389,15 @@ estoque_bp = Blueprint("estoque", __name__, url_prefix="/estoque")
 
 @estoque_bp.route("/")
 def controle():
+    filtro = request.args.get("filtro", "").strip().lower()
     materiais = db.query(Material).all()
 
     lotes = defaultdict(list)
     for mat in materiais:
-        lotes[mat.lote].append(mat)
+        if not filtro or filtro in mat.nome.lower():
+            lotes[mat.lote].append(mat)
 
-    return render_template("controle_estoque.html", lotes=lotes)
+    return render_template("controle_estoque.html", lotes=lotes, filtro=filtro)
 
 @estoque_bp.route("/alterar/<int:id>", methods=["POST"])
 def alterar(id):
