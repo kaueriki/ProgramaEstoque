@@ -3,6 +3,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import IntegrityError
 from datetime import datetime, timezone
 from models import engine, Usuario, Material, Cliente, Movimentacao
+from collections import defaultdict
 
 app = Flask(__name__)
 app.secret_key = "supersecret"
@@ -264,6 +265,7 @@ def excluir_cliente(id):
 
 app.register_blueprint(clientes_bp)
 
+
 movimentacoes_bp = Blueprint("movimentacoes", __name__)
 
 @movimentacoes_bp.route("/movimentacoes")
@@ -293,7 +295,7 @@ def listar_movimentacoes():
                         .limit(per_page)\
                         .all()
 
-    total_pages = (total + per_page - 1) // per_page  # cálculo de total de páginas
+    total_pages = (total + per_page - 1) // per_page
 
     return render_template("movimentacoes.html", movimentacoes=movimentacoes,
                            page=page, total_pages=total_pages,
@@ -393,6 +395,41 @@ def finalizar(id):
     return redirect(url_for("movimentacoes.listar_movimentacoes"))
 
 app.register_blueprint(movimentacoes_bp)
+
+estoque_bp = Blueprint("estoque", __name__, url_prefix="/estoque")
+
+@estoque_bp.route("/")
+def controle():
+    materiais = db.query(Material).all()
+
+    lotes = defaultdict(list)
+    for mat in materiais:
+        lotes[mat.lote].append(mat)
+
+    return render_template("controle_estoque.html", lotes=lotes)
+
+@estoque_bp.route("/alterar/<int:id>", methods=["POST"])
+def alterar(id):
+    material = db.query(Material).get(id)
+    if not material:
+        flash("Material não encontrado!", "error")
+        return redirect(url_for("estoque.controle"))
+
+    valor = int(request.form["valor"])
+    acao = request.form["acao"]
+
+    if acao == "adicionar":
+        material.quantidade += valor
+    elif acao == "remover":
+        material.quantidade -= valor
+        if material.quantidade < 0:
+            material.quantidade = 0
+
+    db.commit()
+    flash("Estoque atualizado com sucesso!", "success")
+    return redirect(url_for("estoque.controle"))
+
+app.register_blueprint(estoque_bp)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
