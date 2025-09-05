@@ -213,7 +213,6 @@ td {
   position: relative;
 }
 
-/* Status cores */
 .status-pendente td {
   background-color: #fff7cc;
 }
@@ -239,7 +238,6 @@ td {
   background-color: #fdecea;
 }
 
-/* Botões e ações */
 .btn-nova-movimentacao {
   display: inline-block;
   background-color: #4caf50;
@@ -278,7 +276,7 @@ td {
   position: absolute;
   top: 110%;
   right: 0;
-  width: 100%;
+  width: 220px;
   overflow: hidden;
   word-break: break-word;
   box-sizing: border-box;
@@ -286,7 +284,7 @@ td {
   background-color: #f9f9f9;
   border: 1px solid #ccc;
   border-radius: 5px;
-  padding: 10px;
+  padding: 14px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
