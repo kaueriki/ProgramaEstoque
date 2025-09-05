@@ -140,11 +140,13 @@ button,
   color: rgb(255, 255, 255)
 }
 .btn-nova-movimentacao:hover {
-  background-color: #43a047;
+  box-shadow: 0 8px 20px rgb(255, 115, 0);
+  transition: 1s;
 }
 
 .btn-devolver {
   background-color: #21f344;
+
 }
 .btn-devolver:hover {
   background-color: #0a9500;

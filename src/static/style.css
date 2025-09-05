@@ -81,7 +81,9 @@ canvas#animated-background {
 }
 
 .btn:hover {
-  background: #e65c00;
+  background: #ff8800;
+  transition: 1s;
+  box-shadow: 0 8px 20px rgb(255, 115, 0);
 }
 
 
