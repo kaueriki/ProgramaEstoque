@@ -1,9 +1,15 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash, Blueprint
+from flask import Flask, render_template, request, redirect, url_for, session, flash, Blueprint, send_file
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import IntegrityError
 from datetime import datetime, timezone
 from models import engine, Usuario, Material, Cliente, Movimentacao
 from collections import defaultdict
+import io
+import pandas as pd
+from reportlab.lib.pagesizes import A4
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph
+from reportlab.lib import colors
+from reportlab.lib.styles import getSampleStyleSheet
 
 app = Flask(__name__)
 app.secret_key = "supersecret"
@@ -269,30 +275,52 @@ def listar_movimentacoes():
         flash("Você precisa estar logado!", "error")
         return redirect(url_for("index"))
 
-    material_nome = request.args.get("material", "").strip()
+    cliente_nome = request.args.get("cliente", "").strip()
     status = request.args.get("status", "").strip().lower()
+    data_inicio_str = request.args.get("data_inicio", "").strip()
+    data_fim_str = request.args.get("data_fim", "").strip()
 
+    per_page = request.args.get("per_page", 10, type=int)
     page = request.args.get("page", 1, type=int)
-    per_page = 10
 
-    query = db.query(Movimentacao).join(Material)
+    query = db.query(Movimentacao).join(Material).outerjoin(Cliente)
 
-    if material_nome:
-        query = query.filter(Material.nome.ilike(f"%{material_nome}%"))
+    if cliente_nome:
+        query = query.filter(Cliente.nome.ilike(f"%{cliente_nome}%"))
 
-    if status:
-        query = query.filter(Movimentacao.status.ilike(f"%{status}%"))
+    if status in ["verde", "amarelo", "vermelho"]:
+        query = query.filter(Movimentacao.status == status)
 
+    if data_inicio_str:
+        try:
+            data_inicio = datetime.strptime(data_inicio_str, "%Y-%m-%d")
+            query = query.filter(Movimentacao.data_retirada >= data_inicio)
+        except ValueError:
+            flash("Data de início inválida", "error")
+
+    if data_fim_str:
+        try:
+            data_fim = datetime.strptime(data_fim_str, "%Y-%m-%d")
+            data_fim = data_fim.replace(hour=23, minute=59, second=59)
+            query = query.filter(Movimentacao.data_retirada <= data_fim)
+        except ValueError:
+            flash("Data de fim inválida", "error")
+
+    # Total e paginação
     total = query.count()
-
     movimentacoes = query.order_by(Movimentacao.data_retirada.desc()) \
-        .offset((page - 1) * per_page).limit(per_page).all()
+                         .offset((page - 1) * per_page) \
+                         .limit(per_page) \
+                         .all()
 
     total_pages = (total + per_page - 1) // per_page
 
-    return render_template("movimentacoes.html", movimentacoes=movimentacoes,
-                           page=page, total_pages=total_pages,
-                           material_nome=material_nome, status=status)
+    return render_template(
+        "movimentacoes.html",
+        movimentacoes=movimentacoes,
+        page=page,
+        total_pages=total_pages
+    )
 
 @movimentacoes_bp.route("/movimentacoes/nova", methods=["GET", "POST"])
 def nova_movimentacao():
@@ -314,7 +342,7 @@ def nova_movimentacao():
             funcionario = request.form["funcionario"].strip()
 
             prazo_str = request.form.get("prazo_devolucao", "").strip()
-            prazo_devolucao = datetime.strptime(prazo_str, "%Y-%m-%d") if prazo_str else None
+            prazo_devolucao = datetime.strptime(prazo_str, "%Y-%m-%dT%H:%M") if prazo_str else None
 
             motivo = request.form.get("motivo", "").strip()
             observacao = request.form.get("observacao", "").strip()
@@ -383,7 +411,82 @@ def finalizar(id):
     flash("Movimentação finalizada com sucesso!", "success")
     return redirect(url_for("movimentacoes.listar_movimentacoes"))
 
+@movimentacoes_bp.route("/movimentacoes/export/excel")
+def export_excel():
+    query = db.query(Movimentacao).join(Material).all()
+
+    data = []
+    for m in query:
+        data.append({
+            "Material": m.material.nome,
+            "Qtd": m.quantidade,
+            "Funcionário": m.funcionario,
+            "Cliente": m.cliente.nome if m.cliente else "-",
+            "OS": m.ordem_servico,
+            "Retirada": m.data_retirada.strftime("%d/%m/%Y %H:%M"),
+            "Prazo": m.prazo_devolucao.strftime("%d/%m/%Y") if m.prazo_devolucao else "-",
+            "Status": m.status,
+            "Observação": m.observacao or "-",
+            "Funcionando": "Sim" if m.funcionando else ("Não" if m.funcionando is not None else "-"),
+        })
+
+    df = pd.DataFrame(data)
+
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine="openpyxl") as writer:
+        df.to_excel(writer, index=False, sheet_name="Movimentações")
+
+    output.seek(0)
+    return send_file(output, as_attachment=True,
+                     download_name="movimentacoes.xlsx",
+                     mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+@movimentacoes_bp.route("/movimentacoes/export/pdf")
+def export_pdf():
+    query = db.query(Movimentacao).join(Material).all()
+
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4)
+    elements = []
+    styles = getSampleStyleSheet()
+
+    elements.append(Paragraph("Relatório de Movimentações", styles["Title"]))
+
+    data = [["Material", "Qtd", "Funcionário", "Cliente", "OS", "Retirada", "Prazo", "Status"]]
+
+    for m in query:
+        data.append([
+            m.material.nome,
+            str(m.quantidade),
+            m.funcionario,
+            m.cliente.nome if m.cliente else "-",
+            m.ordem_servico,
+            m.data_retirada.strftime("%d/%m/%Y %H:%M"),
+            m.prazo_devolucao.strftime("%d/%m/%Y") if m.prazo_devolucao else "-",
+            m.status
+        ])
+
+    table = Table(data, repeatRows=1)
+    table.setStyle(TableStyle([
+        ("BACKGROUND", (0,0), (-1,0), colors.HexColor("#ff7b00")),
+        ("TEXTCOLOR", (0,0), (-1,0), colors.white),
+        ("ALIGN", (0,0), (-1,-1), "CENTER"),
+        ("FONTNAME", (0,0), (-1,0), "Helvetica-Bold"),
+        ("FONTSIZE", (0,0), (-1,-1), 8),
+        ("BOTTOMPADDING", (0,0), (-1,0), 6),
+        ("GRID", (0,0), (-1,-1), 0.5, colors.grey),
+    ]))
+
+    elements.append(table)
+    doc.build(elements)
+
+    buffer.seek(0)
+    return send_file(buffer, as_attachment=True,
+                     download_name="movimentacoes.pdf",
+                     mimetype="application/pdf")
+
 app.register_blueprint(movimentacoes_bp)
+
 
 estoque_bp = Blueprint("estoque", __name__, url_prefix="/estoque")
 
