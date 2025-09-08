@@ -89,7 +89,6 @@ body.sidebar-collapsed {
   margin-left: 30%;
 }
 
-/* MENU */
 .item-menu {
   display: flex;
   flex-direction: column;
@@ -265,9 +264,6 @@ body.sidebar-collapsed {
   color: #1565c0;
 }
 
-/* RESPONSIVO */
-
-/* Até 1024px: sidebar menor */
 @media (max-width: 1024px) {
   .sidebar {
     width: 200px;
@@ -285,7 +281,6 @@ body.sidebar-collapsed {
   }
 }
 
-/* Até 768px: sidebar minimalista, sem logout, só ícones, toggle para abrir */
 @media (max-width: 768px) {
   body {
     flex-direction: column;

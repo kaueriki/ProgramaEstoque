@@ -14,8 +14,30 @@
   <form class="filtro-form-horizontal" method="get" action="{{ url_for('movimentacoes.listar_movimentacoes') }}">
     <div class="filtro-grid-horizontal">
       <div class="filtro-item">
+        <label for="material">Material</label>
+        <input type="text" id="material" name="material" value="{{ request.args.get('material', '') }}">
+      </div>
+      <div class="filtro-item">
         <label for="cliente">Cliente</label>
         <input type="text" id="cliente" name="cliente" value="{{ request.args.get('cliente', '') }}">
+      </div>
+      <div class="filtro-item">
+        <label for="funcionario">Funcionário</label>
+        <input type="text" id="funcionario" name="funcionario" value="{{ request.args.get('funcionario', '') }}">
+      </div>
+    </div>
+
+    <div class="filtro-grid-horizontal">
+      <div class="filtro-item">
+        <label for="status">Status</label>
+          <select name="status" id="status">
+            <option value="">Todos</option>
+            <option value="pendente" {% if request.args.get('status') == 'pendente' %}selected{% endif %}>Pendente</option>
+            <option value="atrasado" {% if request.args.get('status') == 'atrasado' %}selected{% endif %}>Atrasado</option>
+            <option value="verde" {% if request.args.get('status') == 'verde' %}selected{% endif %}>Finalizado</option>
+            <option value="devolvido" {% if request.args.get('status') == 'devolvido' %}selected{% endif %}>Devolvido</option>
+            <option value="cliente" {% if request.args.get('status') == 'cliente' %}selected{% endif %}>Ficou no cliente</option>
+          </select>
       </div>
       <div class="filtro-item">
         <label for="data_inicio">Data Início</label>
@@ -25,28 +47,19 @@
         <label for="data_fim">Data Fim</label>
         <input type="date" id="data_fim" name="data_fim" value="{{ request.args.get('data_fim', '') }}">
       </div>
-      <div class="filtro-item">
-        <label for="status">Status</label>
-        <select name="status" id="status">
-          <option value="">Todos</option>
-          <option value="amarelo">Pendente</option>
-          <option value="verde">FInalizado</option>
-          <!-- <option value="vermelho">Atrasado</option> -->
-        </select>
-      </div>
-       <!-- <label for="per_page">Itens por página:</label>
-        <select name="per_page" id="per_page" onchange="this.form.submit()">
-          <option value="5" {% if request.args.get('per_page', '10') == '5' %}selected{% endif %}>5</option>
-          <option value="10" {% if request.args.get('per_page', '10') == '10' %}selected{% endif %}>10</option>
-          <option value="25" {% if request.args.get('per_page') == '25' %}selected{% endif %}>25</option>
-          <option value="50" {% if request.args.get('per_page') == '50' %}selected{% endif %}>50</option>
-        </select> -->
     </div>
 
     <div class="filtro-acoes-container compact">
       <div class="filtro-acoes-esquerda">
         <button type="submit" class="btn-filtrar">Filtrar</button>
         <button type="button" class="btn-limpar" onclick="window.location.href='{{ url_for('movimentacoes.listar_movimentacoes') }}'">Limpar</button>
+        <label for="per_page">Itens por página</label>
+        <select id="per_page" name="per_page" onchange="this.form.submit()">
+          <option value="10" {% if request.args.get('per_page', '10') == '10' %}selected{% endif %}>10</option>
+          <option value="25" {% if request.args.get('per_page') == '25' %}selected{% endif %}>25</option>
+          <option value="50" {% if request.args.get('per_page') == '50' %}selected{% endif %}>50</option>
+          <option value="100" {% if request.args.get('per_page') == '100' %}selected{% endif %}>100</option>
+        </select>
       </div>
       <div class="filtro-acoes-direita">
         <a href="{{ url_for('movimentacoes.export_pdf') }}" class="btn-exportar">Exportar PDF</a>
@@ -54,6 +67,7 @@
       </div>
     </div>
   </form>
+
 
   <div class="table-wrapper">
     <table class="movimentacoes-table">

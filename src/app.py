@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash, Blueprint, send_file
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import IntegrityError
-from datetime import datetime, timezone
+from datetime import datetime, timezone, date
 from models import engine, Usuario, Material, Cliente, Movimentacao
 from collections import defaultdict
 import io
@@ -10,6 +10,7 @@ from reportlab.lib.pagesizes import A4
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet
+from sqlalchemy import or_, and_
 
 app = Flask(__name__)
 app.secret_key = "supersecret"
@@ -276,7 +277,9 @@ def listar_movimentacoes():
         return redirect(url_for("index"))
 
     cliente_nome = request.args.get("cliente", "").strip()
-    status = request.args.get("status", "").strip().lower()
+    material_nome = request.args.get("material", "").strip()
+    funcionario_nome = request.args.get("funcionario", "").strip()
+    status_raw = request.args.get("status", "").strip().lower()
     data_inicio_str = request.args.get("data_inicio", "").strip()
     data_fim_str = request.args.get("data_fim", "").strip()
 
@@ -288,8 +291,41 @@ def listar_movimentacoes():
     if cliente_nome:
         query = query.filter(Cliente.nome.ilike(f"%{cliente_nome}%"))
 
-    if status in ["verde", "amarelo", "vermelho"]:
-        query = query.filter(Movimentacao.status == status)
+    if material_nome:
+        query = query.filter(Material.nome.ilike(f"%{material_nome}%"))
+
+    if funcionario_nome:
+        query = query.filter(Movimentacao.funcionario.ilike(f"%{funcionario_nome}%"))
+
+    if status_raw:
+        if status_raw in ("verde", "finalizado", "concluido", "concluído"):
+            query = query.filter(Movimentacao.status == "verde")
+
+        elif status_raw in ("amarelo", "pendente", "pendentes"):
+            query = query.filter(
+                or_(
+                    Movimentacao.status == "amarelo",
+                    and_(Movimentacao.prazo_devolucao != None, Movimentacao.prazo_devolucao < date.today())
+                )
+            )
+
+        elif status_raw in ("atrasado", "vencido", "overdue"):
+            query = query.filter(
+                Movimentacao.prazo_devolucao != None,
+                Movimentacao.prazo_devolucao < date.today(),
+                Movimentacao.devolvido == False,
+                Movimentacao.utilizado_cliente == False
+            )
+
+        elif status_raw in ("devolvido", "retorno"):
+            query = query.filter(Movimentacao.devolvido == True)
+
+        elif status_raw in ("cliente", "ficou no cliente", "utilizado_cliente"):
+            query = query.filter(Movimentacao.utilizado_cliente == True)
+
+        elif status_raw in ("amarelo", "vermelho"):
+            query = query.filter(Movimentacao.status == status_raw)
+
 
     if data_inicio_str:
         try:
@@ -306,20 +342,19 @@ def listar_movimentacoes():
         except ValueError:
             flash("Data de fim inválida", "error")
 
-    # Total e paginação
     total = query.count()
     movimentacoes = query.order_by(Movimentacao.data_retirada.desc()) \
                          .offset((page - 1) * per_page) \
                          .limit(per_page) \
                          .all()
-
     total_pages = (total + per_page - 1) // per_page
 
     return render_template(
         "movimentacoes.html",
         movimentacoes=movimentacoes,
         page=page,
-        total_pages=total_pages
+        total_pages=total_pages,
+        per_page=per_page
     )
 
 @movimentacoes_bp.route("/movimentacoes/nova", methods=["GET", "POST"])
