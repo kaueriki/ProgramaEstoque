@@ -81,6 +81,71 @@
   background-color: #cc7c02;
 }
 
+.input-with-button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.input-with-button select {
+  flex: 1;
+}
+
+.input-with-button .add-button {
+  width: 40px;
+  height: 40px;
+  font-size: 20px;
+  line-height: 1;
+  background-color: #ffa02c;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+}
+
+
+.input-with-button .add-button:hover {
+  background-color: #cc7c02;
+}
+.modal-content h3 {
+  margin-bottom: 1rem;
+  font-size: 1.4rem;
+  color: #333;
+}
+
+.form-modal {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.form-modal input {
+  padding: 10px;
+  font-size: 0.95rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.btn-salvar {
+  background-color: #ffa02c;
+  color: white;
+  border: none;
+  padding: 10px;
+  font-size: 1rem;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.btn-salvar:hover {
+  background-color: #cc7c02;
+}
+
 @media (max-width: 768px) {
   .form-movimentacao {
     padding: 1.2rem;

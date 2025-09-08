@@ -2,27 +2,73 @@
 
 {% block extra_css %}
   <link rel="stylesheet" href="{{ url_for('static', filename='nova_movimentacao.css') }}">
+  <style>
+    /* Estilos para os modais e botões */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0; top: 0;
+      width: 100%; height: 100%;
+      overflow: auto;
+      background-color: rgba(0, 0, 0, 0.5);
+    }
+
+    .modal-content {
+      background-color: #fff;
+      margin: 10% auto;
+      padding: 20px;
+      border-radius: 8px;
+      width: 400px;
+      position: relative;
+    }
+
+    .close {
+      position: absolute;
+      top: 8px;
+      right: 12px;
+      font-size: 20px;
+      cursor: pointer;
+    }
+
+    .input-with-button {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .input-with-button button {
+      padding: 4px 8px;
+      cursor: pointer;
+    }
+  </style>
 {% endblock %}
 
 {% block content %}
 <form method="POST" class="form-movimentacao">
   <label>Material:</label>
-  <select name="material_id" required>
-    {% for material in materiais %}
-      <option value="{{ material.id }}">{{ material.nome }}</option>
-    {% endfor %}
-  </select><br>
+    <div class="input-with-button">
+    <select name="material_id" id="material-select" required>
+      {% for material in materiais %}
+        <option value="{{ material.id }}">{{ material.nome }}</option>
+      {% endfor %}
+    </select>
+    <button type="button" class="add-button" onclick="abrirModal('modal-material')">+</button>
+</div><br>
 
   <label>Quantidade:</label>
   <input type="number" name="quantidade" required><br>
 
   <label>Cliente (opcional):</label>
-  <select name="cliente_id">
-    <option value="">-- Selecione --</option>
-    {% for cliente in clientes %}
-      <option value="{{ cliente.id }}">{{ cliente.nome }}</option>
-    {% endfor %}
-  </select><br>
+  <div class="input-with-button">
+    <select name="cliente_id" id="cliente-select">
+      <option value="">-- Selecione --</option>
+      {% for cliente in clientes %}
+        <option value="{{ cliente.id }}">{{ cliente.nome }}</option>
+      {% endfor %}
+    </select>
+    <button type="button" class="add-button" onclick="abrirModal('modal-cliente')">+</button>
+  </div><br>
 
   <label>Ordem de Serviço:</label>
   <input type="text" name="ordem_servico"><br>
@@ -47,4 +93,89 @@
 
   <button type="submit">Salvar</button>
 </form>
+
+<div class="modal" id="modal-material">
+  <div class="modal-content">
+    <span class="close" onclick="fecharModal('modal-material')">&times;</span>
+    <h3>Novo Material</h3>
+    <form id="form-material" class="form-modal">
+      <input type="text" name="nome" placeholder="Nome" required>
+      <input type="number" name="quantidade" placeholder="Quantidade" required>
+      <input type="number" name="lote" placeholder="Lote">
+      <input type="number" name="estoque_minimo_chuva" placeholder="Estoque Mínimo (Chuva)" required>
+      <input type="number" name="estoque_minimo_seco" placeholder="Estoque Mínimo (Seco)" required>
+      <button type="submit" class="btn-salvar">Salvar</button>
+    </form>
+  </div>
+</div>
+
+<div class="modal" id="modal-cliente">
+  <div class="modal-content">
+    <span class="close" onclick="fecharModal('modal-cliente')">&times;</span>
+    <h3>Novo Cliente</h3>
+    <form id="form-cliente" class="form-modal">
+      <input type="text" name="nome" placeholder="Nome do cliente" required>
+      <button type="submit" class="btn-salvar">Salvar</button>
+    </form>
+  </div>
+</div>
+
+
+<script>
+  function abrirModal(id) {
+    document.getElementById(id).style.display = 'block';
+  }
+
+  function fecharModal(id) {
+    document.getElementById(id).style.display = 'none';
+  }
+
+  document.getElementById('form-material').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+
+    const response = await fetch('/materiais/novo', {
+      method: 'POST',
+      body: formData
+    });
+
+    if (response.ok) {
+      const nome = formData.get('nome');
+      const materialSelect = document.getElementById('material-select');
+      const option = document.createElement('option');
+      option.text = nome;
+      option.value = 'temp_' + Date.now();
+      materialSelect.appendChild(option);
+      materialSelect.value = option.value;
+      fecharModal('modal-material');
+      this.reset();
+    } else {
+      alert('Erro ao cadastrar material.');
+    }
+  });
+
+  document.getElementById('form-cliente').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+
+    const response = await fetch('/clientes/novo', {
+      method: 'POST',
+      body: formData
+    });
+
+    if (response.ok) {
+      const nome = formData.get('nome');
+      const clienteSelect = document.getElementById('cliente-select');
+      const option = document.createElement('option');
+      option.text = nome;
+      option.value = 'temp_' + Date.now();
+      clienteSelect.appendChild(option);
+      clienteSelect.value = option.value;
+      fecharModal('modal-cliente');
+      this.reset();
+    } else {
+      alert('Erro ao cadastrar cliente.');
+    }
+  });
+</script>
 {% endblock %}
