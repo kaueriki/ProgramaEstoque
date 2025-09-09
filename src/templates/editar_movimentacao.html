@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='editar_movimentacao.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Editar Movimentação</h2>
+
+    <form method="POST">
+        <div class="mb-3">
+            <label for="material_id" class="form-label">Material</label>
+            <select class="form-select" id="material_id" name="material_id" required>
+                {% for mat in materiais %}
+                    <option value="{{ mat.id }}" {% if movimentacao.material_id == mat.id %}selected{% endif %}>
+                        {{ mat.nome }} (Estoque: {{ mat.quantidade }})
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="mb-3">
+            <label for="quantidade" class="form-label">Quantidade</label>
+            <input type="number" class="form-control" id="quantidade" name="quantidade" value="{{ movimentacao.quantidade }}" required>
+        </div>
+
+        <div class="mb-3">
+            <label for="cliente_id" class="form-label">Cliente</label>
+            <select class="form-select" id="cliente_id" name="cliente_id">
+                <option value="">- Nenhum -</option>
+                {% for cli in clientes %}
+                    <option value="{{ cli.id }}" {% if movimentacao.cliente_id == cli.id %}selected{% endif %}>
+                        {{ cli.nome }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="mb-3">
+            <label for="ordem_servico" class="form-label">Ordem de Serviço</label>
+            <input type="text" class="form-control" id="ordem_servico" name="ordem_servico"
+                   value="{{ movimentacao.ordem_servico }}">
+        </div>
+
+        <div class="mb-3">
+            <label for="funcionario" class="form-label">Funcionário</label>
+            <input type="text" class="form-control" id="funcionario" name="funcionario"
+                   value="{{ movimentacao.funcionario }}">
+        </div>
+
+        <div class="mb-3">
+            <label for="prazo_devolucao" class="form-label">Prazo de Devolução</label>
+            <input type="datetime-local" class="form-control" id="prazo_devolucao" name="prazo_devolucao"
+                   value="{{ movimentacao.prazo_devolucao.strftime('%Y-%m-%dT%H:%M') if movimentacao.prazo_devolucao }}">
+        </div>
+
+        <div class="mb-3">
+            <label for="motivo" class="form-label">Motivo</label>
+            <input type="text" class="form-control" id="motivo" name="motivo"
+                   value="{{ movimentacao.motivo or '' }}">
+        </div>
+
+        <div class="mb-3">
+            <label for="observacao" class="form-label">Observação</label>
+            <textarea class="form-control" id="observacao" name="observacao" rows="3">{{ movimentacao.observacao or '' }}</textarea>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+        <a href="{{ url_for('movimentacoes.listar_movimentacoes') }}" class="btn btn-secondary">Cancelar</a>
+    </form>
+</div>
+{% endblock %}

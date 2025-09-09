@@ -108,32 +108,33 @@
             {% endif %}
           </td>
           <td>
-            {% if not m.devolvido and not m.utilizado_cliente %}
             <div class="btn-group">
-              <button class="btn-acao" type="button" onclick="toggleDropdown('finalizar-{{ m.id }}')">
-                Finalizar
-              </button>
-              <div id="finalizar-{{ m.id }}" class="dropdown-acoes" style="display:none;">
-                <form method="POST" action="{{ url_for('movimentacoes.finalizar', id=m.id) }}">
-                  <label>Funcionando</label>
-                  <select name="funcionando" required>
-                    <option value="">-- Selecione --</option>
-                    <option value="sim">Sim</option>
-                    <option value="nao">Não</option>
-                  </select>
-                  <label>Destino final</label>
-                  <select name="destino" required>
-                    <option value="">-- Selecione --</option>
-                    <option value="retorno">Retornou</option>
-                    <option value="cliente">Ficou no cliente</option>
-                  </select>
-                  <button type="submit" class="btn-finalizar">Confirmar</button>
-                </form>
-              </div>
+              {% if not m.devolvido and not m.utilizado_cliente %}
+                <button class="btn-acao" type="button" onclick="toggleDropdown('finalizar-{{ m.id }}')">
+                  Finalizar
+                </button>
+                <div id="finalizar-{{ m.id }}" class="dropdown-acoes" style="display:none;">
+                  <form method="POST" action="{{ url_for('movimentacoes.finalizar', id=m.id) }}">
+                    <label>Funcionando</label>
+                    <select name="funcionando" required>
+                      <option value="">-- Selecione --</option>
+                      <option value="sim">Sim</option>
+                      <option value="nao">Não</option>
+                    </select>
+                    <label>Destino final</label>
+                    <select name="destino" required>
+                      <option value="">-- Selecione --</option>
+                      <option value="retorno">Retornou</option>
+                      <option value="cliente">Ficou no cliente</option>
+                    </select>
+                    <button type="submit" class="btn-finalizar">Confirmar</button>
+                  </form>
+                </div>
+              {% else %}
+                <span class="status-ok">Finalizado</span>
+              {% endif %}
+              <a href="{{ url_for('movimentacoes.editar_movimentacao', id=m.id) }}" class="btn-editar">Editar</a>
             </div>
-            {% else %}
-              <span class="status-ok">Finalizado</span>
-            {% endif %}
           </td>
         </tr>
         {% endfor %}

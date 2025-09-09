@@ -357,6 +357,76 @@ def listar_movimentacoes():
         per_page=per_page
     )
 
+@movimentacoes_bp.route("/movimentacoes/<int:id>/editar", methods=["GET", "POST"])
+def editar_movimentacao(id):
+    if "usuario_id" not in session:
+        flash("Você precisa estar logado!", "error")
+        return redirect(url_for("index"))
+
+    movimentacao = db.query(Movimentacao).get(id)
+    if not movimentacao:
+        flash("Movimentação não encontrada.", "error")
+        return redirect(url_for("movimentacoes.listar_movimentacoes"))
+
+    materiais = db.query(Material).all()
+    clientes = db.query(Cliente).all()
+
+    if request.method == "POST":
+        try:
+            material_id = int(request.form["material_id"])
+            quantidade = int(request.form["quantidade"])
+            cliente_id = request.form.get("cliente_id")
+            cliente_id = int(cliente_id) if cliente_id else None
+
+            ordem_servico = request.form["ordem_servico"].strip()
+            funcionario = request.form["funcionario"].strip()
+
+            prazo_str = request.form.get("prazo_devolucao", "").strip()
+            prazo_devolucao = datetime.strptime(prazo_str, "%Y-%m-%dT%H:%M") if prazo_str else None
+
+            motivo = request.form.get("motivo", "").strip()
+            observacao = request.form.get("observacao", "").strip()
+
+            if movimentacao.material_id != material_id:
+                material_antigo = db.query(Material).get(movimentacao.material_id)
+                material_antigo.quantidade += movimentacao.quantidade
+
+                material_novo = db.query(Material).get(material_id)
+                if material_novo.quantidade < quantidade:
+                    flash(f"Estoque insuficiente do material {material_novo.nome}. Estoque atual: {material_novo.quantidade}", "error")
+                    return render_template("editar_movimentacao.html", movimentacao=movimentacao, materiais=materiais, clientes=clientes)
+
+                material_novo.quantidade -= quantidade
+                movimentacao.material_id = material_id
+                movimentacao.quantidade = quantidade
+            else:
+                diferenca = quantidade - movimentacao.quantidade
+                material = db.query(Material).get(material_id)
+                if diferenca > 0 and material.quantidade < diferenca:
+                    flash(f"Estoque insuficiente! Estoque atual: {material.quantidade}", "error")
+                    return render_template("editar_movimentacao.html", movimentacao=movimentacao, materiais=materiais, clientes=clientes)
+
+                material.quantidade -= diferenca
+                movimentacao.quantidade = quantidade
+
+            movimentacao.cliente_id = cliente_id
+            movimentacao.ordem_servico = ordem_servico
+            movimentacao.funcionario = funcionario
+            movimentacao.prazo_devolucao = prazo_devolucao
+            movimentacao.motivo = motivo or None
+            movimentacao.observacao = observacao
+
+            db.commit()
+            flash("Movimentação atualizada com sucesso!", "success")
+            return redirect(url_for("movimentacoes.listar_movimentacoes"))
+
+        except Exception as e:
+            db.rollback()
+            flash(f"Erro ao atualizar movimentação: {str(e)}", "error")
+            return render_template("editar_movimentacao.html", movimentacao=movimentacao, materiais=materiais, clientes=clientes)
+
+    return render_template("editar_movimentacao.html", movimentacao=movimentacao, materiais=materiais, clientes=clientes)
+
 @movimentacoes_bp.route("/movimentacoes/nova", methods=["GET", "POST"])
 def nova_movimentacao():
     if "usuario_id" not in session:
