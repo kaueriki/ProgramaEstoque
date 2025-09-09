@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}Valltech - Controle de Estoque{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='controle_estoque.css') }}">
+{% endblock %}
+
+{% block content %}
+  
+  <div class="estoque-container">
+    <div class="header-estoque">
+      <h1>Controle de Estoque</h1>
+      <form method="GET" action="{{ url_for('estoque.controle') }}" class="filtro-form">
+        <input type="text" name="filtro" placeholder="Buscar material..." value="{{ filtro }}">
+        <button type="submit">Filtrar</button>
+      </form>
+    </div>
+
+    {% for lote, materiais in lotes.items() %}
+    <div class="card">
+      <h3>Lote: {{ lote if lote else "Sem lote" }}</h3>
+
+      <table class="tabela-estoque">
+        <thead>
+          <tr>
+            <th>Material</th>
+            <th>Quantidade</th>
+            <th>Mínimo Seco</th>
+            <th>Dif. Seco</th>
+            <th>Mínimo Chuva</th>
+            <th>Dif. Chuva</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for mat in materiais %}
+          <tr>
+            <td>{{ mat.nome }}</td>
+            <td class="{% if mat.quantidade >= mat.estoque_minimo_seco %}verde{% else %}vermelho{% endif %}">
+              {{ mat.quantidade }}
+            </td>
+            <td>{{ mat.estoque_minimo_seco }}</td>
+            <td class="{% if mat.quantidade - mat.estoque_minimo_seco >= 0 %}verde{% else %}vermelho{% endif %}">
+              {{ mat.quantidade - mat.estoque_minimo_seco }}
+            </td>
+            <td>{{ mat.estoque_minimo_chuva }}</td>
+            <td class="{% if mat.quantidade - mat.estoque_minimo_chuva >= 0 %}verde{% else %}vermelho{% endif %}">
+              {{ mat.quantidade - mat.estoque_minimo_chuva }}
+            </td>
+            <td>
+              <form method="POST" action="{{ url_for('estoque.alterar', id=mat.id) }}">
+                <input type="number" name="valor" required>
+                <button type="submit" name="acao" value="adicionar">+</button>
+                <button type="submit" name="acao" value="remover">-</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endfor %}
+
+  </div>
+{% endblock %}

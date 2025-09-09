@@ -1,8 +1,16 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash, Blueprint
+from flask import Flask, render_template, request, redirect, url_for, session, flash, Blueprint, send_file
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import IntegrityError
-from datetime import datetime
+from datetime import datetime, timezone, date
 from models import engine, Usuario, Material, Cliente, Movimentacao
+from collections import defaultdict
+import io
+import pandas as pd
+from reportlab.lib.pagesizes import A4
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph
+from reportlab.lib import colors
+from reportlab.lib.styles import getSampleStyleSheet
+from sqlalchemy import or_, and_
 
 app = Flask(__name__)
 app.secret_key = "supersecret"
@@ -43,7 +51,7 @@ def novo_material():
     if request.method == "POST":
         nome = request.form["nome"]
         quantidade = int(request.form["quantidade"])
-        lote = request.form["lote"]
+        lote = request.form.get("lote", "")  # Agora opcional
         estoque_minimo_chuva = int(request.form["estoque_minimo_chuva"])
         estoque_minimo_seco = int(request.form["estoque_minimo_seco"])
 
@@ -69,7 +77,13 @@ def listar_materiais():
         flash("Você precisa estar logado!", "error")
         return redirect(url_for("index"))
 
-    materiais = db.query(Material).all()
+    nome_filtro = request.args.get("nome", "").strip()
+
+    if nome_filtro:
+        materiais = db.query(Material).filter(Material.nome.ilike(f"%{nome_filtro}%")).all()
+    else:
+        materiais = db.query(Material).all()
+
     return render_template("materiais.html", materiais=materiais)
 
 @app.route("/materiais/<int:material_id>/editar", methods=["GET", "POST"])
@@ -77,22 +91,22 @@ def editar_material(material_id):
     if "usuario_id" not in session:
         flash("Você precisa estar logado!", "error")
         return redirect(url_for("index"))
-    
+
     material = db.query(Material).get(material_id)
     if not material:
         flash("Material não encontrado.", "error")
         return redirect(url_for("listar_materiais"))
-    
+
     if request.method == "POST":
         material.nome = request.form["nome"]
         material.quantidade = int(request.form["quantidade"])
-        material.lote = request.form["lote"]
+        material.lote = request.form.get("lote", "")
         material.estoque_minimo_chuva = int(request.form["estoque_minimo_chuva"])
         material.estoque_minimo_seco = int(request.form["estoque_minimo_seco"])
         db.commit()
         flash("Material atualizado com sucesso!", "success")
         return redirect(url_for("listar_materiais"))
-    
+
     return render_template("editar_material.html", material=material)
 
 @app.route("/materiais/<int:material_id>/excluir", methods=["POST"])
@@ -100,7 +114,7 @@ def excluir_material(material_id):
     if "usuario_id" not in session:
         flash("Você precisa estar logado!", "error")
         return redirect(url_for("index"))
-    
+
     material = db.query(Material).get(material_id)
     if material:
         db.delete(material)
@@ -115,8 +129,14 @@ def listar_usuarios():
     if "usuario_id" not in session:
         flash("Você precisa estar logado!", "error")
         return redirect(url_for("index"))
-    
-    usuarios = db.query(Usuario).all()
+
+    nome_filtro = request.args.get("nome", "").strip()
+
+    if nome_filtro:
+        usuarios = db.query(Usuario).filter(Usuario.nome.ilike(f"%{nome_filtro}%")).all()
+    else:
+        usuarios = db.query(Usuario).all()
+
     return render_template("usuarios.html", usuarios=usuarios)
 
 @app.route("/usuarios/novo", methods=["GET", "POST"])
@@ -186,7 +206,13 @@ def listar_clientes():
         flash("Você precisa estar logado!", "error")
         return redirect(url_for("index"))
 
-    clientes = db.query(Cliente).all()
+    filtro_nome = request.args.get("filtro_nome", "").strip()
+
+    if filtro_nome:
+        clientes = db.query(Cliente).filter(Cliente.nome.ilike(f"%{filtro_nome}%")).all()
+    else:
+        clientes = db.query(Cliente).all()
+
     return render_template("clientes.html", clientes=clientes)
 
 @clientes_bp.route("/clientes/novo", methods=["GET", "POST"])
@@ -249,89 +275,288 @@ def listar_movimentacoes():
     if "usuario_id" not in session:
         flash("Você precisa estar logado!", "error")
         return redirect(url_for("index"))
-    
-    movimentacoes = db.query(Movimentacao).order_by(Movimentacao.data_retirada.desc()).all()
-    return render_template("movimentacoes.html", movimentacoes=movimentacoes)
+
+    cliente_nome = request.args.get("cliente", "").strip()
+    material_nome = request.args.get("material", "").strip()
+    funcionario_nome = request.args.get("funcionario", "").strip()
+    status_raw = request.args.get("status", "").strip().lower()
+    data_inicio_str = request.args.get("data_inicio", "").strip()
+    data_fim_str = request.args.get("data_fim", "").strip()
+
+    per_page = request.args.get("per_page", 10, type=int)
+    page = request.args.get("page", 1, type=int)
+
+    query = db.query(Movimentacao).join(Material).outerjoin(Cliente)
+
+    if cliente_nome:
+        query = query.filter(Cliente.nome.ilike(f"%{cliente_nome}%"))
+
+    if material_nome:
+        query = query.filter(Material.nome.ilike(f"%{material_nome}%"))
+
+    if funcionario_nome:
+        query = query.filter(Movimentacao.funcionario.ilike(f"%{funcionario_nome}%"))
+
+    if status_raw:
+        if status_raw in ("verde", "finalizado", "concluido", "concluído"):
+            query = query.filter(Movimentacao.status == "verde")
+
+        elif status_raw in ("amarelo", "pendente", "pendentes"):
+            query = query.filter(
+                or_(
+                    Movimentacao.status == "amarelo",
+                    and_(Movimentacao.prazo_devolucao != None, Movimentacao.prazo_devolucao < date.today())
+                )
+            )
+
+        elif status_raw in ("atrasado", "vencido", "overdue"):
+            query = query.filter(
+                Movimentacao.prazo_devolucao != None,
+                Movimentacao.prazo_devolucao < date.today(),
+                Movimentacao.devolvido == False,
+                Movimentacao.utilizado_cliente == False
+            )
+
+        elif status_raw in ("devolvido", "retorno"):
+            query = query.filter(Movimentacao.devolvido == True)
+
+        elif status_raw in ("cliente", "ficou no cliente", "utilizado_cliente"):
+            query = query.filter(Movimentacao.utilizado_cliente == True)
+
+        elif status_raw in ("amarelo", "vermelho"):
+            query = query.filter(Movimentacao.status == status_raw)
+
+
+    if data_inicio_str:
+        try:
+            data_inicio = datetime.strptime(data_inicio_str, "%Y-%m-%d")
+            query = query.filter(Movimentacao.data_retirada >= data_inicio)
+        except ValueError:
+            flash("Data de início inválida", "error")
+
+    if data_fim_str:
+        try:
+            data_fim = datetime.strptime(data_fim_str, "%Y-%m-%d")
+            data_fim = data_fim.replace(hour=23, minute=59, second=59)
+            query = query.filter(Movimentacao.data_retirada <= data_fim)
+        except ValueError:
+            flash("Data de fim inválida", "error")
+
+    total = query.count()
+    movimentacoes = query.order_by(Movimentacao.data_retirada.desc()) \
+                         .offset((page - 1) * per_page) \
+                         .limit(per_page) \
+                         .all()
+    total_pages = (total + per_page - 1) // per_page
+
+    return render_template(
+        "movimentacoes.html",
+        movimentacoes=movimentacoes,
+        page=page,
+        total_pages=total_pages,
+        per_page=per_page
+    )
 
 @movimentacoes_bp.route("/movimentacoes/nova", methods=["GET", "POST"])
 def nova_movimentacao():
     if "usuario_id" not in session:
         flash("Você precisa estar logado!", "error")
         return redirect(url_for("index"))
-    
+
     materiais = db.query(Material).all()
     clientes = db.query(Cliente).all()
 
     if request.method == "POST":
-        nova = Movimentacao(
-            material_id=request.form["material_id"],
-            quantidade=request.form["quantidade"],
-            cliente_id=request.form.get("cliente_id") or None,
-            ordem_servico=request.form["ordem_servico"],
-            funcionario=request.form["funcionario"],
-            responsavel_id=session["usuario_id"],
-            data_retirada=datetime.utcnow(),
-            prazo_devolucao=request.form.get("prazo_devolucao") or None,
-            motivo=request.form.get("motivo") or None,
-            status=request.form.get("status") or "amarelo",
-            devolvido=False,
-            utilizado_cliente="utilizado_cliente" in request.form,
-            funcionando=True,
-            observacao=request.form["observacao"]
-        )
-        db.add(nova)
-        db.commit()
-        flash("Movimentação registrada com sucesso!", "success")
-        return redirect(url_for("movimentacoes.listar_movimentacoes"))
+        try:
+            material_id = int(request.form["material_id"])
+            quantidade = int(request.form["quantidade"])
+            cliente_id = request.form.get("cliente_id")
+            cliente_id = int(cliente_id) if cliente_id else None
+
+            ordem_servico = request.form["ordem_servico"].strip()
+            funcionario = request.form["funcionario"].strip()
+
+            prazo_str = request.form.get("prazo_devolucao", "").strip()
+            prazo_devolucao = datetime.strptime(prazo_str, "%Y-%m-%dT%H:%M") if prazo_str else None
+
+            motivo = request.form.get("motivo", "").strip()
+            observacao = request.form.get("observacao", "").strip()
+
+            material = db.query(Material).get(material_id)
+            if material.quantidade < quantidade:
+                flash(f"Estoque insuficiente! Estoque atual: {material.quantidade}", "error")
+                return render_template("nova_movimentacao.html", materiais=materiais, clientes=clientes)
+
+            material.quantidade -= quantidade 
+
+            nova = Movimentacao(
+                material_id=material_id,
+                quantidade=quantidade,
+                cliente_id=cliente_id,
+                ordem_servico=ordem_servico,
+                funcionario=funcionario,
+                responsavel_id=session["usuario_id"],
+                data_retirada=datetime.now(timezone.utc),
+                prazo_devolucao=prazo_devolucao,
+                motivo=motivo or None,
+                status="amarelo",
+                devolvido=False,
+                utilizado_cliente=False,
+                funcionando=None,
+                observacao=observacao
+            )
+
+            db.add(nova)
+            db.commit()
+            flash("Movimentação registrada com sucesso!", "success")
+            return redirect(url_for("movimentacoes.listar_movimentacoes"))
+
+        except Exception as e:
+            db.rollback()
+            flash(f"Erro ao cadastrar movimentação: {str(e)}", "error")
+            return render_template("nova_movimentacao.html", materiais=materiais, clientes=clientes)
 
     return render_template("nova_movimentacao.html", materiais=materiais, clientes=clientes)
 
-@movimentacoes_bp.route("/movimentacoes/<int:id>/finalizar_retorno", methods=["POST"])
-def finalizar_retorno(id):
+@movimentacoes_bp.route("/movimentacoes/<int:id>/finalizar", methods=["POST"])
+def finalizar(id):
     m = db.query(Movimentacao).get(id)
     if not m:
         flash("Movimentação não encontrada", "error")
         return redirect(url_for("movimentacoes.listar_movimentacoes"))
 
+    material = db.query(Material).get(m.material_id)
     funcionando = request.form.get("funcionando")
-    if funcionando == "sim":
-        m.funcionando = True
-    elif funcionando == "nao":
-        m.funcionando = False
+    destino = request.form.get("destino")
+
+    m.funcionando = True if funcionando == "sim" else False if funcionando == "nao" else None
+
+    if destino == "retorno":
+        if not m.devolvido:
+            material.quantidade += m.quantidade 
+            m.devolvido = True
+    elif destino == "cliente":
+        m.utilizado_cliente = True
     else:
-        m.funcionando = None  
-
-    m.devolvido = True
-    m.status = "verde"
-
-    db.commit()
-    flash("Movimentação finalizada (retorno)!", "success")
-    return redirect(url_for("movimentacoes.listar_movimentacoes"))
-
-
-@movimentacoes_bp.route("/movimentacoes/<int:id>/finalizar_cliente", methods=["POST"])
-def finalizar_cliente(id):
-    m = db.query(Movimentacao).get(id)
-    if not m:
-        flash("Movimentação não encontrada", "error")
+        flash("Destino inválido", "error")
         return redirect(url_for("movimentacoes.listar_movimentacoes"))
 
-    funcionando = request.form.get("funcionando")
-    if funcionando == "sim":
-        m.funcionando = True
-    elif funcionando == "nao":
-        m.funcionando = False
-    else:
-        m.funcionando = None
-
-    m.utilizado_cliente = True
     m.status = "verde"
-
     db.commit()
-    flash("Movimentação finalizada (ficou no cliente)!", "success")
+    flash("Movimentação finalizada com sucesso!", "success")
     return redirect(url_for("movimentacoes.listar_movimentacoes"))
+
+@movimentacoes_bp.route("/movimentacoes/export/excel")
+def export_excel():
+    query = db.query(Movimentacao).join(Material).all()
+
+    data = []
+    for m in query:
+        data.append({
+            "Material": m.material.nome,
+            "Qtd": m.quantidade,
+            "Funcionário": m.funcionario,
+            "Cliente": m.cliente.nome if m.cliente else "-",
+            "OS": m.ordem_servico,
+            "Retirada": m.data_retirada.strftime("%d/%m/%Y %H:%M"),
+            "Prazo": m.prazo_devolucao.strftime("%d/%m/%Y") if m.prazo_devolucao else "-",
+            "Status": m.status,
+            "Observação": m.observacao or "-",
+            "Funcionando": "Sim" if m.funcionando else ("Não" if m.funcionando is not None else "-"),
+        })
+
+    df = pd.DataFrame(data)
+
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine="openpyxl") as writer:
+        df.to_excel(writer, index=False, sheet_name="Movimentações")
+
+    output.seek(0)
+    return send_file(output, as_attachment=True,
+                     download_name="movimentacoes.xlsx",
+                     mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+@movimentacoes_bp.route("/movimentacoes/export/pdf")
+def export_pdf():
+    query = db.query(Movimentacao).join(Material).all()
+
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4)
+    elements = []
+    styles = getSampleStyleSheet()
+
+    elements.append(Paragraph("Relatório de Movimentações", styles["Title"]))
+
+    data = [["Material", "Qtd", "Funcionário", "Cliente", "OS", "Retirada", "Prazo", "Status"]]
+
+    for m in query:
+        data.append([
+            m.material.nome,
+            str(m.quantidade),
+            m.funcionario,
+            m.cliente.nome if m.cliente else "-",
+            m.ordem_servico,
+            m.data_retirada.strftime("%d/%m/%Y %H:%M"),
+            m.prazo_devolucao.strftime("%d/%m/%Y") if m.prazo_devolucao else "-",
+            m.status
+        ])
+
+    table = Table(data, repeatRows=1)
+    table.setStyle(TableStyle([
+        ("BACKGROUND", (0,0), (-1,0), colors.HexColor("#ff7b00")),
+        ("TEXTCOLOR", (0,0), (-1,0), colors.white),
+        ("ALIGN", (0,0), (-1,-1), "CENTER"),
+        ("FONTNAME", (0,0), (-1,0), "Helvetica-Bold"),
+        ("FONTSIZE", (0,0), (-1,-1), 8),
+        ("BOTTOMPADDING", (0,0), (-1,0), 6),
+        ("GRID", (0,0), (-1,-1), 0.5, colors.grey),
+    ]))
+
+    elements.append(table)
+    doc.build(elements)
+
+    buffer.seek(0)
+    return send_file(buffer, as_attachment=True,
+                     download_name="movimentacoes.pdf",
+                     mimetype="application/pdf")
 
 app.register_blueprint(movimentacoes_bp)
+
+
+estoque_bp = Blueprint("estoque", __name__, url_prefix="/estoque")
+
+@estoque_bp.route("/")
+def controle():
+    filtro = request.args.get("filtro", "").strip().lower()
+    materiais = db.query(Material).all()
+
+    lotes = defaultdict(list)
+    for mat in materiais:
+        if not filtro or filtro in mat.nome.lower():
+            lotes[mat.lote].append(mat)
+
+    return render_template("controle_estoque.html", lotes=lotes, filtro=filtro)
+
+@estoque_bp.route("/alterar/<int:id>", methods=["POST"])
+def alterar(id):
+    material = db.query(Material).get(id)
+    if not material:
+        flash("Material não encontrado!", "error")
+        return redirect(url_for("estoque.controle"))
+
+    valor = int(request.form["valor"])
+    acao = request.form["acao"]
+
+    if acao == "adicionar":
+        material.quantidade += valor
+    elif acao == "remover":
+        material.quantidade = max(material.quantidade - valor, 0)
+
+    db.commit()
+    flash("Estoque atualizado com sucesso!", "success")
+    return redirect(url_for("estoque.controle"))
+
+app.register_blueprint(estoque_bp)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)

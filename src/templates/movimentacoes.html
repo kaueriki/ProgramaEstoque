@@ -6,109 +6,166 @@
 
 {% block content %}
 <div class="movimentacoes-container">
-  <h2>Histórico de Retiradas</h2>
-  <a href="{{ url_for('movimentacoes.nova_movimentacao') }}" class="btn-nova-movimentacao">Nova Retirada</a>
+  <div class="movimentacoes-header">
+    <h2>Histórico de Retiradas</h2>
+    <a href="{{ url_for('movimentacoes.nova_movimentacao') }}" class="btn-nova-movimentacao">Nova Retirada</a>
+  </div>
 
-  <table class="movimentacoes-table">
-   <thead>
-    <tr>
-      <th>Material</th>
-      <th>Qtd</th>
-      <th>Funcionário</th>
-      <th>Cliente</th>
-      <th>Retirada</th>
-      <th>Prazo</th>
-      <th>Status</th>
-      <th>Observação</th>
-      <th>Funcionando</th>
-      <th>Ações</th>
-    </tr>
-  </thead>
-    <tbody>
-      {% for m in movimentacoes %}
-      <tr class="status-{{ m.status_atual|lower|replace(' ', '-') }}">
-        <td>{{ m.material.nome }}</td>
-        <td>{{ m.quantidade }}</td>
-        <td>{{ m.funcionario }}</td>
-        <td>{{ m.cliente.nome if m.cliente else '-' }}</td>
-        <td>{{ m.data_retirada.strftime('%d/%m/%Y') }}</td>
-        <td>{{ m.prazo_devolucao.strftime('%d/%m/%Y') if m.prazo_devolucao else '-' }}</td>
-        <td>{{ m.status_atual }}</td>
-        <td>{{ m.observacao or '-' }}</td>
-        <td>
-          {% if m.funcionando is none %}
-            -
-          {% elif m.funcionando %}
-            Sim
-          {% else %}
-            Não
-          {% endif %}
-        </td>
-        <td>
-          {% if not m.devolvido and not m.utilizado_cliente %}
-            <div class="acoes-intuitivas">
-              <div class="btn-group">
-                <button class="btn-acao" onclick="toggleDropdown('retorno-{{ m.id }}')">
-                  Retorno ▼
-                </button>
-                <div id="retorno-{{ m.id }}" class="dropdown-acoes">
-                  <form method="POST" action="{{ url_for('movimentacoes.finalizar_retorno', id=m.id) }}">
-                    <label>Funcionando?</label>
-                    <select name="funcionando" required>
-                      <option value="">-- Selecione --</option>
-                      <option value="sim">Sim</option>
-                      <option value="nao">Não</option>
-                    </select>
-                    <button type="submit" class="btn-finalizar">Confirmar</button>
-                  </form>
-                </div>
-              </div>
+  <form class="filtro-form-horizontal" method="get" action="{{ url_for('movimentacoes.listar_movimentacoes') }}">
+    <div class="filtro-grid-horizontal">
+      <div class="filtro-item">
+        <label for="material">Material</label>
+        <input type="text" id="material" name="material" value="{{ request.args.get('material', '') }}">
+      </div>
+      <div class="filtro-item">
+        <label for="cliente">Cliente</label>
+        <input type="text" id="cliente" name="cliente" value="{{ request.args.get('cliente', '') }}">
+      </div>
+      <div class="filtro-item">
+        <label for="funcionario">Funcionário</label>
+        <input type="text" id="funcionario" name="funcionario" value="{{ request.args.get('funcionario', '') }}">
+      </div>
+    </div>
 
-              <div class="btn-group">
-                <button class="btn-acao" onclick="toggleDropdown('cliente-{{ m.id }}')">
-                  Ficou no Cliente ▼
-                </button>
-                <div id="cliente-{{ m.id }}" class="dropdown-acoes">
-                  <form method="POST" action="{{ url_for('movimentacoes.finalizar_cliente', id=m.id) }}">
-                    <label>Funcionando?</label>
-                    <select name="funcionando" required>
-                      <option value="">-- Selecione --</option>
-                      <option value="sim">Sim</option>
-                      <option value="nao">Não</option>
-                    </select>
-                    <button type="submit" class="btn-finalizar">Confirmar</button>
-                  </form>
-                </div>
+    <div class="filtro-grid-horizontal">
+      <div class="filtro-item">
+        <label for="status">Status</label>
+          <select name="status" id="status">
+            <option value="">Todos</option>
+            <option value="pendente" {% if request.args.get('status') == 'pendente' %}selected{% endif %}>Pendente</option>
+            <option value="atrasado" {% if request.args.get('status') == 'atrasado' %}selected{% endif %}>Atrasado</option>
+            <option value="verde" {% if request.args.get('status') == 'verde' %}selected{% endif %}>Finalizado</option>
+            <option value="devolvido" {% if request.args.get('status') == 'devolvido' %}selected{% endif %}>Devolvido</option>
+            <option value="cliente" {% if request.args.get('status') == 'cliente' %}selected{% endif %}>Ficou no cliente</option>
+          </select>
+      </div>
+      <div class="filtro-item">
+        <label for="data_inicio">Data Início</label>
+        <input type="date" id="data_inicio" name="data_inicio" value="{{ request.args.get('data_inicio', '') }}">
+      </div>
+      <div class="filtro-item">
+        <label for="data_fim">Data Fim</label>
+        <input type="date" id="data_fim" name="data_fim" value="{{ request.args.get('data_fim', '') }}">
+      </div>
+    </div>
+
+    <div class="filtro-acoes-container compact">
+      <div class="filtro-acoes-esquerda">
+        <button type="submit" class="btn-filtrar">Filtrar</button>
+        <button type="button" class="btn-limpar" onclick="window.location.href='{{ url_for('movimentacoes.listar_movimentacoes') }}'">Limpar</button>
+        <label for="per_page">Itens por página</label>
+        <select id="per_page" name="per_page" onchange="this.form.submit()">
+          <option value="10" {% if request.args.get('per_page', '10') == '10' %}selected{% endif %}>10</option>
+          <option value="25" {% if request.args.get('per_page') == '25' %}selected{% endif %}>25</option>
+          <option value="50" {% if request.args.get('per_page') == '50' %}selected{% endif %}>50</option>
+          <option value="100" {% if request.args.get('per_page') == '100' %}selected{% endif %}>100</option>
+        </select>
+      </div>
+      <div class="filtro-acoes-direita">
+        <a href="{{ url_for('movimentacoes.export_pdf') }}" class="btn-exportar">Exportar PDF</a>
+        <a href="{{ url_for('movimentacoes.export_excel') }}" class="btn-exportar">Exportar Excel</a>
+      </div>
+    </div>
+  </form>
+
+
+  <div class="table-wrapper">
+    <table class="movimentacoes-table">
+      <thead>
+        <tr>
+          <th>Material</th>
+          <th>Qtd</th>
+          <th>Funcionário</th>
+          <th>Cliente</th>
+          <th>OS</th>
+          <th>Retirada</th>
+          <th>Prazo</th>
+          <th>Status</th>
+          <th>Observação</th>
+          <th>Funcionando</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for m in movimentacoes %}
+        <tr class="status-{{ m.status_atual|lower|replace(' ', '-') }}">
+          <td>{{ m.material.nome }}</td>
+          <td>{{ m.quantidade }}</td>
+          <td>{{ m.funcionario }}</td>
+          <td>{{ m.cliente.nome if m.cliente else '-' }}</td>
+          <td>{{ m.ordem_servico }}</td>
+          <td>{{ m.data_retirada.strftime('%d/%m/%Y %H:%M') }}</td>
+          <td>{{ m.prazo_devolucao.strftime('%d/%m/%Y') if m.prazo_devolucao else '-' }}</td>
+          <td>{{ m.status_atual }}</td>
+          <td>{{ m.observacao or '-' }}</td>
+          <td>
+            {% if m.funcionando is none %}
+              -
+            {% elif m.funcionando %}
+              Sim
+            {% else %}
+              Não
+            {% endif %}
+          </td>
+          <td>
+            {% if not m.devolvido and not m.utilizado_cliente %}
+            <div class="btn-group">
+              <button class="btn-acao" type="button" onclick="toggleDropdown('finalizar-{{ m.id }}')">
+                Finalizar
+              </button>
+              <div id="finalizar-{{ m.id }}" class="dropdown-acoes" style="display:none;">
+                <form method="POST" action="{{ url_for('movimentacoes.finalizar', id=m.id) }}">
+                  <label>Funcionando</label>
+                  <select name="funcionando" required>
+                    <option value="">-- Selecione --</option>
+                    <option value="sim">Sim</option>
+                    <option value="nao">Não</option>
+                  </select>
+                  <label>Destino final</label>
+                  <select name="destino" required>
+                    <option value="">-- Selecione --</option>
+                    <option value="retorno">Retornou</option>
+                    <option value="cliente">Ficou no cliente</option>
+                  </select>
+                  <button type="submit" class="btn-finalizar">Confirmar</button>
+                </form>
               </div>
             </div>
-          {% else %}
-            <span class="status-ok">Finalizado</span>
-          {% endif %}
-        </td>
-      </tr>
+            {% else %}
+              <span class="status-ok">Finalizado</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
 
-      {% endfor %}
-    </tbody>
-  </table>
+  <div class="pagination">
+    {% if page > 1 %}
+      <a href="{{ url_for('movimentacoes.listar_movimentacoes', page=page-1, status=request.args.get('status', ''), cliente=request.args.get('cliente', ''), data_inicio=request.args.get('data_inicio', ''), data_fim=request.args.get('data_fim', '')) }}" class="page-link">← Anterior</a>
+    {% endif %}
+
+    <span>Página {{ page }} de {{ total_pages }}</span>
+
+    {% if page < total_pages %}
+      <a href="{{ url_for('movimentacoes.listar_movimentacoes', page=page+1, status=request.args.get('status', ''), cliente=request.args.get('cliente', ''), data_inicio=request.args.get('data_inicio', ''), data_fim=request.args.get('data_fim', '')) }}" class="page-link">Próxima →</a>
+    {% endif %}
+  </div>
 </div>
 
 <script>
   function toggleDropdown(id) {
     document.querySelectorAll('.dropdown-acoes').forEach(el => {
-      if (el.id !== id) {
-        el.style.display = 'none';
-      }
+      if (el.id !== id) el.style.display = 'none';
     });
-
     const dropdown = document.getElementById(id);
     dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
   }
 
   document.addEventListener('click', function(event) {
     if (!event.target.closest('.btn-group')) {
-      document.querySelectorAll('.dropdown-acoes').forEach(el => {
-        el.style.display = 'none';
-      });
+      document.querySelectorAll('.dropdown-acoes').forEach(el => el.style.display = 'none');
     }
   });
 </script>

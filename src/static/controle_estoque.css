@@ -1,0 +1,210 @@
+.estoque-container { 
+  display: flex; 
+  flex-direction: column; 
+  gap: 25px; 
+  padding: 20px 30px; 
+  height: auto; 
+  max-height: 90vh; 
+  overflow-y: auto; 
+  overflow-x: hidden; 
+  border-radius: 12px; 
+  background-color: #5f5f5f27; 
+  margin: 30px auto; 
+  box-shadow: inset 0 0 5px rgba(0,0,0,0.05), 0 8px 20px rgba(0,0,0,0.15); 
+  border-width: 2px; 
+  border-color: white; 
+  border-radius: 15px; 
+  border-style: solid; 
+}
+
+.header-estoque {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+.header-estoque h1 {
+  color: #ffffff;
+  font-size: 2.2rem;
+  margin: 0;
+  font-weight: 700;
+}
+
+.filtro-form {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  background-color: #fff;
+  padding: 12px 18px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.filtro-form input[type="text"] {
+  flex: 1;
+  min-width: 220px;
+  padding: 10px 14px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  background-color: #f9f9f9;
+  color: #333;
+  font-size: 1rem;
+  transition: 0.2s ease-in-out;
+}
+
+.filtro-form input[type="text"]:focus {
+  outline: none;
+  border-color: #ffa726;
+  background-color: #fff;
+}
+
+.filtro-form button {
+  background-color: #ffa726;
+  color: #fff;
+  font-weight: 600;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.filtro-form button:hover {
+  background-color: #ff9800;
+}
+
+.card {
+  background: white;
+  color: #333;
+  padding: 25px;
+  border-radius: 14px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  border-width: 1px;
+  border-style: solid;
+  border-color: black;
+}
+
+.card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0px 10px 30px rgba(0, 0, 0, 0.15);
+}
+
+.card h3 {
+  margin-bottom: 20px;
+  font-size: 1.4rem;
+  font-weight: bold;
+  color: #ffa726;
+  border-left: 6px solid #ffa726;
+  padding-left: 10px;
+}
+
+.tabela-estoque {
+  width: 100%;
+  border-collapse: collapse;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.tabela-estoque th {
+  background: #ffa726;
+  color: #fff;
+  font-weight: bold;
+  padding: 12px;
+  font-size: 0.95rem;
+  text-align: center;
+}
+
+.tabela-estoque td {
+  padding: 12px;
+  text-align: center;
+  border-top: 1px solid #ddd;
+  font-size: 0.95rem;
+}
+
+.tabela-estoque tr:nth-child(even) {
+  background: #f5f5f5;
+}
+
+.tabela-estoque tr:hover {
+  background: #e0e0e0;
+}
+
+.tabela-estoque input[type="number"] {
+  width: 80px;
+  padding: 6px;
+  border: 1px solid #bbb;
+  border-radius: 6px;
+  background: #fafafa;
+  color: #333;
+  text-align: center;
+  font-weight: bold;
+}
+
+.tabela-estoque button {
+  border: none;
+  padding: 6px 12px;
+  margin-left: 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: 0.2s ease;
+}
+
+.tabela-estoque button[value="adicionar"] {
+  background: #4caf50;
+  color: white;
+}
+
+.tabela-estoque button[value="adicionar"]:hover {
+  background: #43a047;
+}
+
+.tabela-estoque button[value="remover"] {
+  background: #f44336;
+  color: white;
+}
+
+.tabela-estoque button[value="remover"]:hover {
+  background: #e53935;
+}
+
+/* ------------------- INDICADORES DE STATUS ------------------- */
+.verde {
+  color: #4caf50;
+  font-weight: bold;
+}
+
+.vermelho {
+  color: #f44336;
+  font-weight: bold;
+}
+
+@media (max-width: 768px) {
+  .header-estoque {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .filtro-form {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filtro-form input,
+  .filtro-form button {
+    width: 100%;
+  }
+
+  .tabela-estoque td,
+  .tabela-estoque th {
+    font-size: 0.85rem;
+    padding: 10px;
+  }
+
+  .tabela-estoque input[type="number"] {
+    width: 60px;
+  }
+}

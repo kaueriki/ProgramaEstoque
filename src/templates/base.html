@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{% block title %}Valltech - Sistema{% endblock %}</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}Valltech - Estoque{% endblock %}</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='base.css') }}">
   <link rel="icon" href="{{ url_for('static', filename='assets/favicon.ico') }}" type="image/x-icon">
@@ -13,21 +13,22 @@
   {% block extra_css %}{% endblock %}
 </head>
 <body>
+  <button class="sidebar-toggle" onclick="toggleSidebar()">☰</button>
+
   <aside class="sidebar">
     <div class="sidebar-header">
       <img src="{{ url_for('static', filename='assets/logo-branca.png') }}" alt="Logo Valltech">
     </div>
-
     <nav class="item-menu">
-
       <div class="menu-section">
         <a href="{{ url_for('movimentacoes.listar_movimentacoes') }}"><i class="fas fa-list"></i> Histórico</a>
       </div>
-
       <div class="item-menu">
         <a href="{{ url_for('movimentacoes.nova_movimentacao') }}"><i class="fas fa-plus-circle"></i> Cadastrar Retirada</a>
       </div>
-
+      <div class="item-menu">
+        <a href="{{ url_for('estoque.controle') }}"><i class="fas fa-warehouse"></i> Estoque</a>
+      </div>
       <div class="menu-section">
         <button class="menu-toggle"><i class="fas fa-boxes"></i> Materiais <span class="arrow">▼</span></button>
         <div class="submenu">
@@ -35,7 +36,6 @@
           <a href="{{ url_for('novo_material') }}"><i class="fas fa-box"></i> Novo Material</a>
         </div>
       </div>
-
       <div class="menu-section">
         <button class="menu-toggle"><i class="fas fa-users"></i> Usuários <span class="arrow">▼</span></button>
         <div class="submenu">
@@ -43,7 +43,6 @@
           <a href="{{ url_for('novo_usuario') }}"><i class="fas fa-user-plus"></i> Novo Usuário</a>
         </div>
       </div>
-
       <div class="menu-section">
         <button class="menu-toggle"><i class="fas fa-address-book"></i> Clientes <span class="arrow">▼</span></button>
         <div class="submenu">
@@ -51,8 +50,6 @@
           <a href="{{ url_for('clientes.novo_cliente') }}"><i class="fas fa-user-tie"></i> Novo Cliente</a>
         </div>
       </div>
-
-      
     </nav>
     <div class="logout-wrapper">
       <a href="{{ url_for('logout') }}" class="logout-link"><i class="fas fa-sign-out-alt"></i> Logout</a>
@@ -61,17 +58,16 @@
 
   <main class="main-content">
     {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-        <div class="flash-messages">
-          {% for category, message in messages %}
-            <div class="flash-message {{ category }}">{{ message }}</div>
-          {% endfor %}
-        </div>
-      {% endif %}
+    {% if messages %}
+    <div class="flash-messages">
+      {% for category, message in messages %}
+      <div class="flash-message {{ category }}">{{ message }}</div>
+      {% endfor %}
+    </div>
+    {% endif %}
     {% endwith %}
 
-    {% block content %}
-    {% endblock %}
+    {% block content %}{% endblock %}
   </main>
 
   <script>
@@ -89,6 +85,13 @@
         section.classList.toggle('open');
       });
     });
+
+    function toggleSidebar() {
+      const sidebar = document.querySelector('.sidebar');
+      const body = document.body;
+      sidebar.classList.toggle('collapsed');
+      body.classList.toggle('sidebar-collapsed');
+    }
   </script>
 </body>
 </html>

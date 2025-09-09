@@ -1,29 +1,25 @@
 .form-movimentacao {
-  max-width: 703px;
-  height: 90vh;
+  max-width: 650px;
+  height: 80vh;
   overflow-y: auto;
   margin: 2rem auto;
-  background-color: #0000007c;
+  background-color: #fff;
   padding: 2rem;
-  border: 1px solid #ffffff;
-  border-radius: 9px;
-  box-shadow: 0 2px 8px rgb(255, 255, 255);
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   font-size: 0.95rem;
-  color: #ffffff;
+  color: #333;
   position: relative;
   margin-bottom: 30px;
 }
 
 .form-movimentacao::-webkit-scrollbar {
-  width: 6px;
-  height: auto;
-  color: white
+  width: 8px;
 }
 
 .form-movimentacao::-webkit-scrollbar-thumb {
-  background-color: rgb(255, 255, 255);
+  background-color: rgba(0, 0, 0, 0.2);
   border-radius: 4px;
-  height: auto;
 }
 
 .form-movimentacao h2 {
@@ -82,6 +78,71 @@
 }
 
 .form-movimentacao button:hover {
+  background-color: #cc7c02;
+}
+
+.input-with-button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.input-with-button select {
+  flex: 1;
+}
+
+.input-with-button .add-button {
+  width: 40px;
+  height: 40px;
+  font-size: 20px;
+  line-height: 1;
+  background-color: #ffa02c;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+}
+
+
+.input-with-button .add-button:hover {
+  background-color: #cc7c02;
+}
+.modal-content h3 {
+  margin-bottom: 1rem;
+  font-size: 1.4rem;
+  color: #333;
+}
+
+.form-modal {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.form-modal input {
+  padding: 10px;
+  font-size: 0.95rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.btn-salvar {
+  background-color: #ffa02c;
+  color: white;
+  border: none;
+  padding: 10px;
+  font-size: 1rem;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.btn-salvar:hover {
   background-color: #cc7c02;
 }
 

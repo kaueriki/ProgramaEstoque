@@ -1,16 +1,18 @@
 .content-container {
   width: 60%;
-  margin: 60px auto;
+  margin: auto;
+  margin-top: 30px;
   background: rgb(255, 255, 255); 
-  padding: 40px 45px;
   border-radius: 14px;
+  padding: 30px;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  height: 660px;
 }
 
 .content-container h2 {
   margin-top: 0;
-  font-size: 28px;
+  font-size: 20px;
   font-weight: 700;
   color: #222;
   border-bottom: 3px solid #ff6600;
@@ -21,9 +23,9 @@
 form label {
   display: block;
   margin-bottom: 8px;
-  font-weight: 600;
+  font-weight: 500;
   color: #444;
-  font-size: 16px;
+  font-size: 13px;
 }
 
 form input[type="text"],
