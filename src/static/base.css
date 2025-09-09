@@ -42,6 +42,10 @@ body.sidebar-collapsed {
   user-select: none;
 }
 
+.sidebar-toggle:hover {
+  background-color: rgb(189, 123, 1);
+}
+
 .sidebar {
   height: 100%;
   width: 240px;
