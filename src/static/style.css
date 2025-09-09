@@ -126,3 +126,12 @@ canvas {
   border-radius: 12px;
   box-shadow: 0 8px 20px rgb(255, 115, 0);
 }
+#login-container {
+    pointer-events: none;
+}
+
+#login-container input,
+#login-container button {
+    pointer-events: auto;
+}
+

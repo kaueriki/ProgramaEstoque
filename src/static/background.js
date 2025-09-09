@@ -51,9 +51,11 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         }
     }
+    
 
     criarPilha(10, window.innerHeight - 20, 5, 3);
     criarPilha(window.innerWidth - 150, window.innerHeight - 20, 5, 3);
+    
 
     const mouse = Mouse.create(canvas);
     const mouseConstraint = MouseConstraint.create(engine, {
@@ -63,4 +65,27 @@ document.addEventListener("DOMContentLoaded", () => {
     World.add(world, mouseConstraint);
 
     render.mouse = mouse;
+       const loginBox = document.querySelector(".login-container"); // <- seu id do login
+    const rect = loginBox.getBoundingClientRect();
+    const canvasRect = canvas.getBoundingClientRect();
+
+    // converte posição do login box para dentro do canvas
+    const x = rect.left - canvasRect.left;
+    const y = rect.top - canvasRect.top;
+
+    const thickness = 20; // espessura das paredes invisíveis
+
+    const paredesLogin = [
+        // chão
+        Bodies.rectangle(x + rect.width / 2, y + rect.height, rect.width, thickness, { isStatic: true, render: { visible: false } }),
+        // esquerda
+        Bodies.rectangle(x, y + rect.height / 2, thickness, rect.height, { isStatic: true, render: { visible: false } }),
+        // direita
+        Bodies.rectangle(x + rect.width, y + rect.height / 2, thickness, rect.height, { isStatic: true, render: { visible: false } }),
+        // teto (opcional) — comente se quiser que as caixas possam entrar por cima
+        // Bodies.rectangle(x + rect.width / 2, y, rect.width, thickness, { isStatic: true, render: { visible: false } }),
+    ];
+
+    World.add(world, paredesLogin);
+
 });
