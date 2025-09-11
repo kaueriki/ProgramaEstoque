@@ -157,17 +157,32 @@
 
 <script>
   function toggleDropdown(id) {
+    const dropdown = document.getElementById(id);
+
     document.querySelectorAll('.dropdown-acoes').forEach(el => {
       if (el.id !== id) el.style.display = 'none';
     });
-    const dropdown = document.getElementById(id);
-    dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
-  }
 
+    if (dropdown.style.display === 'block') {
+      dropdown.style.display = 'none';
+      return;
+    }
+
+    dropdown.style.display = 'block';
+
+    const rect = dropdown.parentElement.getBoundingClientRect();
+    dropdown.style.position = 'fixed';
+    dropdown.style.top = `${rect.bottom + 5}px`; 
+    dropdown.style.left = `${rect.left}px`;
+    dropdown.style.zIndex = 9999;
+  }
   document.addEventListener('click', function(event) {
-    if (!event.target.closest('.btn-group')) {
+    if (!event.target.closest('.btn-group') && !event.target.closest('.dropdown-acoes')) {
       document.querySelectorAll('.dropdown-acoes').forEach(el => el.style.display = 'none');
     }
   });
+
+
+
 </script>
 {% endblock %}
