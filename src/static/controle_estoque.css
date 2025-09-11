@@ -132,7 +132,7 @@
 }
 
 .tabela-estoque input[type="number"] {
-  width: 80px;
+  width: 50px;
   padding: 6px;
   border: 1px solid #bbb;
   border-radius: 6px;
@@ -170,7 +170,6 @@
   background: #e53935;
 }
 
-/* ------------------- INDICADORES DE STATUS ------------------- */
 .verde {
   color: #4caf50;
   font-weight: bold;

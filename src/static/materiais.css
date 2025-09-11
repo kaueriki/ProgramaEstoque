@@ -1,108 +1,133 @@
-
 .materiais-container {
-  max-width: 1000px;
-  margin: auto;
-  background: rgb(255, 255, 255); 
-  padding: 30px;
-  border-radius: 12px;
-  box-shadow: 0 0 18px rgba(0, 0, 0, 0.05);
-  margin-top: 30px;
+  width: 100%;
+  height: 80vh;
+  overflow-y: auto;
+  margin: 2rem auto;
+  background-color: #fff;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  font-size: 0.95rem;
+  color: #333;
+  position: relative;
 }
 
 .materiais-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 1.5rem;
 }
 
 .materiais-header h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #222;
   margin: 0;
-  font-size: 26px;
-  color: #333;
-}
-
-.filtro-form {
-  margin-bottom: 20px;
-  display: flex;
-  gap: 10px;
-}
-
-.filtro-form input[type="text"] {
-  padding: 8px;
-  font-size: 14px;
-  border-radius: 4px;
-  border: 1px solid #ccc;
-  flex: 1;
-}
-
-.filtro-form button {
-  padding: 8px 16px;
-  background-color: #ffa600;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-}
-
-.filtro-form button:hover {
-  background-color: #b36500;
 }
 
 .btn-novo {
-  display: inline-block;
-  padding: 12px 20px;
-  background-color: #ffa600;
+  background-color: #ffa726;
   color: white;
-  text-decoration: none;
+  padding: 0.6rem 1.2rem;
   border-radius: 6px;
-  font-weight: bold;
-  transition: background 0.3s ease;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.3s ease;
 }
 
 .btn-novo:hover {
-  background-color: #e65c00;
+  background-color: #aa6907;
+}
+
+.filtro-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.filtro-form input[type="text"] {
+  flex-grow: 1;
+  padding: 0.6rem 1rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: border-color 0.3s;
+}
+
+.filtro-form input[type="text"]:focus {
+  border-color: #ffa726;
+  outline: none;
+}
+
+.filtro-form button {
+  padding: 0.6rem 1.2rem;
+  background-color: #ffa726;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.filtro-form button:hover {
+  background-color: #967008;
 }
 
 .materiais-tabela {
   width: 100%;
   border-collapse: collapse;
+  border-radius: 10px;
+  overflow: hidden;
   margin-bottom: 30px;
 }
 
-.materiais-tabela thead {
-  background-color: #ff9100;
-  color: white;
+.materiais-tabela th {
+  background: #ffa726;
+  color: #fff;
+  font-weight: bold;
+  padding: 12px;
+  font-size: 0.95rem;
+  text-align: center;
 }
 
-.materiais-tabela th,
 .materiais-tabela td {
-  padding: 14px;
-  text-align: left;
-  border-bottom: 1px solid #ddd;
-  font-size: 15px;
+  padding: 12px;
+  text-align: center;
+  border-top: 1px solid #ddd;
+  font-size: 0.95rem;
 }
 
+.materiais-tabela tr:nth-child(even) {
+  background: #f5f5f5;
+}
+
+.materiais-tabela tr:hover {
+  background: #e0e0e0;
+}
 
 .action-btn {
-  margin-right: 8px;
-  padding: 6px 12px;
+  padding: 0.4rem 0.8rem;
+  font-size: 13px;
   border: none;
   border-radius: 4px;
-  font-size: 14px;
   cursor: pointer;
   text-decoration: none;
+  margin-right: 0.4rem;
+  transition: background-color 0.3s ease;
+  margin-top: 10px;
 }
 
 .action-btn.edit {
-  background-color: #4caf50;
+  background-color: #2196f3;
   color: white;
 }
 
 .action-btn.edit:hover {
-  background-color: #43a047;
+  background-color: #1976d2;
 }
 
 .action-btn.delete {
@@ -111,5 +136,56 @@
 }
 
 .action-btn.delete:hover {
-  background-color: #e53935;
+  background-color: #d32f2f;
+}
+
+@media (max-width: 768px) {
+  .materiais-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .materiais-tabela thead {
+    display: none;
+  }
+
+  .materiais-tabela,
+  .materiais-tabela tbody,
+  .materiais-tabela tr,
+  .materiais-tabela td {
+    display: block;
+    width: 100%;
+  }
+
+  .materiais-tabela tr {
+    margin-bottom: 1rem;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 1rem;
+    background-color: #fff;
+  }
+
+  .materiais-tabela td {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+  }
+
+  .materiais-tabela td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: #555;
+  }
+
+  .materiais-tabela td:last-child {
+    flex-direction: row;
+    justify-content: flex-end;
+    gap: 0.5rem;
+  }
+
+  .action-btn {
+    width: auto;
+    padding: 0.5rem 0.8rem;
+  }
 }

@@ -144,13 +144,13 @@
 
   <div class="pagination">
     {% if page > 1 %}
-      <a href="{{ url_for('movimentacoes.listar_movimentacoes', page=page-1, status=request.args.get('status', ''), cliente=request.args.get('cliente', ''), data_inicio=request.args.get('data_inicio', ''), data_fim=request.args.get('data_fim', '')) }}" class="page-link">← Anterior</a>
+      <a href="{{ url_for('movimentacoes.listar_movimentacoes', page=page-1, status=request.args.get('status', ''), cliente=request.args.get('cliente', ''), data_inicio=request.args.get('data_inicio', ''), data_fim=request.args.get('data_fim', '')) }}" class="page-link">? Anterior</a>
     {% endif %}
 
     <span>Página {{ page }} de {{ total_pages }}</span>
 
     {% if page < total_pages %}
-      <a href="{{ url_for('movimentacoes.listar_movimentacoes', page=page+1, status=request.args.get('status', ''), cliente=request.args.get('cliente', ''), data_inicio=request.args.get('data_inicio', ''), data_fim=request.args.get('data_fim', '')) }}" class="page-link">Próxima →</a>
+      <a href="{{ url_for('movimentacoes.listar_movimentacoes', page=page+1, status=request.args.get('status', ''), cliente=request.args.get('cliente', ''), data_inicio=request.args.get('data_inicio', ''), data_fim=request.args.get('data_fim', '')) }}" class="page-link">Próxima ?</a>
     {% endif %}
   </div>
 </div>
