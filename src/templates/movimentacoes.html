@@ -76,6 +76,7 @@
           <th>Material</th>
           <th>Qtd</th>
           <th>Funcionário</th>
+          <!-- <th>Responsável</th> -->
           <th>Cliente</th>
           <th>OS</th>
           <th>Retirada</th>
@@ -92,6 +93,7 @@
           <td>{{ m.material.nome }}</td>
           <td>{{ m.quantidade }}</td>
           <td>{{ m.funcionario }}</td>
+          <!-- <td>{{ m.responsavel.nome if m.responsavel else '-' }}</td> -->
           <td>{{ m.cliente.nome if m.cliente else '-' }}</td>
           <td>{{ m.ordem_servico }}</td>
           <td>{{ m.data_retirada.strftime('%d/%m/%Y %H:%M') }}</td>

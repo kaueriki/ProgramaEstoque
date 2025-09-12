@@ -48,6 +48,7 @@
   <label>Material:</label>
     <div class="input-with-button">
     <select name="material_id" id="material-select" required>
+      <option value="">-- Selecione --</option>
       {% for material in materiais %}
         <option value="{{ material.id }}">{{ material.nome }}</option>
       {% endfor %}

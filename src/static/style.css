@@ -8,7 +8,8 @@ body {
   align-items: center;
   position: relative;
   overflow: hidden;
-  background: #0d0d0d;
+  background: url("/static/assets/Fundo2.jpg") no-repeat center center;
+  background-size: cover;
 }
 
 canvas#animated-background {
@@ -25,7 +26,6 @@ canvas#animated-background {
 }
 
 .login-container {
-  background: rgba(0, 0, 0, 0.377);
   padding: 35px;
   width: 22%;
   border-radius: 12px;
@@ -47,7 +47,7 @@ canvas#animated-background {
   border: none;
   border-bottom: 2px solid #ff8c00;
   outline: none;
-  color: #ffffff;
+  color: black;
   font-size: 16px;
 }
 
@@ -56,7 +56,7 @@ canvas#animated-background {
   left: 0;
   top: 50%;
   transform: translateY(-50%);
-  color: white;
+  color: black;
   transition: 0.5s ease;
 }
 
@@ -121,10 +121,11 @@ canvas {
 .login-container {
   position: relative;
   z-index: 10; 
-  background: rgba(0, 0, 0, 0.281);
+  background: rgba(255, 255, 255, 0.44);
   padding: 30px;
   border-radius: 12px;
   box-shadow: 0 8px 20px rgb(255, 115, 0);
+  
 }
 #login-container {
     pointer-events: none;

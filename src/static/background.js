@@ -30,6 +30,9 @@ document.addEventListener("DOMContentLoaded", () => {
     ];
     World.add(world, paredes);
 
+    // Caminho da logo da Valltech
+    const logoTexture = "/static/assets/caixa3.png";
+
     function criarPilha(x, y, linhas, colunas) {
         const tamanho = 80;
         const espaco = 3;
@@ -44,48 +47,50 @@ document.addEventListener("DOMContentLoaded", () => {
                     {
                         restitution: 0.3,
                         friction: 0.3,
-                        render: { fillStyle: "#ffcd88ff" }
+                        render: {
+                            sprite: {
+                                texture: logoTexture,
+                                xScale: 0.15,
+                                yScale: 0.15
+                            }
+                        }
                     }
                 );
                 World.add(world, box);
             }
         }
     }
-    
 
+    // Criar pilhas nas laterais
     criarPilha(10, window.innerHeight - 20, 5, 3);
     criarPilha(window.innerWidth - 150, window.innerHeight - 20, 5, 3);
-    
 
+    // Controle do mouse
     const mouse = Mouse.create(canvas);
     const mouseConstraint = MouseConstraint.create(engine, {
         mouse,
         constraint: { stiffness: 0.1, render: { visible: false } }
     });
     World.add(world, mouseConstraint);
-
     render.mouse = mouse;
-       const loginBox = document.querySelector(".login-container"); // <- seu id do login
+
+    // Paredes invisíveis ao redor da caixa de login
+    const loginBox = document.querySelector(".login-container");
     const rect = loginBox.getBoundingClientRect();
     const canvasRect = canvas.getBoundingClientRect();
 
-    // converte posição do login box para dentro do canvas
     const x = rect.left - canvasRect.left;
     const y = rect.top - canvasRect.top;
 
-    const thickness = 20; // espessura das paredes invisíveis
+    const thickness = 20;
 
     const paredesLogin = [
-        // chão
         Bodies.rectangle(x + rect.width / 2, y + rect.height, rect.width, thickness, { isStatic: true, render: { visible: false } }),
-        // esquerda
         Bodies.rectangle(x, y + rect.height / 2, thickness, rect.height, { isStatic: true, render: { visible: false } }),
-        // direita
         Bodies.rectangle(x + rect.width, y + rect.height / 2, thickness, rect.height, { isStatic: true, render: { visible: false } }),
-        // teto (opcional) — comente se quiser que as caixas possam entrar por cima
+        // Caso queira impedir a entrada de cima, descomente abaixo:
         // Bodies.rectangle(x + rect.width / 2, y, rect.width, thickness, { isStatic: true, render: { visible: false } }),
     ];
 
     World.add(world, paredesLogin);
-
 });
