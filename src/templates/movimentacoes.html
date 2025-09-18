@@ -62,8 +62,24 @@
         </select>
       </div>
       <div class="filtro-acoes-direita">
-        <a href="{{ url_for('movimentacoes.export_pdf') }}" class="btn-exportar">Exportar PDF</a>
-        <a href="{{ url_for('movimentacoes.export_excel') }}" class="btn-exportar">Exportar Excel</a>
+        <a href="{{ url_for('movimentacoes.export_pdf', 
+          material=request.args.get('material', ''),
+          cliente=request.args.get('cliente', ''),
+          funcionario=request.args.get('funcionario', ''),
+          status=request.args.get('status', ''),
+          data_inicio=request.args.get('data_inicio', ''),
+          data_fim=request.args.get('data_fim', '')
+        ) }}" class="btn-exportar">Exportar PDF</a>
+
+        <a href="{{ url_for('movimentacoes.export_excel', 
+          material=request.args.get('material', ''),
+          cliente=request.args.get('cliente', ''),
+          funcionario=request.args.get('funcionario', ''),
+          status=request.args.get('status', ''),
+          data_inicio=request.args.get('data_inicio', ''),
+          data_fim=request.args.get('data_fim', '')
+        ) }}" class="btn-exportar">Exportar Excel</a>
+
       </div>
     </div>
   </form>
@@ -146,13 +162,13 @@
 
   <div class="pagination">
     {% if page > 1 %}
-      <a href="{{ url_for('movimentacoes.listar_movimentacoes', page=page-1, status=request.args.get('status', ''), cliente=request.args.get('cliente', ''), data_inicio=request.args.get('data_inicio', ''), data_fim=request.args.get('data_fim', '')) }}" class="page-link">? Anterior</a>
+      <a href="{{ url_for('movimentacoes.listar_movimentacoes', page=page-1, status=request.args.get('status', ''), cliente=request.args.get('cliente', ''), data_inicio=request.args.get('data_inicio', ''), data_fim=request.args.get('data_fim', '')) }}" class="page-link">Anterior</a>
     {% endif %}
 
     <span>Página {{ page }} de {{ total_pages }}</span>
 
     {% if page < total_pages %}
-      <a href="{{ url_for('movimentacoes.listar_movimentacoes', page=page+1, status=request.args.get('status', ''), cliente=request.args.get('cliente', ''), data_inicio=request.args.get('data_inicio', ''), data_fim=request.args.get('data_fim', '')) }}" class="page-link">Próxima ?</a>
+      <a href="{{ url_for('movimentacoes.listar_movimentacoes', page=page+1, status=request.args.get('status', ''), cliente=request.args.get('cliente', ''), data_inicio=request.args.get('data_inicio', ''), data_fim=request.args.get('data_fim', '')) }}" class="page-link">Próxima</a>
     {% endif %}
   </div>
 </div>

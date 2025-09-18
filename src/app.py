@@ -518,10 +518,33 @@ def finalizar(id):
 
 @movimentacoes_bp.route("/movimentacoes/export/excel")
 def export_excel():
-    query = db.query(Movimentacao).join(Material).all()
+    query = db.query(Movimentacao).join(Material)
+
+    # Aplica os mesmos filtros que no frontend
+    material = request.args.get("material")
+    cliente = request.args.get("cliente")
+    funcionario = request.args.get("funcionario")
+    status = request.args.get("status")
+    data_inicio = request.args.get("data_inicio")
+    data_fim = request.args.get("data_fim")
+
+    if material:
+        query = query.filter(Material.nome.ilike(f"%{material}%"))
+    if cliente:
+        query = query.join(Cliente).filter(Cliente.nome.ilike(f"%{cliente}%"))
+    if funcionario:
+        query = query.filter(Movimentacao.funcionario.ilike(f"%{funcionario}%"))
+    if status:
+        query = query.filter(Movimentacao.status == status)
+    if data_inicio:
+        query = query.filter(Movimentacao.data_retirada >= data_inicio)
+    if data_fim:
+        query = query.filter(Movimentacao.data_retirada <= data_fim)
+
+    results = query.all()
 
     data = []
-    for m in query:
+    for m in results:
         data.append({
             "Material": m.material.nome,
             "Qtd": m.quantidade,
@@ -536,7 +559,6 @@ def export_excel():
         })
 
     df = pd.DataFrame(data)
-
     output = io.BytesIO()
     with pd.ExcelWriter(output, engine="openpyxl") as writer:
         df.to_excel(writer, index=False, sheet_name="Movimentações")
@@ -548,7 +570,29 @@ def export_excel():
 
 @movimentacoes_bp.route("/movimentacoes/export/pdf")
 def export_pdf():
-    query = db.query(Movimentacao).join(Material).all()
+    query = db.query(Movimentacao).join(Material)
+
+    material = request.args.get("material")
+    cliente = request.args.get("cliente")
+    funcionario = request.args.get("funcionario")
+    status = request.args.get("status")
+    data_inicio = request.args.get("data_inicio")
+    data_fim = request.args.get("data_fim")
+
+    if material:
+        query = query.filter(Material.nome.ilike(f"%{material}%"))
+    if cliente:
+        query = query.join(Cliente).filter(Cliente.nome.ilike(f"%{cliente}%"))
+    if funcionario:
+        query = query.filter(Movimentacao.funcionario.ilike(f"%{funcionario}%"))
+    if status:
+        query = query.filter(Movimentacao.status == status)
+    if data_inicio:
+        query = query.filter(Movimentacao.data_retirada >= data_inicio)
+    if data_fim:
+        query = query.filter(Movimentacao.data_retirada <= data_fim)
+
+    results = query.all()
 
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=A4)
@@ -559,7 +603,7 @@ def export_pdf():
 
     data = [["Material", "Qtd", "Funcionário", "Cliente", "OS", "Retirada", "Prazo", "Status"]]
 
-    for m in query:
+    for m in results:
         data.append([
             m.material.nome,
             str(m.quantidade),

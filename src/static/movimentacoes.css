@@ -82,6 +82,14 @@
   width: 100%;
 }
 
+.filtro-acoes-esquerda select {
+  padding: 8px 0;
+  font-size: 0.9rem;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  width: 30%;
+}
+
 .filtro-acoes-container.compact {
   display: flex;
   justify-content: space-between;

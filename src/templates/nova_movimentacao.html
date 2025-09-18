@@ -2,6 +2,8 @@
 
 {% block extra_css %}
   <link rel="stylesheet" href="{{ url_for('static', filename='nova_movimentacao.css') }}">
+  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
   <style>
     .modal {
       display: none;
@@ -30,23 +32,13 @@
       cursor: pointer;
     }
 
-    .input-with-button {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .input-with-button button {
-      padding: 4px 8px;
-      cursor: pointer;
-    }
   </style>
 {% endblock %}
 
 {% block content %}
 <form method="POST" class="form-movimentacao">
   <label>Material:</label>
-    <div class="input-with-button">
+  <div class="input-with-button">
     <select name="material_id" id="material-select" required>
       <option value="">-- Selecione --</option>
       {% for material in materiais %}
@@ -54,7 +46,7 @@
       {% endfor %}
     </select>
     <button type="button" class="add-button" onclick="abrirModal('modal-material')">+</button>
-</div><br>
+  </div><br>
 
   <label>Quantidade:</label>
   <input type="number" name="quantidade" required><br>
@@ -68,8 +60,8 @@
       {% endfor %}
     </select>
     <button type="button" class="add-button" onclick="abrirModal('modal-cliente')">+</button>
-  </div><br>
-
+  </div>
+  
   <label>Ordem de Serviço:</label>
   <input type="text" name="ordem_servico"><br>
 
@@ -120,6 +112,9 @@
   </div>
 </div>
 
+<!-- Scripts -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
 <script>
   function abrirModal(id) {
@@ -129,6 +124,19 @@
   function fecharModal(id) {
     document.getElementById(id).style.display = 'none';
   }
+
+  $(document).ready(function () {
+    $('#material-select').select2({
+      placeholder: 'Selecione ou pesquise um material',
+      width: '100%'
+    });
+
+    $('#cliente-select').select2({
+      placeholder: 'Selecione ou pesquise um cliente',
+      allowClear: true,
+      width: '100%'
+    });
+  });
 
   document.getElementById('form-material').addEventListener('submit', async function (e) {
     e.preventDefault();
@@ -146,7 +154,7 @@
       option.text = nome;
       option.value = 'temp_' + Date.now();
       materialSelect.appendChild(option);
-      materialSelect.value = option.value;
+      $(materialSelect).val(option.value).trigger('change');
       fecharModal('modal-material');
       this.reset();
     } else {
@@ -154,6 +162,7 @@
     }
   });
 
+  // Envio do novo cliente
   document.getElementById('form-cliente').addEventListener('submit', async function (e) {
     e.preventDefault();
     const formData = new FormData(this);
@@ -170,7 +179,7 @@
       option.text = nome;
       option.value = 'temp_' + Date.now();
       clienteSelect.appendChild(option);
-      clienteSelect.value = option.value;
+      $(clienteSelect).val(option.value).trigger('change');
       fecharModal('modal-cliente');
       this.reset();
     } else {
