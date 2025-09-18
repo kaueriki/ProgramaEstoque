@@ -1,4 +1,6 @@
-from sqlalchemy import create_engine, Column, Integer, String, Boolean, Text, Date, DateTime, ForeignKey, Enum
+from sqlalchemy import (
+    create_engine, Column, Integer, String, Boolean, Text, Date, DateTime, ForeignKey, Enum
+)
 from sqlalchemy.orm import declarative_base, relationship, sessionmaker
 from datetime import datetime, date
 from urllib.parse import quote_plus
@@ -14,9 +16,9 @@ DATABASE_URL = f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB
 engine = create_engine(DATABASE_URL, echo=True)
 Base = declarative_base()
 
+
 class Usuario(Base):
     __tablename__ = "usuarios"
-
     id = Column(Integer, primary_key=True, autoincrement=True)
     nome = Column(String(100), nullable=False)
     senha = Column(String(255), nullable=False)
@@ -25,7 +27,6 @@ class Usuario(Base):
 
 class Cliente(Base):
     __tablename__ = "clientes"
-
     id = Column(Integer, primary_key=True, autoincrement=True)
     nome = Column(String(150), nullable=False)
     criado_em = Column(DateTime, default=datetime.utcnow)
@@ -33,7 +34,6 @@ class Cliente(Base):
 
 class Material(Base):
     __tablename__ = "materiais"
-
     id = Column(Integer, primary_key=True, autoincrement=True)
     nome = Column(String(150), nullable=False)
     quantidade = Column(Integer, nullable=False, default=0)
@@ -45,10 +45,7 @@ class Material(Base):
 
 class Movimentacao(Base):
     __tablename__ = "movimentacoes"
-
     id = Column(Integer, primary_key=True, autoincrement=True)
-    material_id = Column(Integer, ForeignKey("materiais.id"), nullable=False)
-    quantidade = Column(Integer, nullable=False)
     cliente_id = Column(Integer, ForeignKey("clientes.id"))
     ordem_servico = Column(String(50))
     funcionario = Column(String(100), nullable=False)
@@ -59,12 +56,16 @@ class Movimentacao(Base):
     status = Column(Enum("verde", "amarelo", "vermelho"), default="amarelo")
     devolvido = Column(Boolean, default=False)
     utilizado_cliente = Column(Boolean, default=False)
-    funcionando = Column(Boolean, default = True)
+    funcionando = Column(Boolean, default=True)
     observacao = Column(Text)
 
-    material = relationship("Material")
     cliente = relationship("Cliente")
     responsavel = relationship("Usuario")
+    materiais = relationship(
+        "MovimentacaoMaterial",
+        back_populates="movimentacao",
+        cascade="all, delete-orphan"
+    )
 
     @property
     def status_atual(self):
@@ -77,7 +78,19 @@ class Movimentacao(Base):
         return "Pendente"
 
 
+class MovimentacaoMaterial(Base):
+    __tablename__ = "movimentacoes_materiais"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    movimentacao_id = Column(Integer, ForeignKey("movimentacoes.id"), nullable=False)
+    material_id = Column(Integer, ForeignKey("materiais.id"), nullable=False)
+    quantidade = Column(Integer, nullable=False)
+
+    movimentacao = relationship("Movimentacao", back_populates="materiais")
+    material = relationship("Material")
+
+
 Base.metadata.create_all(engine)
+
 Session = sessionmaker(bind=engine)
 session = Session()
 
@@ -86,30 +99,20 @@ print("Banco de dados pronto")
 
 # novo_usuario = Usuario(
 #     nome="admin",
-#     senha="1234" 
+#     senha="1234"
 # )
 # session.add(novo_usuario)
 # session.commit()
 
-
-# novo_cliente = Cliente(
-#     nome="Ceagesp",
-# )
+# novo_cliente = Cliente(nome="Ceagesp")
 # session.add(novo_cliente)
 
-# novo_material = Material(
-#     nome="Parafuso 10mm",
-#     quantidade=100,
-#     lote="1",
-#     estoque_minimo_chuva=50,
-#     estoque_minimo_seco=30
-# )
-# session.add(novo_material)
+# novo_material1 = Material(nome="Parafuso 10mm", quantidade=100, lote="1", estoque_minimo_chuva=50, estoque_minimo_seco=30)
+# novo_material2 = Material(nome="Porca 10mm", quantidade=150, lote="2", estoque_minimo_chuva=40, estoque_minimo_seco=20)
+# session.add_all([novo_material1, novo_material2])
 # session.commit()
 
 # nova_movimentacao = Movimentacao(
-#     material_id=1,
-#     quantidade=10,
 #     cliente_id=1,
 #     ordem_servico="43000",
 #     funcionario="Bidu",
@@ -123,4 +126,17 @@ print("Banco de dados pronto")
 #     observacao="Material entregue em bom estado."
 # )
 # session.add(nova_movimentacao)
+# session.flush()  # Para gerar o ID da movimentação
+
+# # Adiciona os materiais na movimentação
+# mov_mat1 = MovimentacaoMaterial(movimentacao_id=nova_movimentacao.id, material_id=1, quantidade=10)
+# mov_mat2 = MovimentacaoMaterial(movimentacao_id=nova_movimentacao.id, material_id=2, quantidade=20)
+# session.add_all([mov_mat1, mov_mat2])
+
+# # Atualiza o estoque dos materiais
+# mat1 = session.query(Material).get(1)
+# mat2 = session.query(Material).get(2)
+# mat1.quantidade -= 10
+# mat2.quantidade -= 20
+
 # session.commit()

@@ -26,8 +26,6 @@ CREATE TABLE materiais (
 
 CREATE TABLE movimentacoes (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    material_id INT NOT NULL,
-    quantidade INT NOT NULL,
     cliente_id INT,
     ordem_servico VARCHAR(50),
     funcionario VARCHAR(100) NOT NULL, 
@@ -41,12 +39,16 @@ CREATE TABLE movimentacoes (
     funcionando BOOLEAN,
     observacao TEXT,
     
-	CONSTRAINT fk_mov_material FOREIGN KEY (material_id) REFERENCES materiais(id) ON DELETE CASCADE,
     CONSTRAINT fk_mov_cliente FOREIGN KEY (cliente_id) REFERENCES clientes(id) ON DELETE SET NULL,
     CONSTRAINT fk_mov_responsavel FOREIGN KEY (responsavel_id) REFERENCES usuarios(id) ON DELETE CASCADE
-    );
+);
+
+CREATE TABLE movimentacoes_materiais (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    movimentacao_id INT NOT NULL,
+    material_id INT NOT NULL,
+    quantidade INT NOT NULL,
     
-select * from usuarios where id = 1;
-select * from clientes where id = 1;
-select * from movimentacoes where id = 1;
-select * from materiais where id = 1;
+    CONSTRAINT fk_mm_movimentacao FOREIGN KEY (movimentacao_id) REFERENCES movimentacoes(id) ON DELETE CASCADE,
+    CONSTRAINT fk_mm_material FOREIGN KEY (material_id) REFERENCES materiais(id) ON DELETE CASCADE
+);

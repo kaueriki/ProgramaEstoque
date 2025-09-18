@@ -31,25 +31,32 @@
       font-size: 20px;
       cursor: pointer;
     }
-
   </style>
 {% endblock %}
 
 {% block content %}
 <form method="POST" class="form-movimentacao">
-  <label>Material:</label>
-  <div class="input-with-button">
-    <select name="material_id" id="material-select" required>
-      <option value="">-- Selecione --</option>
-      {% for material in materiais %}
-        <option value="{{ material.id }}">{{ material.nome }}</option>
-      {% endfor %}
-    </select>
+  <div class="form-header">
+    <h3>Materiais:</h3>
     <button type="button" class="add-button" onclick="abrirModal('modal-material')">+</button>
-  </div><br>
+  </div>
+  <div id="materiais-container">
+    <div class="material-row">
+      <select name="material_id[]" class="material-select" required>
+        <option value="">-- Selecione --</option>
+        {% for material in materiais %}
+          <option value="{{ material.id }}">{{ material.nome }} ({{ material.quantidade }} disponíveis)</option>
+        {% endfor %}
+      </select>
 
-  <label>Quantidade:</label>
-  <input type="number" name="quantidade" required><br>
+      <input type="number" name="quantidade[]" min="1" placeholder="Qtd" required>
+
+      <button type="button" class="remove-button" onclick="removerLinha(this)">X</button>
+    </div>
+  </div>
+
+  <button type="button" class="add-button" onclick="adicionarLinha()">+ Adicionar Material</button>
+  <br><br>
 
   <label>Cliente (opcional):</label>
   <div class="input-with-button">
@@ -61,7 +68,7 @@
     </select>
     <button type="button" class="add-button" onclick="abrirModal('modal-cliente')">+</button>
   </div>
-  
+
   <label>Ordem de Serviço:</label>
   <input type="text" name="ordem_servico"><br>
 
@@ -83,7 +90,7 @@
   <label>Observação:</label>
   <textarea name="observacao"></textarea><br>
 
-  <button type="submit">Salvar</button>
+  <button type="submit" class="btn-salvar-form">Salvar</button>
 </form>
 
 <div class="modal" id="modal-material">
@@ -112,7 +119,6 @@
   </div>
 </div>
 
-<!-- Scripts -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
@@ -125,8 +131,64 @@
     document.getElementById(id).style.display = 'none';
   }
 
+  function adicionarLinha() {
+    const container = document.getElementById("materiais-container");
+    const novaLinha = document.createElement("div");
+    novaLinha.className = "material-row";
+
+    const select = document.createElement("select");
+    select.name = "material_id[]";
+    select.required = true;
+    select.className = "material-select";
+
+    const defaultOption = document.createElement("option");
+    defaultOption.value = "";
+    defaultOption.text = "-- Selecione --";
+    select.appendChild(defaultOption);
+
+    {% for material in materiais %}
+      const option{{ loop.index }} = document.createElement("option");
+      option{{ loop.index }}.value = "{{ material.id }}";
+      option{{ loop.index }}.text = "{{ material.nome }} ({{ material.quantidade }} disponíveis)";
+      select.appendChild(option{{ loop.index }});
+    {% endfor %}
+
+    const input = document.createElement("input");
+    input.type = "number";
+    input.name = "quantidade[]";
+    input.min = "1";
+    input.placeholder = "Qtd";
+    input.required = true;
+
+    const removeButton = document.createElement("button");
+    removeButton.type = "button";
+    removeButton.className = "remove-button";
+    removeButton.textContent = "X";
+    removeButton.onclick = function () {
+      removerLinha(removeButton);
+    };
+
+    novaLinha.appendChild(select);
+    novaLinha.appendChild(input);
+    novaLinha.appendChild(removeButton);
+
+    container.appendChild(novaLinha);
+
+    $(select).select2({
+      placeholder: 'Selecione ou pesquise um material',
+      width: '100%'
+    });
+  }
+
+  function removerLinha(botao) {
+    const container = document.getElementById("materiais-container");
+    if (container.children.length > 1) {
+      botao.parentElement.remove();
+    }
+  }
+
   $(document).ready(function () {
-    $('#material-select').select2({
+    $('.material-select').select2({
       placeholder: 'Selecione ou pesquise um material',
       width: '100%'
     });
@@ -149,12 +211,15 @@
 
     if (response.ok) {
       const nome = formData.get('nome');
-      const materialSelect = document.getElementById('material-select');
-      const option = document.createElement('option');
-      option.text = nome;
-      option.value = 'temp_' + Date.now();
-      materialSelect.appendChild(option);
-      $(materialSelect).val(option.value).trigger('change');
+      const idTemp = 'temp_' + Date.now();
+
+      document.querySelectorAll('.material-select').forEach(select => {
+        const option = document.createElement('option');
+        option.text = nome;
+        option.value = idTemp;
+        select.appendChild(option);
+      });
+
       fecharModal('modal-material');
       this.reset();
     } else {
@@ -162,7 +227,6 @@
     }
   });
 
-  // Envio do novo cliente
   document.getElementById('form-cliente').addEventListener('submit', async function (e) {
     e.preventDefault();
     const formData = new FormData(this);
@@ -174,12 +238,15 @@
 
     if (response.ok) {
       const nome = formData.get('nome');
+      const idTemp = 'temp_' + Date.now();
+
       const clienteSelect = document.getElementById('cliente-select');
       const option = document.createElement('option');
       option.text = nome;
-      option.value = 'temp_' + Date.now();
+      option.value = idTemp;
       clienteSelect.appendChild(option);
-      $(clienteSelect).val(option.value).trigger('change');
+      $(clienteSelect).val(idTemp).trigger('change');
+
       fecharModal('modal-cliente');
       this.reset();
     } else {

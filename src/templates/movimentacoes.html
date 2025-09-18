@@ -106,8 +106,24 @@
       <tbody>
         {% for m in movimentacoes %}
         <tr class="status-{{ m.status_atual|lower|replace(' ', '-') }}">
-          <td>{{ m.material.nome }}</td>
-          <td>{{ m.quantidade }}</td>
+          <td>
+            <ul style="padding-left: 18px; margin: 0;">
+              {% for mov_mat in m.materiais %}
+                <li>{{ mov_mat.material.nome }}</li>
+              {% else %}
+                <li>-</li>
+              {% endfor %}
+            </ul>
+          </td>
+          <td>
+            <ul style="padding-left: 18px; margin: 0;">
+              {% for mov_mat in m.materiais %}
+                <li>{{ mov_mat.quantidade }}</li>
+              {% else %}
+                <li>-</li>
+              {% endfor %}
+            </ul>
+          </td>
           <td>{{ m.funcionario }}</td>
           <!-- <td>{{ m.responsavel.nome if m.responsavel else '-' }}</td> -->
           <td>{{ m.cliente.nome if m.cliente else '-' }}</td>
@@ -199,8 +215,5 @@
       document.querySelectorAll('.dropdown-acoes').forEach(el => el.style.display = 'none');
     }
   });
-
-
-
 </script>
 {% endblock %}

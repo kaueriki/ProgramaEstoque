@@ -2,7 +2,7 @@ from flask import Flask, render_template, request, redirect, url_for, session, f
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import IntegrityError
 from datetime import datetime, timezone, date
-from models import engine, Usuario, Material, Cliente, Movimentacao
+from models import engine, Usuario, Material, Cliente, Movimentacao, MovimentacaoMaterial
 from collections import defaultdict
 import io
 import pandas as pd
@@ -286,7 +286,9 @@ def listar_movimentacoes():
     per_page = request.args.get("per_page", 10, type=int)
     page = request.args.get("page", 1, type=int)
 
-    query = db.query(Movimentacao).join(Material).outerjoin(Cliente)
+    query = db.query(Movimentacao)\
+        .join(Movimentacao.materiais)\
+        .outerjoin(Cliente)
 
     if cliente_nome:
         query = query.filter(Cliente.nome.ilike(f"%{cliente_nome}%"))
@@ -326,7 +328,6 @@ def listar_movimentacoes():
         elif status_raw in ("amarelo", "vermelho"):
             query = query.filter(Movimentacao.status == status_raw)
 
-
     if data_inicio_str:
         try:
             data_inicio = datetime.strptime(data_inicio_str, "%Y-%m-%d")
@@ -342,7 +343,7 @@ def listar_movimentacoes():
         except ValueError:
             flash("Data de fim inválida", "error")
 
-    total = query.count()
+    total = query.distinct().count()
     movimentacoes = query.order_by(Movimentacao.data_retirada.desc()) \
                          .offset((page - 1) * per_page) \
                          .limit(per_page) \
@@ -356,6 +357,82 @@ def listar_movimentacoes():
         total_pages=total_pages,
         per_page=per_page
     )
+
+@movimentacoes_bp.route("/movimentacoes/nova", methods=["GET", "POST"])
+def nova_movimentacao():
+    if "usuario_id" not in session:
+        flash("Você precisa estar logado!", "error")
+        return redirect(url_for("index"))
+
+    materiais = db.query(Material).all()
+    clientes = db.query(Cliente).all()
+
+    if request.method == "POST":
+        try:
+            ordem_servico = request.form["ordem_servico"].strip()
+            funcionario = request.form["funcionario"].strip()
+            cliente_id = request.form.get("cliente_id")
+            cliente_id = int(cliente_id) if cliente_id else None
+
+            prazo_str = request.form.get("prazo_devolucao", "").strip()
+            prazo_devolucao = datetime.strptime(prazo_str, "%Y-%m-%dT%H:%M") if prazo_str else None
+
+            motivo = request.form.get("motivo", "").strip()
+            observacao = request.form.get("observacao", "").strip()
+
+            materiais_ids = request.form.getlist("material_id[]")
+            quantidades = request.form.getlist("quantidade[]")
+
+            if not materiais_ids or not quantidades or len(materiais_ids) != len(quantidades):
+                flash("Informe pelo menos um material com quantidade!", "error")
+                return render_template("nova_movimentacao.html", materiais=materiais, clientes=clientes)
+
+            nova_mov = Movimentacao(
+                cliente_id=cliente_id,
+                ordem_servico=ordem_servico,
+                funcionario=funcionario,
+                responsavel_id=session["usuario_id"],
+                data_retirada=datetime.now(timezone.utc),
+                prazo_devolucao=prazo_devolucao,
+                motivo=motivo or None,
+                status="amarelo",
+                devolvido=False,
+                utilizado_cliente=False,
+                funcionando=None,
+                observacao=observacao
+            )
+
+            db.add(nova_mov)
+            db.flush()
+            for mat_id_str, qtd_str in zip(materiais_ids, quantidades):
+                mat_id = int(mat_id_str)
+                qtd = int(qtd_str)
+
+                material = db.get(Material, mat_id)
+                if material.quantidade < qtd:
+                    raise Exception(f"Estoque insuficiente de {material.nome}. Estoque atual: {material.quantidade}")
+
+                material.quantidade -= qtd
+
+                mov_mat = MovimentacaoMaterial(
+                    movimentacao_id=nova_mov.id,
+                    material_id=mat_id,
+                    quantidade=qtd
+                )
+                db.add(mov_mat)
+
+            db.commit()
+            flash("Movimentação registrada com sucesso!", "success")
+            return redirect(url_for("movimentacoes.listar_movimentacoes"))
+
+        except Exception as e:
+            db.rollback()
+            import traceback
+            traceback.print_exc() 
+            flash(f"Erro ao cadastrar movimentação: {str(e)}", "error")
+            return render_template("nova_movimentacao.html", materiais=materiais, clientes=clientes)
+
+    return render_template("nova_movimentacao.html", materiais=materiais, clientes=clientes)
 
 @movimentacoes_bp.route("/movimentacoes/<int:id>/editar", methods=["GET", "POST"])
 def editar_movimentacao(id):
@@ -371,15 +448,14 @@ def editar_movimentacao(id):
     materiais = db.query(Material).all()
     clientes = db.query(Cliente).all()
 
+    materiais_atual = {mm.material_id: mm.quantidade for mm in movimentacao.materiais_associados}
+
     if request.method == "POST":
         try:
-            material_id = int(request.form["material_id"])
-            quantidade = int(request.form["quantidade"])
-            cliente_id = request.form.get("cliente_id")
-            cliente_id = int(cliente_id) if cliente_id else None
-
             ordem_servico = request.form["ordem_servico"].strip()
             funcionario = request.form["funcionario"].strip()
+            cliente_id = request.form.get("cliente_id")
+            cliente_id = int(cliente_id) if cliente_id else None
 
             prazo_str = request.form.get("prazo_devolucao", "").strip()
             prazo_devolucao = datetime.strptime(prazo_str, "%Y-%m-%dT%H:%M") if prazo_str else None
@@ -387,27 +463,46 @@ def editar_movimentacao(id):
             motivo = request.form.get("motivo", "").strip()
             observacao = request.form.get("observacao", "").strip()
 
-            if movimentacao.material_id != material_id:
-                material_antigo = db.query(Material).get(movimentacao.material_id)
-                material_antigo.quantidade += movimentacao.quantidade
+            materiais_ids = request.form.getlist("material_id[]")
+            quantidades = request.form.getlist("quantidade[]")
 
-                material_novo = db.query(Material).get(material_id)
-                if material_novo.quantidade < quantidade:
-                    flash(f"Estoque insuficiente do material {material_novo.nome}. Estoque atual: {material_novo.quantidade}", "error")
-                    return render_template("editar_movimentacao.html", movimentacao=movimentacao, materiais=materiais, clientes=clientes)
+            if not materiais_ids or not quantidades or len(materiais_ids) != len(quantidades):
+                flash("Informe pelo menos um material com quantidade!", "error")
+                return render_template("editar_movimentacao.html", movimentacao=movimentacao, materiais=materiais, clientes=clientes)
 
-                material_novo.quantidade -= quantidade
-                movimentacao.material_id = material_id
-                movimentacao.quantidade = quantidade
-            else:
-                diferenca = quantidade - movimentacao.quantidade
-                material = db.query(Material).get(material_id)
-                if diferenca > 0 and material.quantidade < diferenca:
-                    flash(f"Estoque insuficiente! Estoque atual: {material.quantidade}", "error")
-                    return render_template("editar_movimentacao.html", movimentacao=movimentacao, materiais=materiais, clientes=clientes)
+            novos_materiais = {}
+            for mat_id_str, qtd_str in zip(materiais_ids, quantidades):
+                mat_id = int(mat_id_str)
+                qtd = int(qtd_str)
+                novos_materiais[mat_id] = qtd
 
-                material.quantidade -= diferenca
-                movimentacao.quantidade = quantidade
+            for mat_id, qtd_atual in materiais_atual.items():
+                qtd_nova = novos_materiais.get(mat_id, 0)
+                diferenca = qtd_atual - qtd_nova
+                if diferenca > 0:
+                    material = db.query(Material).get(mat_id)
+                    material.quantidade += diferenca
+
+            for mat_id, qtd_nova in novos_materiais.items():
+                qtd_atual = materiais_atual.get(mat_id, 0)
+                diferenca = qtd_nova - qtd_atual
+                if diferenca > 0:
+                    material = db.query(Material).get(mat_id)
+                    if material.quantidade < diferenca:
+                        flash(f"Estoque insuficiente do material {material.nome}. Estoque atual: {material.quantidade}", "error")
+                        return render_template("editar_movimentacao.html", movimentacao=movimentacao, materiais=materiais, clientes=clientes)
+                    material.quantidade -= diferenca
+
+
+            db.query(MovimentacaoMaterial).filter(MovimentacaoMaterial.movimentacao_id == movimentacao.id).delete()
+            for mat_id, qtd in novos_materiais.items():
+                mov_mat = MovimentacaoMaterial(
+                    movimentacao_id=movimentacao.id,
+                    material_id=mat_id,
+                    quantidade=qtd
+                )
+                db.add(mov_mat)
+
 
             movimentacao.cliente_id = cliente_id
             movimentacao.ordem_servico = ordem_servico
@@ -427,67 +522,6 @@ def editar_movimentacao(id):
 
     return render_template("editar_movimentacao.html", movimentacao=movimentacao, materiais=materiais, clientes=clientes)
 
-@movimentacoes_bp.route("/movimentacoes/nova", methods=["GET", "POST"])
-def nova_movimentacao():
-    if "usuario_id" not in session:
-        flash("Você precisa estar logado!", "error")
-        return redirect(url_for("index"))
-
-    materiais = db.query(Material).all()
-    clientes = db.query(Cliente).all()
-
-    if request.method == "POST":
-        try:
-            material_id = int(request.form["material_id"])
-            quantidade = int(request.form["quantidade"])
-            cliente_id = request.form.get("cliente_id")
-            cliente_id = int(cliente_id) if cliente_id else None
-
-            ordem_servico = request.form["ordem_servico"].strip()
-            funcionario = request.form["funcionario"].strip()
-
-            prazo_str = request.form.get("prazo_devolucao", "").strip()
-            prazo_devolucao = datetime.strptime(prazo_str, "%Y-%m-%dT%H:%M") if prazo_str else None
-
-            motivo = request.form.get("motivo", "").strip()
-            observacao = request.form.get("observacao", "").strip()
-
-            material = db.query(Material).get(material_id)
-            if material.quantidade < quantidade:
-                flash(f"Estoque insuficiente! Estoque atual: {material.quantidade}", "error")
-                return render_template("nova_movimentacao.html", materiais=materiais, clientes=clientes)
-
-            material.quantidade -= quantidade 
-
-            nova = Movimentacao(
-                material_id=material_id,
-                quantidade=quantidade,
-                cliente_id=cliente_id,
-                ordem_servico=ordem_servico,
-                funcionario=funcionario,
-                responsavel_id=session["usuario_id"],
-                data_retirada=datetime.now(timezone.utc),
-                prazo_devolucao=prazo_devolucao,
-                motivo=motivo or None,
-                status="amarelo",
-                devolvido=False,
-                utilizado_cliente=False,
-                funcionando=None,
-                observacao=observacao
-            )
-
-            db.add(nova)
-            db.commit()
-            flash("Movimentação registrada com sucesso!", "success")
-            return redirect(url_for("movimentacoes.listar_movimentacoes"))
-
-        except Exception as e:
-            db.rollback()
-            flash(f"Erro ao cadastrar movimentação: {str(e)}", "error")
-            return render_template("nova_movimentacao.html", materiais=materiais, clientes=clientes)
-
-    return render_template("nova_movimentacao.html", materiais=materiais, clientes=clientes)
-
 @movimentacoes_bp.route("/movimentacoes/<int:id>/finalizar", methods=["POST"])
 def finalizar(id):
     m = db.query(Movimentacao).get(id)
@@ -495,7 +529,6 @@ def finalizar(id):
         flash("Movimentação não encontrada", "error")
         return redirect(url_for("movimentacoes.listar_movimentacoes"))
 
-    material = db.query(Material).get(m.material_id)
     funcionando = request.form.get("funcionando")
     destino = request.form.get("destino")
 
@@ -503,7 +536,9 @@ def finalizar(id):
 
     if destino == "retorno":
         if not m.devolvido:
-            material.quantidade += m.quantidade 
+            for mm in m.materiais_associados:
+                material = db.query(Material).get(mm.material_id)
+                material.quantidade += mm.quantidade
             m.devolvido = True
     elif destino == "cliente":
         m.utilizado_cliente = True
