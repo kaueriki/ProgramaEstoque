@@ -135,9 +135,10 @@
               </button>
               <div id="finalizar-{{ m.id }}" class="dropdown-acoes" style="display:none;">
                 <form method="POST" action="{{ url_for('movimentacoes.finalizar', id=m.id) }}">
+                  <h4>Devolução do Material</h4>
                   {% for mov_mat in m.materiais %}
                     <label for="quantidade_ok_{{ mov_mat.id }}">
-                      Qtd devolvida ({{ mov_mat.material.nome }})
+                      Qtd devolvida OK ({{ mov_mat.material.nome }})
                     </label>
                     <input
                       type="number"
