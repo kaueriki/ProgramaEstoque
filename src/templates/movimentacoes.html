@@ -30,14 +30,14 @@
     <div class="filtro-grid-horizontal">
       <div class="filtro-item">
         <label for="status">Status</label>
-          <select name="status" id="status">
-            <option value="">Todos</option>
-            <option value="pendente" {% if request.args.get('status') == 'pendente' %}selected{% endif %}>Pendente</option>
-            <option value="atrasado" {% if request.args.get('status') == 'atrasado' %}selected{% endif %}>Atrasado</option>
-            <option value="verde" {% if request.args.get('status') == 'verde' %}selected{% endif %}>Finalizado</option>
-            <option value="devolvido" {% if request.args.get('status') == 'devolvido' %}selected{% endif %}>Devolvido</option>
-            <option value="cliente" {% if request.args.get('status') == 'cliente' %}selected{% endif %}>Ficou no cliente</option>
-          </select>
+        <select name="status" id="status">
+          <option value="">Todos</option>
+          <option value="pendente" {% if request.args.get('status') == 'pendente' %}selected{% endif %}>Pendente</option>
+          <option value="atrasado" {% if request.args.get('status') == 'atrasado' %}selected{% endif %}>Atrasado</option>
+          <option value="verde" {% if request.args.get('status') == 'verde' %}selected{% endif %}>Finalizado</option>
+          <option value="devolvido" {% if request.args.get('status') == 'devolvido' %}selected{% endif %}>Devolvido</option>
+          <option value="cliente" {% if request.args.get('status') == 'cliente' %}selected{% endif %}>Ficou no cliente</option>
+        </select>
       </div>
       <div class="filtro-item">
         <label for="data_inicio">Data Início</label>
@@ -79,11 +79,9 @@
           data_inicio=request.args.get('data_inicio', ''),
           data_fim=request.args.get('data_fim', '')
         ) }}" class="btn-exportar">Exportar Excel</a>
-
       </div>
     </div>
   </form>
-
 
   <div class="table-wrapper">
     <table class="movimentacoes-table">
@@ -92,14 +90,12 @@
           <th>Material</th>
           <th>Qtd</th>
           <th>Funcionário</th>
-          <!-- <th>Responsável</th> -->
           <th>Cliente</th>
           <th>OS</th>
           <th>Retirada</th>
           <th>Prazo</th>
           <th>Status</th>
           <th>Observação</th>
-          <th>Funcionando</th>
           <th>Ações</th>
         </tr>
       </thead>
@@ -125,7 +121,6 @@
             </ul>
           </td>
           <td>{{ m.funcionario }}</td>
-          <!-- <td>{{ m.responsavel.nome if m.responsavel else '-' }}</td> -->
           <td>{{ m.cliente.nome if m.cliente else '-' }}</td>
           <td>{{ m.ordem_servico }}</td>
           <td>{{ m.data_retirada.strftime('%d/%m/%Y %H:%M') }}</td>
@@ -133,37 +128,37 @@
           <td>{{ m.status_atual }}</td>
           <td>{{ m.observacao or '-' }}</td>
           <td>
-            {% if m.funcionando is none %}
-              -
-            {% elif m.funcionando %}
-              Sim
-            {% else %}
-              Não
-            {% endif %}
-          </td>
-          <td>
             <div class="btn-group">
               {% if not m.devolvido and not m.utilizado_cliente %}
-                <button class="btn-acao" type="button" onclick="toggleDropdown('finalizar-{{ m.id }}')">
-                  Finalizar
-                </button>
-                <div id="finalizar-{{ m.id }}" class="dropdown-acoes" style="display:none;">
-                  <form method="POST" action="{{ url_for('movimentacoes.finalizar', id=m.id) }}">
-                    <label>Funcionando</label>
-                    <select name="funcionando" required>
-                      <option value="">-- Selecione --</option>
-                      <option value="sim">Sim</option>
-                      <option value="nao">Não</option>
-                    </select>
-                    <label>Destino final</label>
-                    <select name="destino" required>
-                      <option value="">-- Selecione --</option>
-                      <option value="retorno">Retornou</option>
-                      <option value="cliente">Ficou no cliente</option>
-                    </select>
-                    <button type="submit" class="btn-finalizar">Confirmar</button>
-                  </form>
-                </div>
+              <button class="btn-acao" type="button" onclick="toggleDropdown('finalizar-{{ m.id }}')">
+                Finalizar
+              </button>
+              <div id="finalizar-{{ m.id }}" class="dropdown-acoes" style="display:none;">
+                <form method="POST" action="{{ url_for('movimentacoes.finalizar', id=m.id) }}">
+                  {% for mov_mat in m.materiais %}
+                    <label for="quantidade_ok_{{ mov_mat.id }}">
+                      Qtd devolvida ({{ mov_mat.material.nome }})
+                    </label>
+                    <input
+                      type="number"
+                      id="quantidade_ok_{{ mov_mat.id }}"
+                      name="quantidade_ok_{{ mov_mat.id }}"
+                      min="0"
+                      max="{{ mov_mat.quantidade }}"
+                      required
+                    >
+                  {% endfor %}
+
+                  <label>Destino</label>
+                  <select name="destino" required>
+                    <option value="">-- Selecione --</option>
+                    <option value="retorno">Retornou ao estoque</option>
+                    <option value="cliente">Ficou no cliente</option>
+                  </select>
+
+                  <button type="submit" class="btn-finalizar">Confirmar</button>
+                </form>
+              </div>
               {% else %}
                 <span class="status-ok">Finalizado</span>
               {% endif %}
@@ -178,13 +173,25 @@
 
   <div class="pagination">
     {% if page > 1 %}
-      <a href="{{ url_for('movimentacoes.listar_movimentacoes', page=page-1, status=request.args.get('status', ''), cliente=request.args.get('cliente', ''), data_inicio=request.args.get('data_inicio', ''), data_fim=request.args.get('data_fim', '')) }}" class="page-link">Anterior</a>
+      <a href="{{ url_for('movimentacoes.listar_movimentacoes', page=page-1, 
+          status=request.args.get('status', ''), 
+          cliente=request.args.get('cliente', ''), 
+          funcionario=request.args.get('funcionario', ''),
+          material=request.args.get('material', ''),
+          data_inicio=request.args.get('data_inicio', ''), 
+          data_fim=request.args.get('data_fim', ''),
+          per_page=request.args.get('per_page', '10')) }}" class="page-link">Anterior</a>
     {% endif %}
-
     <span>Página {{ page }} de {{ total_pages }}</span>
-
     {% if page < total_pages %}
-      <a href="{{ url_for('movimentacoes.listar_movimentacoes', page=page+1, status=request.args.get('status', ''), cliente=request.args.get('cliente', ''), data_inicio=request.args.get('data_inicio', ''), data_fim=request.args.get('data_fim', '')) }}" class="page-link">Próxima</a>
+      <a href="{{ url_for('movimentacoes.listar_movimentacoes', page=page+1, 
+          status=request.args.get('status', ''), 
+          cliente=request.args.get('cliente', ''), 
+          funcionario=request.args.get('funcionario', ''),
+          material=request.args.get('material', ''),
+          data_inicio=request.args.get('data_inicio', ''), 
+          data_fim=request.args.get('data_fim', ''),
+          per_page=request.args.get('per_page', '10')) }}" class="page-link">Próxima</a>
     {% endif %}
   </div>
 </div>
@@ -192,24 +199,18 @@
 <script>
   function toggleDropdown(id) {
     const dropdown = document.getElementById(id);
-
     document.querySelectorAll('.dropdown-acoes').forEach(el => {
       if (el.id !== id) el.style.display = 'none';
     });
-
-    if (dropdown.style.display === 'block') {
-      dropdown.style.display = 'none';
-      return;
-    }
-
-    dropdown.style.display = 'block';
+    dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
 
     const rect = dropdown.parentElement.getBoundingClientRect();
     dropdown.style.position = 'fixed';
-    dropdown.style.top = `${rect.bottom + 5}px`; 
+    dropdown.style.top = `${rect.bottom + 5}px`;
     dropdown.style.left = `${rect.left}px`;
     dropdown.style.zIndex = 9999;
   }
+
   document.addEventListener('click', function(event) {
     if (!event.target.closest('.btn-group') && !event.target.closest('.dropdown-acoes')) {
       document.querySelectorAll('.dropdown-acoes').forEach(el => el.style.display = 'none');

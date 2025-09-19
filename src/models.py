@@ -84,9 +84,11 @@ class MovimentacaoMaterial(Base):
     movimentacao_id = Column(Integer, ForeignKey("movimentacoes.id"), nullable=False)
     material_id = Column(Integer, ForeignKey("materiais.id"), nullable=False)
     quantidade = Column(Integer, nullable=False)
+    quantidade_ok = Column(Integer)
 
     movimentacao = relationship("Movimentacao", back_populates="materiais")
     material = relationship("Material")
+
 
 
 Base.metadata.create_all(engine)

@@ -524,24 +524,50 @@ def editar_movimentacao(id):
 
 @movimentacoes_bp.route("/movimentacoes/<int:id>/finalizar", methods=["POST"])
 def finalizar(id):
+    if "usuario_id" not in session:
+        flash("Você precisa estar logado!", "error")
+        return redirect(url_for("index"))
+
     m = db.query(Movimentacao).get(id)
     if not m:
         flash("Movimentação não encontrada", "error")
         return redirect(url_for("movimentacoes.listar_movimentacoes"))
 
-    funcionando = request.form.get("funcionando")
     destino = request.form.get("destino")
-
-    m.funcionando = True if funcionando == "sim" else False if funcionando == "nao" else None
 
     if destino == "retorno":
         if not m.devolvido:
             for mm in m.materiais:
-                material = db.query(Material).get(mm.material_id)
-                material.quantidade += mm.quantidade
+                input_name = f"quantidade_ok_{mm.id}"
+                qtd_ok_str = request.form.get(input_name)
+
+                try:
+                    qtd_ok = int(qtd_ok_str)
+                    if qtd_ok < 0 or qtd_ok > mm.quantidade:
+                        flash(f"Quantidade inválida para o material {mm.material.nome}", "error")
+                        return redirect(url_for("movimentacoes.listar_movimentacoes"))
+
+                    mm.quantidade_ok = qtd_ok
+
+                    material = db.query(Material).get(mm.material_id)
+                    # Repor apenas o que voltou
+                    material.quantidade += qtd_ok
+
+                    # Se algo não voltou: remover do estoque
+                    qtd_danificado = mm.quantidade - qtd_ok
+                    if qtd_danificado > 0:
+                        # Nenhuma ação extra necessária além de não repor ao estoque
+                        pass  # (mantido aqui por clareza)
+
+                except (ValueError, TypeError):
+                    flash(f"Quantidade inválida para o material {mm.material.nome}", "error")
+                    return redirect(url_for("movimentacoes.listar_movimentacoes"))
+
             m.devolvido = True
+
     elif destino == "cliente":
         m.utilizado_cliente = True
+
     else:
         flash("Destino inválido", "error")
         return redirect(url_for("movimentacoes.listar_movimentacoes"))
