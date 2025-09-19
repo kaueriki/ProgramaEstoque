@@ -1,12 +1,10 @@
 .movimentacoes-container {
   display: flex;
   flex-direction: column;
-  height: 650px;
+  height: 90vh;
   max-width: 1200px;
   width: 100%;
-  margin-left: auto;
-  margin-right: auto;
-  margin-top: 20px;
+  margin: 20px auto;
   padding: 5px 20px;
   background-color: #fdfdfd;
   border: 1px solid #ddd;
@@ -26,18 +24,16 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 
 .btn-nova-movimentacao {
-  display: inline-block;
   background-color: #4caf50;
-  margin-bottom: 1rem;
   text-decoration: none;
-  padding: 8px 14px;
+  padding: 6px 12px;
   color: white;
-  border-radius: 5px;
-  font-size: 0.9rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
   transition: background-color 0.3s ease;
 }
 
@@ -46,77 +42,77 @@
 }
 
 .filtro-form-horizontal {
-  padding: 14px 18px;
+  padding: 10px 14px;
   background-color: #f9f9f9;
   border-radius: 8px;
   border: 1px solid #ddd;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 
 .filtro-grid-horizontal {
   display: flex;
-  gap: 16px;
-  margin-bottom: 12px;
+  gap: 12px;
+  margin-bottom: 10px;
   flex-wrap: wrap;
 }
 
-.filtro-grid-horizontal .filtro-item {
+.filtro-item {
   flex: 1;
   display: flex;
   flex-direction: column;
 }
 
-.filtro-grid-horizontal .filtro-item label {
-  font-size: 0.8rem;
-  margin-bottom: 4px;
+.filtro-item label {
+  font-size: 0.75rem;
+  margin-bottom: 2px;
   font-weight: 500;
   color: #333;
 }
 
 .filtro-item input,
 .filtro-item select {
-  padding: 8px 10px;
-  font-size: 0.9rem;
-  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 0.85rem;
+  border-radius: 5px;
   border: 1px solid #ccc;
   width: 100%;
-}
-
-.filtro-acoes-esquerda select {
-  padding: 8px 0;
-  font-size: 0.9rem;
-  border-radius: 6px;
-  border: 1px solid #ccc;
-  width: 30%;
 }
 
 .filtro-acoes-container.compact {
   display: flex;
   justify-content: space-between;
-  margin-top: 16px;
+  margin-top: 12px;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 10px;
 }
 
 .filtro-acoes-esquerda,
 .filtro-acoes-direita {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+}
+
+.filtro-acoes-esquerda select {
+  padding: 6px;
+  font-size: 0.85rem;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  width: 30%;
 }
 
 .btn-filtrar,
 .btn-limpar,
 .btn-exportar {
-  min-width: 120px;
+  min-width: 90px;
   text-align: center;
-  padding: 6px 10px;
-  font-size: 0.85rem;
+  padding: 5px 10px;
+  font-size: 0.8rem;
   font-weight: 500;
-  border-radius: 5px;
+  border-radius: 4px;
   cursor: pointer;
-  transition: background-color 0.3s ease;
   border: none;
+  transition: background-color 0.3s ease;
 }
 
 .btn-filtrar,
@@ -134,8 +130,6 @@
   background-color: #ff7b00;
   color: white;
   text-decoration: none;
-  display: inline-flex;
-  align-items: center;
 }
 
 .btn-exportar:hover {
@@ -143,7 +137,7 @@
 }
 
 .table-wrapper {
-  max-height: 500px;
+  max-height: calc(100vh - 350px);
   overflow-y: auto;
   overflow-x: auto;
   border: 1px solid #ddd;
@@ -151,24 +145,9 @@
   z-index: 0;
 }
 
-.dropdown-acoes {
-  display: none;
-  position: fixed;
-  width: 220px;
-  background-color: #f9f9f9;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  padding: 14px;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-  z-index: 9999;
-  left: 0;
-  transform: translateX(-100%);
-}
-
-
 .movimentacoes-table {
   border-collapse: collapse;
-  font-size: 0.95rem;
+  font-size: 0.8rem;
   background-color: #fff;
   width: 100%;
   min-width: 900px;
@@ -184,7 +163,7 @@
 
 .movimentacoes-table th,
 .movimentacoes-table td {
-  padding: 12px 12px;
+  padding: 2px 3px;
   text-align: center;
   border-bottom: 1px solid #e0e0e0;
 }
@@ -219,24 +198,23 @@ td {
 }
 
 .pagination {
-  padding-top: 12px;
+  padding-top: 10px;
   border-top: 1px solid #ddd;
   background-color: #fdfdfd;
-  margin-top: 20px;
+  margin-top: 16px;
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 16px;
-  font-family: 'Segoe UI', sans-serif;
-  font-size: 0.95rem;
+  gap: 14px;
+  font-size: 0.85rem;
   color: #333;
 }
 
 .page-link {
-  padding: 8px 14px;
+  padding: 6px 12px;
   background-color: #ff7b00;
   color: white;
-  border-radius: 6px;
+  border-radius: 5px;
   text-decoration: none;
   font-weight: 600;
   transition: background-color 0.3s ease;
@@ -253,7 +231,7 @@ td {
 .btn-group {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
   align-items: flex-start;
   position: relative;
 }
@@ -261,15 +239,14 @@ td {
 .btn-acao {
   background-color: #007bff;
   color: #fff;
-  padding: 6px 10px;
-  font-size: 0.85rem;
+  padding: 5px 8px;
+  font-size: 0.8rem;
   border: none;
   border-radius: 4px;
   cursor: pointer;
   width: 100%;
   text-align: center;
   transition: background-color 0.3s ease;
-  height: 33px;
 }
 
 .btn-acao:hover {
@@ -279,9 +256,9 @@ td {
 .btn-editar {
   background-color: #ff7b00;
   color: white;
-  padding: 6px 10px;
-  border-radius: 5px;
-  font-size: 0.85rem;
+  padding: 2px 4px;
+  border-radius: 4px;
+  font-size: 0.8rem;
   font-weight: 500;
   text-decoration: none;
   display: inline-block;
@@ -295,16 +272,29 @@ td {
   background-color: #d96a00;
 }
 
+.dropdown-acoes {
+  display: none;
+  position: fixed;
+  width: 200px;
+  background-color: #f9f9f9;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  padding: 10px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  z-index: 9999;
+  left: 0;
+  transform: translateX(-100%);
+}
 
 .dropdown-acoes form {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .dropdown-acoes select {
   padding: 4px 6px;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   border: 1px solid #ccc;
   border-radius: 4px;
 }
@@ -314,8 +304,8 @@ button,
   background-color: #28a745;
   border: none;
   color: white;
-  font-weight: 600;
-  padding: 6px 12px;
+  font-weight: 300;
+  padding: 5px 10px;
   border-radius: 5px;
   cursor: pointer;
   transition: background-color 0.3s ease;
@@ -353,8 +343,4 @@ button:hover,
     width: 100%;
   }
 
-  .btn-acao,
-  .btn-editar {
-    width: 100%;
-  }
 }

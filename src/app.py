@@ -283,7 +283,7 @@ def listar_movimentacoes():
     data_inicio_str = request.args.get("data_inicio", "").strip()
     data_fim_str = request.args.get("data_fim", "").strip()
 
-    per_page = request.args.get("per_page", 10, type=int)
+    per_page = request.args.get("per_page", 50, type=int)
     page = request.args.get("page", 1, type=int)
 
     query = db.query(Movimentacao)\
@@ -448,7 +448,7 @@ def editar_movimentacao(id):
     materiais = db.query(Material).all()
     clientes = db.query(Cliente).all()
 
-    materiais_atual = {mm.material_id: mm.quantidade for mm in movimentacao.materiais_associados}
+    materiais_atual = {mm.material_id: mm.quantidade for mm in movimentacao.materiais}
 
     if request.method == "POST":
         try:
@@ -536,7 +536,7 @@ def finalizar(id):
 
     if destino == "retorno":
         if not m.devolvido:
-            for mm in m.materiais_associados:
+            for mm in m.materiais:
                 material = db.query(Material).get(mm.material_id)
                 material.quantidade += mm.quantidade
             m.devolvido = True
@@ -553,9 +553,8 @@ def finalizar(id):
 
 @movimentacoes_bp.route("/movimentacoes/export/excel")
 def export_excel():
-    query = db.query(Movimentacao).join(Material)
+    query = db.query(Movimentacao).outerjoin(Movimentacao.materiais).outerjoin(Material).outerjoin(Cliente)
 
-    # Aplica os mesmos filtros que no frontend
     material = request.args.get("material")
     cliente = request.args.get("cliente")
     funcionario = request.args.get("funcionario")
@@ -566,7 +565,7 @@ def export_excel():
     if material:
         query = query.filter(Material.nome.ilike(f"%{material}%"))
     if cliente:
-        query = query.join(Cliente).filter(Cliente.nome.ilike(f"%{cliente}%"))
+        query = query.filter(Cliente.nome.ilike(f"%{cliente}%"))
     if funcionario:
         query = query.filter(Movimentacao.funcionario.ilike(f"%{funcionario}%"))
     if status:
@@ -576,22 +575,24 @@ def export_excel():
     if data_fim:
         query = query.filter(Movimentacao.data_retirada <= data_fim)
 
-    results = query.all()
+    movimentacoes = query.distinct().all()
 
     data = []
-    for m in results:
-        data.append({
-            "Material": m.material.nome,
-            "Qtd": m.quantidade,
-            "Funcionário": m.funcionario,
-            "Cliente": m.cliente.nome if m.cliente else "-",
-            "OS": m.ordem_servico,
-            "Retirada": m.data_retirada.strftime("%d/%m/%Y %H:%M"),
-            "Prazo": m.prazo_devolucao.strftime("%d/%m/%Y") if m.prazo_devolucao else "-",
-            "Status": m.status,
-            "Observação": m.observacao or "-",
-            "Funcionando": "Sim" if m.funcionando else ("Não" if m.funcionando is not None else "-"),
-        })
+    for mov in movimentacoes:
+        for mm in mov.materiais:
+            material = mm.material
+            data.append({
+                "Material": material.nome,
+                "Qtd": mm.quantidade,
+                "Funcionário": mov.funcionario,
+                "Cliente": mov.cliente.nome if mov.cliente else "-",
+                "OS": mov.ordem_servico,
+                "Retirada": mov.data_retirada.strftime("%d/%m/%Y %H:%M"),
+                "Prazo": mov.prazo_devolucao.strftime("%d/%m/%Y") if mov.prazo_devolucao else "-",
+                "Status": mov.status,
+                "Observação": mov.observacao or "-",
+                "Funcionando": "Sim" if mov.funcionando else ("Não" if mov.funcionando is not None else "-"),
+            })
 
     df = pd.DataFrame(data)
     output = io.BytesIO()
@@ -605,7 +606,7 @@ def export_excel():
 
 @movimentacoes_bp.route("/movimentacoes/export/pdf")
 def export_pdf():
-    query = db.query(Movimentacao).join(Material)
+    query = db.query(Movimentacao).outerjoin(Movimentacao.materiais).outerjoin(Material).outerjoin(Cliente)
 
     material = request.args.get("material")
     cliente = request.args.get("cliente")
@@ -617,7 +618,7 @@ def export_pdf():
     if material:
         query = query.filter(Material.nome.ilike(f"%{material}%"))
     if cliente:
-        query = query.join(Cliente).filter(Cliente.nome.ilike(f"%{cliente}%"))
+        query = query.filter(Cliente.nome.ilike(f"%{cliente}%"))
     if funcionario:
         query = query.filter(Movimentacao.funcionario.ilike(f"%{funcionario}%"))
     if status:
@@ -627,7 +628,7 @@ def export_pdf():
     if data_fim:
         query = query.filter(Movimentacao.data_retirada <= data_fim)
 
-    results = query.all()
+    movimentacoes = query.distinct().all()
 
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=A4)
@@ -638,17 +639,19 @@ def export_pdf():
 
     data = [["Material", "Qtd", "Funcionário", "Cliente", "OS", "Retirada", "Prazo", "Status"]]
 
-    for m in results:
-        data.append([
-            m.material.nome,
-            str(m.quantidade),
-            m.funcionario,
-            m.cliente.nome if m.cliente else "-",
-            m.ordem_servico,
-            m.data_retirada.strftime("%d/%m/%Y %H:%M"),
-            m.prazo_devolucao.strftime("%d/%m/%Y") if m.prazo_devolucao else "-",
-            m.status
-        ])
+    for mov in movimentacoes:
+        for mm in mov.materiais:
+            material = mm.material
+            data.append([
+                material.nome,
+                str(mm.quantidade),
+                mov.funcionario,
+                mov.cliente.nome if mov.cliente else "-",
+                mov.ordem_servico,
+                mov.data_retirada.strftime("%d/%m/%Y %H:%M"),
+                mov.prazo_devolucao.strftime("%d/%m/%Y") if mov.prazo_devolucao else "-",
+                mov.status
+            ])
 
     table = Table(data, repeatRows=1)
     table.setStyle(TableStyle([
