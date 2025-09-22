@@ -10,19 +10,26 @@
 
     <form method="POST">
         <div class="mb-3">
-            <label for="material_id" class="form-label">Material</label>
-            <select class="form-select" id="material_id" name="material_id" required>
-                {% for mat in materiais %}
-                    <option value="{{ mat.id }}" {% if movimentacao.material_id == mat.id %}selected{% endif %}>
-                        {{ mat.nome }} (Estoque: {{ mat.quantidade }})
-                    </option>
-                {% endfor %}
-            </select>
-        </div>
+            
 
-        <div class="mb-3">
-            <label for="quantidade" class="form-label">Quantidade</label>
-            <input type="number" class="form-control" id="quantidade" name="quantidade" value="{{ movimentacao.quantidade }}" required>
+            {% for mm in movimentacao.materiais %}
+            <div class="row align-items-end mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">Materiais</label>
+                    <select class="form-select" name="material_id[]" required>
+                        {% for mat in materiais %}
+                            <option value="{{ mat.id }}" {% if mat.id == mm.material_id %}selected{% endif %}>
+                                {{ mat.nome }} (Estoque: {{ mat.quantidade }})
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="quantidade" class="form-label">Quantidade:</label>
+                    <input type="number" class="form-control" name="quantidade[]" value="{{ mm.quantidade }}" required>
+                </div>
+            </div>
+            {% endfor %}
         </div>
 
         <div class="mb-3">
@@ -57,13 +64,13 @@
 
         <div class="mb-3">
             <label for="motivo" class="form-label">Motivo</label>
-            <select name="motivo" id="motivo" value="{{ movimentacao.motivo or '' }}" class="form-select">
+            <select name="motivo" id="motivo" class="form-select">
                 <option value="">-- Selecione --</option>
-                <option value="manutenção">Manutenção</option>
-                <option value="preventiva">Preventiva</option>
-                <option value="teste">Teste</option>
-                <option value="instalação">Instalação</option>
-            </select><br>
+                <option value="manutenção" {% if movimentacao.motivo == 'manutenção' %}selected{% endif %}>Manutenção</option>
+                <option value="preventiva" {% if movimentacao.motivo == 'preventiva' %}selected{% endif %}>Preventiva</option>
+                <option value="teste" {% if movimentacao.motivo == 'teste' %}selected{% endif %}>Teste</option>
+                <option value="instalação" {% if movimentacao.motivo == 'instalação' %}selected{% endif %}>Instalação</option>
+            </select>
         </div>
 
         <div class="mb-3">

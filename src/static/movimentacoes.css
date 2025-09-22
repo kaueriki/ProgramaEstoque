@@ -13,7 +13,6 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
   overflow: hidden;
 }
-
 .movimentacoes-header,
 .filtro-form,
 .pagination {
@@ -136,6 +135,7 @@
   background-color: #d96a00;
 }
 
+/* TABELA */
 .table-wrapper {
   max-height: calc(100vh - 350px);
   overflow-y: auto;
@@ -273,17 +273,19 @@ td {
 }
 
 .dropdown-acoes {
-  display: none;
   position: fixed;
-  width: 200px;
-  background-color: #f9f9f9;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  padding: 10px;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-  z-index: 9999;
-  left: 0;
-  transform: translateX(-100%);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 10000;
+  padding: 20px;
+  display: none;
+  width: 400px;
+  background-color: #fdfdfd;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  font-family: 'Segoe UI', sans-serif;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
 .dropdown-acoes form {
@@ -292,15 +294,22 @@ td {
   gap: 6px;
 }
 
-.dropdown-acoes select {
+.dropdown-acoes select,
+.dropdown-acoes input {
   padding: 4px 6px;
   font-size: 0.8rem;
   border: 1px solid #ccc;
   border-radius: 4px;
 }
 
-button,
-.btn-finalizar {
+.dropdown-acoes h3 {
+  margin-top: 0;
+  font-size: 1rem;
+  color: #333;
+}
+
+.btn-finalizar,
+button {
   background-color: #28a745;
   border: none;
   color: white;
@@ -311,10 +320,34 @@ button,
   transition: background-color 0.3s ease;
 }
 
-button:hover,
-.btn-finalizar:hover {
+.btn-finalizar:hover,
+button:hover {
   background-color: #218838;
 }
+
+.btn-fechar {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  font-size: 1rem;
+  font-weight: bold;
+  border-radius: 6px;
+  width: 28px;
+  height: 28px;
+  line-height: 1;
+  cursor: pointer;
+  text-align: center;
+  padding: 0;
+  transition: background-color 0.3s ease;
+}
+
+.btn-fechar:hover {
+  background-color: #c82333; 
+}
+
 
 .status-ok {
   color: #28a745;
@@ -343,4 +376,9 @@ button:hover,
     width: 100%;
   }
 
+
+  .dropdown-acoes {
+    width: 90%;
+    max-width: 400px;
+  }
 }

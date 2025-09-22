@@ -10,7 +10,6 @@
     <h2>Histórico de Retiradas</h2>
     <a href="{{ url_for('movimentacoes.nova_movimentacao') }}" class="btn-nova-movimentacao">Nova Retirada</a>
   </div>
-
   <form class="filtro-form-horizontal" method="get" action="{{ url_for('movimentacoes.listar_movimentacoes') }}">
     <div class="filtro-grid-horizontal">
       <div class="filtro-item">
@@ -133,9 +132,9 @@
               <button class="btn-acao" type="button" onclick="toggleDropdown('finalizar-{{ m.id }}')">
                 Finalizar
               </button>
-              <div id="finalizar-{{ m.id }}" class="dropdown-acoes" style="display:none;">
+              <div id="finalizar-{{ m.id }}" class="dropdown-acoes">
+                <h3>Devolução do Material</h3>
                 <form method="POST" action="{{ url_for('movimentacoes.finalizar', id=m.id) }}">
-                  <h4>Devolução do Material</h4>
                   {% for mov_mat in m.materiais %}
                     <label for="quantidade_ok_{{ mov_mat.id }}">
                       Qtd devolvida OK ({{ mov_mat.material.nome }})
@@ -150,14 +149,17 @@
                     >
                   {% endfor %}
 
-                  <label>Destino</label>
-                  <select name="destino" required>
+                  <label for="destino_{{ m.id }}">Destino</label>
+                  <select name="destino" id="destino_{{ m.id }}" required>
                     <option value="">-- Selecione --</option>
                     <option value="retorno">Retornou ao estoque</option>
                     <option value="cliente">Ficou no cliente</option>
                   </select>
 
-                  <button type="submit" class="btn-finalizar">Confirmar</button>
+                  <div class="btn-group">
+                    <button type="submit" class="btn-finalizar">Confirmar</button>
+                    <button type="button" class="btn-fechar" onclick="toggleDropdown('finalizar-{{ m.id }}')">x</button>
+                  </div>
                 </form>
               </div>
               {% else %}
@@ -200,16 +202,15 @@
 <script>
   function toggleDropdown(id) {
     const dropdown = document.getElementById(id);
-    document.querySelectorAll('.dropdown-acoes').forEach(el => {
-      if (el.id !== id) el.style.display = 'none';
-    });
-    dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+    const isVisible = dropdown.style.display === 'block';
 
-    const rect = dropdown.parentElement.getBoundingClientRect();
-    dropdown.style.position = 'fixed';
-    dropdown.style.top = `${rect.bottom + 5}px`;
-    dropdown.style.left = `${rect.left}px`;
-    dropdown.style.zIndex = 9999;
+    document.querySelectorAll('.dropdown-acoes').forEach(el => {
+      el.style.display = 'none';
+    });
+
+    if (!isVisible) {
+      dropdown.style.display = 'block';
+    }
   }
 
   document.addEventListener('click', function(event) {
