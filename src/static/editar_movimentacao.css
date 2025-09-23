@@ -24,6 +24,7 @@
   font-weight: bold;
   margin-bottom: 0.3rem;
   display: block;
+  margin-top: 10px;
 }
 
 .form-control,
@@ -35,6 +36,7 @@
   border-radius: 4px;
   box-sizing: border-box;
   transition: border-color 0.2s ease;
+  margin-top: 10px;
 }
 
 .form-control:focus,

@@ -49,7 +49,7 @@
         {% endfor %}
       </select>
 
-      <input type="number" name="quantidade[]" min="1" placeholder="Qtd" required>
+      <input type="number" name="quantidade[]" min="1" placeholder="1" value="1" required>
 
       <button type="button" class="remove-button" onclick="removerLinha(this)">X</button>
     </div>
@@ -73,7 +73,44 @@
   <input type="text" name="ordem_servico"><br>
 
   <label>Funcionário:</label>
-  <input type="text" name="funcionario" required><br>
+  <select name="funcionario" required>
+    <option value="">-- Selecione --</option>
+    <option value="Adauto">Adauto</option>
+    <option value="Andre">André</option>
+    <option value="Daniel">Daniel</option>
+    <option value="Dener">Dener</option>
+    <option value="Denilson">Denilson</option>
+    <option value="Domerice">Domerice</option>
+    <option value="Duda">Duda</option>
+    <option value="Eduardo">Eduardo</option>
+    <option value="Elvis">Élvis</option>
+    <option value="Fabiano">Fabiano</option>
+    <option value="Felipe">Felipe</option>
+    <option value="Gabriel">Gabriel</option>
+    <option value="Geraldo">Geraldo</option>
+    <option value="Guilherme">Guilherme</option>
+    <option value="Hudson">Hudson</option>
+    <option value="Jason">Jason</option>
+    <option value="Joao Vitor">João Vitor</option>
+    <option value="Jonielson">Jonielson</option>
+    <option value="Kaue">Kauê</option>
+    <option value="Leonardo">Leonardo</option>
+    <option value="Luan">Luan</option>
+    <option value="Lucas">Lucas</option>
+    <option value="Lucas Febba">Lucas Febba</option>
+    <option value="Marcus">Marcus Bidu</option>
+    <option value="Marlon">Marlon</option>
+    <option value="Matheus Barbosa">Matheus Barbosa</option>
+    <option value="Matheus Miranda">Matheus Miranda</option>
+    <option value="Pablo">Pablo</option>
+    <option value="Renan">Renan</option>
+    <option value="Ricardo">Ricardo</option>
+    <option value="Robert">Robert</option>
+    <option value="Thais">Thais</option>
+    <option value="Thiago">Thiago</option>
+    <option value="Vanderson">Vanderson</option>
+  </select>
+  <br>
 
   <label>Prazo de Devolução:</label>
   <input type="datetime-local" name="prazo_devolucao"><br>

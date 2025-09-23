@@ -2,6 +2,8 @@
 
 {% block extra_css %}
   <link rel="stylesheet" href="{{ url_for('static', filename='editar_movimentacao.css') }}">
+  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
 {% endblock %}
 
 {% block content %}
@@ -9,13 +11,13 @@
     <h2>Editar Movimentação</h2>
 
     <form method="POST">
-        <div class="mb-3">
+        <div id="materiais-container" class="mb-3">
             
 
             {% for mm in movimentacao.materiais %}
-            <div class="row align-items-end mb-3">
+            <div class="row align-items-end mb-3 material-item">
                 <div class="col-md-6">
-                    <label class="form-label">Materiais</label>
+                    <label class="form-label">Material</label>
                     <select class="form-select" name="material_id[]" required>
                         {% for mat in materiais %}
                             <option value="{{ mat.id }}" {% if mat.id == mm.material_id %}selected{% endif %}>
@@ -28,9 +30,14 @@
                     <label for="quantidade" class="form-label">Quantidade:</label>
                     <input type="number" class="form-control" name="quantidade[]" value="{{ mm.quantidade }}" required>
                 </div>
+                <div class="col-md-3">
+                    <button type="button" class="btn btn-danger btn-remove-material">Remover</button>
+                </div>
             </div>
             {% endfor %}
         </div>
+
+        <button type="button" class="btn btn-success mb-3" id="add-material">+ Adicionar Material</button>
 
         <div class="mb-3">
             <label for="cliente_id" class="form-label">Cliente</label>
@@ -52,8 +59,43 @@
 
         <div class="mb-3">
             <label for="funcionario" class="form-label">Funcionário</label>
-            <input type="text" class="form-control" id="funcionario" name="funcionario"
-                   value="{{ movimentacao.funcionario }}">
+            <select name="funcionario" " id="funcionario" class="form-select" required>
+                <option value="{{ movimentacao.funcionario }}">{{ movimentacao.funcionario }}</option> 
+                <option value="Adauto">Adauto</option>
+                <option value="Andre">André</option>
+                <option value="Daniel">Daniel</option>
+                <option value="Dener">Dener</option>
+                <option value="Denilson">Denilson</option>
+                <option value="Domerice">Domerice</option>
+                <option value="Duda">Duda</option>
+                <option value="Eduardo">Eduardo</option>
+                <option value="Elvis">Élvis</option>
+                <option value="Fabiano">Fabiano</option>
+                <option value="Felipe">Felipe</option>
+                <option value="Gabriel">Gabriel</option>
+                <option value="Geraldo">Geraldo</option>
+                <option value="Guilherme">Guilherme</option>
+                <option value="Hudson">Hudson</option>
+                <option value="Jason">Jason</option>
+                <option value="Joao Vitor">João Vitor</option>
+                <option value="Jonielson">Jonielson</option>
+                <option value="Kaue">Kauê</option>
+                <option value="Leonardo">Leonardo</option>
+                <option value="Luan">Luan</option>
+                <option value="Lucas">Lucas</option>
+                <option value="Lucas Febba">Lucas Febba</option>
+                <option value="Marcus">Marcus Bidu</option>
+                <option value="Marlon">Marlon</option>
+                <option value="Matheus Barbosa">Matheus Barbosa</option>
+                <option value="Matheus Miranda">Matheus Miranda</option>
+                <option value="Pablo">Pablo</option>
+                <option value="Renan">Renan</option>
+                <option value="Ricardo">Ricardo</option>
+                <option value="Robert">Robert</option>
+                <option value="Thais">Thais</option>
+                <option value="Thiago">Thiago</option>
+                <option value="Vanderson">Vanderson</option>
+            </select>
         </div>
 
         <div class="mb-3">
@@ -72,7 +114,6 @@
                 <option value="instalação" {% if movimentacao.motivo == 'instalação' %}selected{% endif %}>Instalação</option>
             </select>
         </div>
-
         <div class="mb-3">
             <label for="observacao" class="form-label">Observação</label>
             <textarea class="form-control" id="observacao" name="observacao" rows="3">{{ movimentacao.observacao or '' }}</textarea>
@@ -82,4 +123,36 @@
         <a href="{{ url_for('movimentacoes.listar_movimentacoes') }}" class="btn btn-secondary">Cancelar</a>
     </form>
 </div>
+
+<div id="material-template" style="display: none;">
+    <div class="row align-items-end mb-3 material-item">
+        <div class="col-md-6">
+            <select class="form-select" name="material_id[]" required>
+                {% for mat in materiais %}
+                    <option value="{{ mat.id }}">{{ mat.nome }} (Estoque: {{ mat.quantidade }})</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3">
+            <input type="number" class="form-control" name="quantidade[]" required>
+        </div>
+        <div class="col-md-3">
+            <button type="button" class="btn btn-danger btn-remove-material">Remover</button>
+        </div>
+    </div>
+</div>
+
+<script>
+  document.getElementById('add-material').addEventListener('click', function () {
+    const container = document.getElementById('materiais-container');
+    const template = document.getElementById('material-template').innerHTML;
+    container.insertAdjacentHTML('beforeend', template);
+  });
+
+  document.addEventListener('click', function (e) {
+    if (e.target.classList.contains('btn-remove-material')) {
+      e.target.closest('.material-item').remove();
+    }
+  });
+</script>
 {% endblock %}
