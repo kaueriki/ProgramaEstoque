@@ -3,156 +3,175 @@
 {% block extra_css %}
   <link rel="stylesheet" href="{{ url_for('static', filename='editar_movimentacao.css') }}">
   <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-
 {% endblock %}
 
 {% block content %}
 <div class="container mt-4">
-    <h2>Editar Movimentação</h2>
+  <h2>Editar Movimentação</h2>
 
-    <form method="POST">
-        <div id="materiais-container" class="mb-3">
-            
-
-            {% for mm in movimentacao.materiais %}
-            <div class="row align-items-end mb-3 material-item">
-                <div class="col-md-6">
-                    <label class="form-label">Material</label>
-                    <select class="form-select" name="material_id[]" required>
-                        {% for mat in materiais %}
-                            <option value="{{ mat.id }}" {% if mat.id == mm.material_id %}selected{% endif %}>
-                                {{ mat.nome }} (Estoque: {{ mat.quantidade }})
-                            </option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <label for="quantidade" class="form-label">Quantidade:</label>
-                    <input type="number" class="form-control" name="quantidade[]" value="{{ mm.quantidade }}" required>
-                </div>
-                <div class="col-md-3">
-                    <button type="button" class="btn btn-danger btn-remove-material">Remover</button>
-                </div>
-            </div>
+  <form method="POST">
+    <div id="materiais-container" class="mb-3">
+      {% for mm in movimentacao.materiais %}
+      <div class="row align-items-end mb-3 material-item">
+        <div class="col-md-6">
+          <label class="form-label">Material</label>
+          <select class="form-select select2-material" name="material_id[]" required>
+            {% for mat in materiais %}
+            <option value="{{ mat.id }}" {% if mat.id == mm.material_id %}selected{% endif %}>
+              {{ mat.nome }}
+            </option>
             {% endfor %}
+          </select>
         </div>
-
-        <button type="button" class="btn btn-success mb-3" id="add-material">+ Adicionar Material</button>
-
-        <div class="mb-3">
-            <label for="cliente_id" class="form-label">Cliente</label>
-            <select class="form-select" id="cliente_id" name="cliente_id">
-                <option value="">- Nenhum -</option>
-                {% for cli in clientes %}
-                    <option value="{{ cli.id }}" {% if movimentacao.cliente_id == cli.id %}selected{% endif %}>
-                        {{ cli.nome }}
-                    </option>
-                {% endfor %}
-            </select>
+        <div class="col-md-3">
+          <label class="form-label">Quantidade:</label>
+          <input type="number" class="form-control" name="quantidade[]" value="{{ mm.quantidade }}" required>
         </div>
-
-        <div class="mb-3">
-            <label for="ordem_servico" class="form-label">Ordem de Serviço</label>
-            <input type="text" class="form-control" id="ordem_servico" name="ordem_servico"
-                   value="{{ movimentacao.ordem_servico }}">
+        <div class="col-md-3">
+          <button type="button" class="btn btn-danger btn-remove-material">Remover</button>
         </div>
+      </div>
+      {% endfor %}
+    </div>
 
-        <div class="mb-3">
-            <label for="funcionario" class="form-label">Funcionário</label>
-            <select name="funcionario" " id="funcionario" class="form-select" required>
-                <option value="{{ movimentacao.funcionario }}">{{ movimentacao.funcionario }}</option> 
-                <option value="Adauto">Adauto</option>
-                <option value="Andre">André</option>
-                <option value="Daniel">Daniel</option>
-                <option value="Dener">Dener</option>
-                <option value="Denilson">Denilson</option>
-                <option value="Domerice">Domerice</option>
-                <option value="Duda">Duda</option>
-                <option value="Eduardo">Eduardo</option>
-                <option value="Elvis">Élvis</option>
-                <option value="Fabiano">Fabiano</option>
-                <option value="Felipe">Felipe</option>
-                <option value="Gabriel">Gabriel</option>
-                <option value="Geraldo">Geraldo</option>
-                <option value="Guilherme">Guilherme</option>
-                <option value="Hudson">Hudson</option>
-                <option value="Jason">Jason</option>
-                <option value="Joao Vitor">João Vitor</option>
-                <option value="Jonielson">Jonielson</option>
-                <option value="Kaue">Kauê</option>
-                <option value="Leonardo">Leonardo</option>
-                <option value="Luan">Luan</option>
-                <option value="Lucas">Lucas</option>
-                <option value="Lucas Febba">Lucas Febba</option>
-                <option value="Marcus">Marcus Bidu</option>
-                <option value="Marlon">Marlon</option>
-                <option value="Matheus Barbosa">Matheus Barbosa</option>
-                <option value="Matheus Miranda">Matheus Miranda</option>
-                <option value="Pablo">Pablo</option>
-                <option value="Renan">Renan</option>
-                <option value="Ricardo">Ricardo</option>
-                <option value="Robert">Robert</option>
-                <option value="Thais">Thais</option>
-                <option value="Thiago">Thiago</option>
-                <option value="Vanderson">Vanderson</option>
-            </select>
-        </div>
+    <button type="button" class="btn btn-success mb-3" id="add-material">+ Adicionar Material</button>
 
-        <div class="mb-3">
-            <label for="prazo_devolucao" class="form-label">Prazo de Devolução</label>
-            <input type="datetime-local" class="form-control" id="prazo_devolucao" name="prazo_devolucao"
-                   value="{{ movimentacao.prazo_devolucao.strftime('%Y-%m-%dT%H:%M') if movimentacao.prazo_devolucao }}">
-        </div>
+    <div class="mb-3">
+      <label for="cliente_id" class="form-label">Cliente</label>
+      <select class="form-select select2" id="cliente_id" name="cliente_id">
+        <option value="">- Nenhum -</option>
+        {% for cli in clientes %}
+        <option value="{{ cli.id }}" {% if movimentacao.cliente_id == cli.id %}selected{% endif %}>
+          {{ cli.nome }}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
 
-        <div class="mb-3">
-            <label for="motivo" class="form-label">Motivo</label>
-            <select name="motivo" id="motivo" class="form-select">
-                <option value="">-- Selecione --</option>
-                <option value="manutenção" {% if movimentacao.motivo == 'manutenção' %}selected{% endif %}>Manutenção</option>
-                <option value="preventiva" {% if movimentacao.motivo == 'preventiva' %}selected{% endif %}>Preventiva</option>
-                <option value="teste" {% if movimentacao.motivo == 'teste' %}selected{% endif %}>Teste</option>
-                <option value="instalação" {% if movimentacao.motivo == 'instalação' %}selected{% endif %}>Instalação</option>
-            </select>
-        </div>
-        <div class="mb-3">
-            <label for="observacao" class="form-label">Observação</label>
-            <textarea class="form-control" id="observacao" name="observacao" rows="3">{{ movimentacao.observacao or '' }}</textarea>
-        </div>
+    <div class="mb-3">
+      <label for="ordem_servico" class="form-label">Ordem de Serviço</label>
+      <input type="text" class="form-control" id="ordem_servico" name="ordem_servico"
+        value="{{ movimentacao.ordem_servico }}">
+    </div>
 
-        <button type="submit" class="btn btn-primary">Salvar Alterações</button>
-        <a href="{{ url_for('movimentacoes.listar_movimentacoes') }}" class="btn btn-secondary">Cancelar</a>
-    </form>
+    <div class="mb-3">
+      <label for="funcionario" class="form-label">Funcionário</label>
+      <select name="funcionario" id="funcionario" class="form-select select2" required>
+        <option value="{{ movimentacao.funcionario }}">{{ movimentacao.funcionario }}</option>
+        <option value="Adauto">Adauto</option>
+        <option value="Andre">André</option>
+        <option value="Daniel">Daniel</option>
+        <option value="Dener">Dener</option>
+        <option value="Denilson">Denilson</option>
+        <option value="Domerice">Domerice</option>
+        <option value="Duda">Duda</option>
+        <option value="Eduardo">Eduardo</option>
+        <option value="Elvis">Élvis</option>
+        <option value="Fabiano">Fabiano</option>
+        <option value="Felipe">Felipe</option>
+        <option value="Gabriel">Gabriel</option>
+        <option value="Geraldo">Geraldo</option>
+        <option value="Guilherme">Guilherme</option>
+        <option value="Hudson">Hudson</option>
+        <option value="Jason">Jason</option>
+        <option value="Joao Vitor">João Vitor</option>
+        <option value="Jonielson">Jonielson</option>
+        <option value="Kaue">Kauê</option>
+        <option value="Leonardo">Leonardo</option>
+        <option value="Luan">Luan</option>
+        <option value="Lucas">Lucas</option>
+        <option value="Lucas Febba">Lucas Febba</option>
+        <option value="Marcus">Marcus Bidu</option>
+        <option value="Marlon">Marlon</option>
+        <option value="Matheus Barbosa">Matheus Barbosa</option>
+        <option value="Matheus Miranda">Matheus Miranda</option>
+        <option value="Pablo">Pablo</option>
+        <option value="Renan">Renan</option>
+        <option value="Ricardo">Ricardo</option>
+        <option value="Robert">Robert</option>
+        <option value="Thais">Thais</option>
+        <option value="Thiago">Thiago</option>
+        <option value="Vanderson">Vanderson</option>
+      </select>
+    </div>
+
+    <div class="mb-3">
+      <label for="prazo_devolucao" class="form-label">Prazo de Devolução</label>
+      <input type="datetime-local" class="form-control" id="prazo_devolucao" name="prazo_devolucao"
+        value="{{ movimentacao.prazo_devolucao.strftime('%Y-%m-%dT%H:%M') if movimentacao.prazo_devolucao }}">
+    </div>
+
+    <div class="mb-3">
+      <label for="motivo" class="form-label">Motivo</label>
+      <select name="motivo" id="motivo" class="form-select select2">
+        <option value="">-- Selecione --</option>
+        <option value="manutenção" {% if movimentacao.motivo == 'manutenção' %}selected{% endif %}>Manutenção</option>
+        <option value="preventiva" {% if movimentacao.motivo == 'preventiva' %}selected{% endif %}>Preventiva</option>
+        <option value="teste" {% if movimentacao.motivo == 'teste' %}selected{% endif %}>Teste</option>
+        <option value="instalação" {% if movimentacao.motivo == 'instalação' %}selected{% endif %}>Instalação</option>
+      </select>
+    </div>
+
+    <div class="mb-3">
+      <label for="observacao" class="form-label">Observação</label>
+      <textarea class="form-control" id="observacao" name="observacao"
+        rows="3">{{ movimentacao.observacao or '' }}</textarea>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+    <a href="{{ url_for('movimentacoes.listar_movimentacoes') }}" class="btn btn-secondary">Cancelar</a>
+  </form>
 </div>
 
 <div id="material-template" style="display: none;">
-    <div class="row align-items-end mb-3 material-item">
-        <div class="col-md-6">
-            <select class="form-select" name="material_id[]" required>
-                {% for mat in materiais %}
-                    <option value="{{ mat.id }}">{{ mat.nome }} (Estoque: {{ mat.quantidade }})</option>
-                {% endfor %}
-            </select>
-        </div>
-        <div class="col-md-3">
-            <input type="number" class="form-control" name="quantidade[]" required>
-        </div>
-        <div class="col-md-3">
-            <button type="button" class="btn btn-danger btn-remove-material">Remover</button>
-        </div>
+  <div class="row align-items-end mb-3 material-item">
+    <div class="col-md-6">
+      <select class="form-select select2-material" name="material_id[]" required>
+        {% for mat in materiais %}
+        <option value="{{ mat.id }}">{{ mat.nome }} (Estoque: {{ mat.quantidade }})</option>
+        {% endfor %}
+      </select>
     </div>
+    <div class="col-md-3">
+      <input type="number" class="form-control" name="quantidade[]" required>
+    </div>
+    <div class="col-md-3">
+      <button type="button" class="btn btn-danger btn-remove-material">Remover</button>
+    </div>
+  </div>
 </div>
 
-<script>
-  document.getElementById('add-material').addEventListener('click', function () {
-    const container = document.getElementById('materiais-container');
-    const template = document.getElementById('material-template').innerHTML;
-    container.insertAdjacentHTML('beforeend', template);
-  });
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
-  document.addEventListener('click', function (e) {
-    if (e.target.classList.contains('btn-remove-material')) {
-      e.target.closest('.material-item').remove();
-    }
+<script>
+  $(document).ready(function () {
+    $('.select2').select2({
+      width: '100%',
+      language: "pt-BR"
+    });
+
+    $('.select2-material').select2({
+      width: '100%',
+      placeholder: 'Selecione um material',
+      language: "pt-BR"
+    });
+
+    $('#add-material').on('click', function () {
+      const container = $('#materiais-container');
+      const template = $('#material-template').html();
+      container.append(template);
+
+      container.find('.select2-material').last().select2({
+        width: '100%',
+        placeholder: 'Selecione um material',
+        language: "pt-BR"
+      });
+    });
+
+    $(document).on('click', '.btn-remove-material', function () {
+      $(this).closest('.material-item').remove();
+    });
   });
 </script>
 {% endblock %}

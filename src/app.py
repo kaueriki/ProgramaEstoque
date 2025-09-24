@@ -533,49 +533,49 @@ def finalizar(id):
         flash("Movimentação não encontrada", "error")
         return redirect(url_for("movimentacoes.listar_movimentacoes"))
 
-    destino = request.form.get("destino")
+    try:
+        resumo = []
+        for mm in m.materiais:
+            input_name = f"quantidade_ok_{mm.id}"
+            qtd_ok_str = request.form.get(input_name)
 
-    if destino == "retorno":
-        if not m.devolvido:
-            for mm in m.materiais:
-                input_name = f"quantidade_ok_{mm.id}"
-                qtd_ok_str = request.form.get(input_name)
-
-                try:
-                    qtd_ok = int(qtd_ok_str)
-                    if qtd_ok < 0 or qtd_ok > mm.quantidade:
-                        flash(f"Quantidade inválida para o material {mm.material.nome}", "error")
-                        return redirect(url_for("movimentacoes.listar_movimentacoes"))
-
-                    mm.quantidade_ok = qtd_ok
-
-                    material = db.query(Material).get(mm.material_id)
-                    # Repor apenas o que voltou
-                    material.quantidade += qtd_ok
-
-                    # Se algo não voltou: remover do estoque
-                    qtd_danificado = mm.quantidade - qtd_ok
-                    if qtd_danificado > 0:
-                        # Nenhuma ação extra necessária além de não repor ao estoque
-                        pass  # (mantido aqui por clareza)
-
-                except (ValueError, TypeError):
+            try:
+                qtd_ok = int(qtd_ok_str)
+                if qtd_ok < 0 or qtd_ok > mm.quantidade:
                     flash(f"Quantidade inválida para o material {mm.material.nome}", "error")
                     return redirect(url_for("movimentacoes.listar_movimentacoes"))
 
-            m.devolvido = True
+                mm.quantidade_ok = qtd_ok
 
-    elif destino == "cliente":
-        m.utilizado_cliente = True
+                material = db.query(Material).get(mm.material_id)
+                material.quantidade += qtd_ok
 
-    else:
-        flash("Destino inválido", "error")
+                qtd_danificado = mm.quantidade - qtd_ok
+
+                resumo.append(f"{mm.material.nome}: OK: {qtd_ok} / não OK {qtd_danificado}")
+
+            except (ValueError, TypeError):
+                flash(f"Quantidade inválida para o material {mm.material.nome}", "error")
+                return redirect(url_for("movimentacoes.listar_movimentacoes"))
+
+        observacao_usuario = request.form.get("observacao_usuario", "").strip()
+        resumo_final = " | ".join(resumo)
+        if observacao_usuario:
+            resumo_final += f" | Obs: {observacao_usuario}"
+
+        m.observacao = resumo_final
+        m.devolvido = True
+        m.status = "verde"
+
+        db.commit()
+        flash("Movimentação finalizada com sucesso!", "success")
         return redirect(url_for("movimentacoes.listar_movimentacoes"))
 
-    m.status = "verde"
-    db.commit()
-    flash("Movimentação finalizada com sucesso!", "success")
-    return redirect(url_for("movimentacoes.listar_movimentacoes"))
+    except Exception as e:
+        db.rollback()
+        flash(f"Erro ao finalizar movimentação: {str(e)}", "error")
+        return redirect(url_for("movimentacoes.listar_movimentacoes"))
+
 
 @movimentacoes_bp.route("/movimentacoes/export/excel")
 def export_excel():
