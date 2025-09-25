@@ -160,6 +160,7 @@
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
 <script>
+  const materiaisData = {{ materiais|tojson }};
   function abrirModal(id) {
     document.getElementById(id).style.display = 'block';
   }
@@ -183,12 +184,12 @@
     defaultOption.text = "-- Selecione --";
     select.appendChild(defaultOption);
 
-    {% for material in materiais %}
-      const option{{ loop.index }} = document.createElement("option");
-      option{{ loop.index }}.value = "{{ material.id }}";
-      option{{ loop.index }}.text = "{{ material.nome }} ({{ material.quantidade }} disponíveis)";
-      select.appendChild(option{{ loop.index }});
-    {% endfor %}
+    materiaisData.forEach(material => {
+      const option = document.createElement("option");
+      option.value = material.id;
+      option.textContent = `${material.nome} (${material.quantidade} disponíveis)`;
+      select.appendChild(option);
+    });
 
     const input = document.createElement("input");
     input.type = "number";
@@ -208,7 +209,6 @@
     novaLinha.appendChild(select);
     novaLinha.appendChild(input);
     novaLinha.appendChild(removeButton);
-
     container.appendChild(novaLinha);
 
     $(select).select2({
@@ -248,7 +248,7 @@
 
     if (response.ok) {
       const nome = formData.get('nome');
-      const idTemp = 'temp_' + Date.now();
+      const idTemp = 'temp_' + Date.now(); 
 
       document.querySelectorAll('.material-select').forEach(select => {
         const option = document.createElement('option');
@@ -282,6 +282,7 @@
       option.text = nome;
       option.value = idTemp;
       clienteSelect.appendChild(option);
+
       $(clienteSelect).val(idTemp).trigger('change');
 
       fecharModal('modal-cliente');
