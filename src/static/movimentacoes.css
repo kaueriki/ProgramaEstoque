@@ -272,41 +272,127 @@ td {
   background-color: #d96a00;
 }
 
+/* MODAL MAIS ELEGANTE */
 .dropdown-acoes {
   position: fixed;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -50%);
+  transform: translate(-50%, -50%) scale(0.95);
   z-index: 10000;
-  padding: 20px;
+  padding: 24px 28px;
   display: none;
-  width: 400px;
-  background-color: #fdfdfd;
-  border: 1px solid #ddd;
-  border-radius: 10px;
+  width: 420px;
+  max-width: 90%;
+  background: #fff;
+  border-radius: 14px;
   font-family: 'Segoe UI', sans-serif;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
+  animation: fadeInModal 0.25s ease-out forwards;
+}
+
+@keyframes fadeInModal {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -48%) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+.dropdown-acoes h3 {
+  margin: 0 0 12px 0;
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #333;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 6px;
 }
 
 .dropdown-acoes form {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 10px;
 }
 
+.dropdown-acoes input,
 .dropdown-acoes select,
-.dropdown-acoes input {
-  padding: 4px 6px;
-  font-size: 0.8rem;
+.dropdown-acoes textarea {
+  padding: 8px 10px;
+  font-size: 0.85rem;
   border: 1px solid #ccc;
-  border-radius: 4px;
+  border-radius: 8px;
+  outline: none;
+  transition: all 0.2s ease;
 }
 
-.dropdown-acoes h3 {
-  margin-top: 0;
-  font-size: 1rem;
-  color: #333;
+.dropdown-acoes input:focus,
+.dropdown-acoes select:focus,
+.dropdown-acoes textarea:focus {
+  border-color: #ff7b00;
+  box-shadow: 0 0 0 2px rgba(255, 123, 0, 0.2);
 }
+
+/* Botões dentro do modal */
+.dropdown-acoes button,
+.dropdown-acoes .btn-finalizar {
+  padding: 8px 14px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  border-radius: 8px;
+  cursor: pointer;
+  border: none;
+  transition: background 0.2s ease, transform 0.1s ease;
+}
+
+.dropdown-acoes button:hover,
+.dropdown-acoes .btn-finalizar:hover {
+  transform: translateY(-1px);
+}
+
+/* Botão confirmar */
+.dropdown-acoes .btn-finalizar {
+  background: linear-gradient(135deg, #28a745, #218838);
+  color: #fff;
+}
+
+/* Botão remover */
+.dropdown-acoes .btn-remover {
+  background: #f44336;
+  color: #fff;
+}
+
+/* Botão adicionar */
+.dropdown-acoes .btn-adicionar {
+  background: #ff7b00;
+  color: #fff;
+}
+
+/* Botão fechar */
+.btn-fechar {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  background: #f44336;
+  color: white;
+  border: none;
+  font-size: 1rem;
+  font-weight: bold;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  line-height: 1;
+  cursor: pointer;
+  text-align: center;
+  padding: 0;
+  transition: background 0.2s ease;
+}
+
+.btn-fechar:hover {
+  background: #c82333;
+}
+
 
 .btn-finalizar,
 button {

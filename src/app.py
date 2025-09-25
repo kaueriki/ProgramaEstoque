@@ -267,7 +267,6 @@ def excluir_cliente(id):
     return redirect(url_for("clientes.listar_clientes"))
 
 app.register_blueprint(clientes_bp)
-
 movimentacoes_bp = Blueprint("movimentacoes", __name__)
 
 @movimentacoes_bp.route("/movimentacoes")
@@ -286,8 +285,8 @@ def listar_movimentacoes():
     per_page = request.args.get("per_page", 50, type=int)
     page = request.args.get("page", 1, type=int)
 
-    query = db.query(Movimentacao)\
-        .join(Movimentacao.materiais)\
+    query = db.query(Movimentacao) \
+        .join(Movimentacao.materiais) \
         .outerjoin(Cliente)
 
     if cliente_nome:
@@ -349,13 +348,15 @@ def listar_movimentacoes():
                          .limit(per_page) \
                          .all()
     total_pages = (total + per_page - 1) // per_page
+    materiais_disponiveis = db.query(Material).order_by(Material.nome).all()
 
     return render_template(
         "movimentacoes.html",
         movimentacoes=movimentacoes,
         page=page,
         total_pages=total_pages,
-        per_page=per_page
+        per_page=per_page,
+        materiais_disponiveis=materiais_disponiveis
     )
 
 @movimentacoes_bp.route("/movimentacoes/nova", methods=["GET", "POST"])
@@ -521,7 +522,6 @@ def editar_movimentacao(id):
             return render_template("editar_movimentacao.html", movimentacao=movimentacao, materiais=materiais, clientes=clientes)
 
     return render_template("editar_movimentacao.html", movimentacao=movimentacao, materiais=materiais, clientes=clientes)
-
 @movimentacoes_bp.route("/movimentacoes/<int:id>/finalizar", methods=["POST"])
 def finalizar(id):
     if "usuario_id" not in session:
@@ -535,6 +535,7 @@ def finalizar(id):
 
     try:
         resumo = []
+
         for mm in m.materiais:
             input_name = f"quantidade_ok_{mm.id}"
             qtd_ok_str = request.form.get(input_name)
@@ -552,13 +553,35 @@ def finalizar(id):
 
                 qtd_danificado = mm.quantidade - qtd_ok
 
-                resumo.append(f"{mm.material.nome}: OK: {qtd_ok} / não OK {qtd_danificado}")
+                resumo.append(f"{mm.material.nome}: OK {qtd_ok} / não OK {qtd_danificado}")
 
             except (ValueError, TypeError):
                 flash(f"Quantidade inválida para o material {mm.material.nome}", "error")
                 return redirect(url_for("movimentacoes.listar_movimentacoes"))
 
-        observacao_usuario = request.form.get("observacao_usuario", "").strip()
+        extras_nomes = request.form.getlist("extra_nome[]")
+        extras_qtds = request.form.getlist("extra_quantidade[]")
+
+        for nome, qtd_str in zip(extras_nomes, extras_qtds):
+            if not nome.strip() or not qtd_str.strip():
+                continue 
+            try:
+                qtd = int(qtd_str)
+                if qtd <= 0:
+                    continue
+
+                material = db.query(Material).filter(Material.nome == nome.strip()).first()
+                if material:
+                    material.quantidade += qtd
+                else:
+                    material = Material(nome=nome.strip(), quantidade=qtd)
+                    db.add(material)
+
+                resumo.append(f"{nome.strip()}: OK {qtd} (extra adicionado)")
+            except ValueError:
+                continue
+
+        observacao_usuario = request.form.get("observacao_finalizacao", "").strip()
         resumo_final = " | ".join(resumo)
         if observacao_usuario:
             resumo_final += f" | Obs: {observacao_usuario}"
@@ -575,7 +598,6 @@ def finalizar(id):
         db.rollback()
         flash(f"Erro ao finalizar movimentação: {str(e)}", "error")
         return redirect(url_for("movimentacoes.listar_movimentacoes"))
-
 
 @movimentacoes_bp.route("/movimentacoes/export/excel")
 def export_excel():

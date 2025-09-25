@@ -2,6 +2,7 @@
 
 {% block extra_css %}
   <link rel="stylesheet" href="{{ url_for('static', filename='movimentacoes.css') }}">
+  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 {% endblock %}
 
 {% block content %}
@@ -63,7 +64,6 @@
       </div>
       <div class="filtro-acoes-direita">
         <a href="{{ url_for('movimentacoes.export_pdf', material=request.args.get('material', ''), cliente=request.args.get('cliente', ''), funcionario=request.args.get('funcionario', ''), status=request.args.get('status', ''), data_inicio=request.args.get('data_inicio', ''), data_fim=request.args.get('data_fim', '')) }}" class="btn-exportar">Exportar PDF</a>
-
         <a href="{{ url_for('movimentacoes.export_excel', material=request.args.get('material', ''), cliente=request.args.get('cliente', ''), funcionario=request.args.get('funcionario', ''), status=request.args.get('status', ''), data_inicio=request.args.get('data_inicio', ''), data_fim=request.args.get('data_fim', '')) }}" class="btn-exportar">Exportar Excel</a>
       </div>
     </div>
@@ -124,6 +124,13 @@
                   <label for="quantidade_ok_{{ mov_mat.id }}">Qtd OK ({{ mov_mat.material.nome }})</label>
                   <input type="number" name="quantidade_ok_{{ mov_mat.id }}" min="0" max="{{ mov_mat.quantidade }}" required>
                   {% endfor %}
+
+                  <div class="materiais-extra">
+                    <h4>Adicionar Material devolvido</h4>
+                    <div id="extras-{{ m.id }}"></div>
+                    <button type="button" class="btn-adicionar-extra" onclick="addExtra({{ m.id }})">+ Adicionar Material</button>
+                  </div>
+
                   <label for="observacao_finalizacao">Observação</label>
                   <textarea name="observacao_finalizacao" rows="3" placeholder="Observação"></textarea>
                   <div class="btn-group">
@@ -155,16 +162,15 @@
   </div>
 </div>
 
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
 <script>
   function toggleDropdown(id) {
     const dropdown = document.getElementById(id);
     const isVisible = dropdown.style.display === 'block';
-
     document.querySelectorAll('.dropdown-acoes').forEach(el => el.style.display = 'none');
-
-    if (!isVisible) {
-      dropdown.style.display = 'block';
-    }
+    if (!isVisible) dropdown.style.display = 'block';
   }
 
   document.addEventListener('click', function (event) {
@@ -172,5 +178,27 @@
       document.querySelectorAll('.dropdown-acoes').forEach(el => el.style.display = 'none');
     }
   });
+
+  function addExtra(movId) {
+    const container = document.getElementById(`extras-${movId}`);
+    const wrapper = document.createElement("div");
+    wrapper.classList.add("extra-item");
+    wrapper.innerHTML = `
+      <select name="extra_nome[]" class="extra-select" required>
+        <option value="">Selecione o material</option>
+        {% for material in materiais_disponiveis %}
+        <option value="{{ material.nome }}">{{ material.nome }}</option>
+        {% endfor %}
+      </select>
+      <input type="number" name="extra_quantidade[]" min="1" placeholder="Qtd" required>
+      <button type="button" class="btn-remover-extra" onclick="this.parentElement.remove()">Remover</button>
+    `;
+    container.appendChild(wrapper);
+
+    $(wrapper).find(".extra-select").select2({
+      width: "200px",
+      placeholder: "Selecione ou pesquise"
+    });
+  }
 </script>
 {% endblock %}
