@@ -468,3 +468,99 @@ button:hover {
     max-width: 400px;
   }
 }
+
+/* ======= TABELA ESTILIZADA ======= */
+
+.movimentacoes-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.85rem;
+  background-color: #fff;
+  min-width: 1000px;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.movimentacoes-table thead th {
+  position: sticky;
+  top: 0;
+  background-color: #ff7b00;
+  color: #fff;
+  padding: 10px 8px;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.5px;
+  z-index: 2;
+  border-bottom: 2px solid #f56c00;
+}
+
+.movimentacoes-table th:first-child {
+  border-top-left-radius: 8px;
+}
+.movimentacoes-table th:last-child {
+  border-top-right-radius: 8px;
+}
+
+.movimentacoes-table tbody td {
+  padding: 10px 8px;
+  border-bottom: 1px solid #eee;
+  text-align: center;
+  vertical-align: middle;
+  font-size: 0.84rem;
+  color: #333;
+}
+
+.movimentacoes-table td ul {
+  list-style: none;
+  padding-left: 0;
+  margin: 0;
+}
+
+.movimentacoes-table td ul li {
+  padding: 2px 0;
+}
+
+/* Botões dentro da tabela */
+.btn-acao,
+.btn-editar {
+  padding: 6px 10px;
+  font-size: 0.75rem;
+  border-radius: 6px;
+  display: inline-block;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.btn-editar {
+  font-weight: 500;
+}
+
+.btn-group {
+  gap: 6px;
+}
+
+/* Estado da linha finalizada (apenas texto, já tinha cor de fundo) */
+.status-ok {
+  display: inline-block;
+  font-weight: 600;
+  font-size: 0.8rem;
+  color: #28a745;
+  background: rgba(40, 167, 69, 0.1);
+  padding: 3px 6px;
+  border-radius: 6px;
+}
+
+.table-wrapper::-webkit-scrollbar {
+  height: 6px;
+  width: 6px;
+}
+.table-wrapper::-webkit-scrollbar-thumb {
+  background-color: #ccc;
+  border-radius: 4px;
+}
+.table-wrapper::-webkit-scrollbar-track {
+  background-color: transparent;
+}

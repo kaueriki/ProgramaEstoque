@@ -112,7 +112,7 @@
           <td>{{ m.data_retirada.strftime('%d/%m/%Y %H:%M') }}</td>
           <td>{{ m.prazo_devolucao.strftime('%d/%m/%Y') if m.prazo_devolucao else '-' }}</td>
           <td>{{ m.status_atual }}</td>
-          <td>{{ m.observacao or '-' }}</td>
+          <td style="white-space: pre-wrap;">{{ m.observacao or '-' }}</td>
           <td>
             <div class="btn-group">
               {% if not m.devolvido and not m.utilizado_cliente %}

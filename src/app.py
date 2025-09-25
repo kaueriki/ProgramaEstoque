@@ -563,7 +563,6 @@ def editar_movimentacao(id):
                            materiais=materiais_serializados,
                            clientes=clientes)
 
-
 @movimentacoes_bp.route("/movimentacoes/<int:id>/finalizar", methods=["POST"])
 def finalizar(id):
     if "usuario_id" not in session:
@@ -578,6 +577,7 @@ def finalizar(id):
     try:
         resumo = []
 
+        # Processa os materiais da movimentação
         for mm in m.materiais:
             input_name = f"quantidade_ok_{mm.id}"
             qtd_ok_str = request.form.get(input_name)
@@ -600,6 +600,7 @@ def finalizar(id):
                 flash(f"Quantidade inválida para o material {mm.material.nome}", "error")
                 return redirect(url_for("movimentacoes.listar_movimentacoes"))
 
+        # Processa os materiais extras adicionados
         extras_nomes = request.form.getlist("extra_nome[]")
         extras_qtds = request.form.getlist("extra_quantidade[]")
 
@@ -622,12 +623,26 @@ def finalizar(id):
             except ValueError:
                 continue
 
+        # Observação do usuário
         observacao_usuario = request.form.get("observacao_finalizacao", "").strip()
-        resumo_final = " | ".join(resumo)
-        if observacao_usuario:
-            resumo_final += f" | Obs: {observacao_usuario}"
 
-        m.observacao = resumo_final
+        # Formata o resumo para observação com quebras de linha
+        resumo_formatado = ""
+        for item in resumo:
+            if "(extra adicionado)" in item:
+                nome, resto = item.split(":", 1)
+                resumo_formatado += f"\n{nome.strip()}:\n  - OK: {resto.strip()}\n"
+            else:
+                nome, detalhes = item.split(":", 1)
+                partes = detalhes.strip().split("/")
+                ok = partes[0].replace("OK", "").strip()
+                nao_ok = partes[1].replace("não OK", "").strip()
+                resumo_formatado += f"\n{nome.strip()}:\n  - OK: {ok} | Não OK: {nao_ok}\n"
+
+        if observacao_usuario:
+            resumo_formatado += f"\n\nObs: {observacao_usuario}"
+
+        m.observacao = resumo_formatado.strip()
         m.devolvido = True
         m.status = "verde"
 
