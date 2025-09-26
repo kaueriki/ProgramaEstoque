@@ -45,7 +45,7 @@
       <select name="material_id[]" class="material-select" required>
         <option value="">-- Selecione --</option>
         {% for material in materiais %}
-          <option value="{{ material.id }}">{{ material.nome }} ({{ material.quantidade }} disponíveis)</option>
+          <option value="{{ material.id }}">{{ material.nome }}</option>
         {% endfor %}
       </select>
 

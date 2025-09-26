@@ -113,38 +113,37 @@
           <td>{{ m.prazo_devolucao.strftime('%d/%m/%Y') if m.prazo_devolucao else '-' }}</td>
           <td>{{ m.status_atual }}</td>
           <td style="white-space: pre-wrap;">{{ m.observacao or '-' }}</td>
-          <td>
-            <div class="btn-group">
-              {% if not m.devolvido and not m.utilizado_cliente %}
-              <button class="btn-acao" onclick="toggleDropdown('finalizar-{{ m.id }}')">Finalizar</button>
-              <div id="finalizar-{{ m.id }}" class="dropdown-acoes">
-                <h3>Finalizar Movimentação</h3>
-                <form method="POST" action="{{ url_for('movimentacoes.finalizar', id=m.id) }}">
-                  {% for mov_mat in m.materiais %}
-                  <label for="quantidade_ok_{{ mov_mat.id }}">Qtd OK ({{ mov_mat.material.nome }})</label>
-                  <input type="number" name="quantidade_ok_{{ mov_mat.id }}" min="0" max="{{ mov_mat.quantidade }}" required>
-                  {% endfor %}
-
-                  <div class="materiais-extra">
-                    <h4>Adicionar Material devolvido</h4>
-                    <div id="extras-{{ m.id }}"></div>
-                    <button type="button" class="btn-adicionar-extra" onclick="addExtra({{ m.id }})">+ Adicionar Material</button>
+            <td>
+              <div class="btn-group">
+                {% if not m.devolvido and not m.utilizado_cliente %}
+                  <button class="btn-acao" onclick="toggleDropdown('finalizar-{{ m.id }}')">Finalizar</button>
+                  <div id="finalizar-{{ m.id }}" class="dropdown-acoes">
+                    <h3>Finalizar Movimentação</h3>
+                    <form method="POST" action="{{ url_for('movimentacoes.finalizar', id=m.id) }}">
+                      {% for mov_mat in m.materiais %}
+                        <label for="quantidade_ok_{{ mov_mat.id }}">
+                          Quantidade que retornou ao estoque ({{ mov_mat.material.nome }})
+                        </label>
+                        <input type="number" 
+                              name="quantidade_ok_{{ mov_mat.id }}" 
+                              min="0" 
+                              max="{{ mov_mat.quantidade }}" 
+                              required>
+                      {% endfor %}
+                      <label for="observacao_finalizacao">Observação</label>
+                      <textarea name="observacao_finalizacao" rows="3" placeholder="Observação"></textarea>
+                      <div class="btn-group">
+                        <button type="submit" class="btn-finalizar">Confirmar</button>
+                        <button type="button" class="btn-fechar" onclick="toggleDropdown('finalizar-{{ m.id }}')">x</button>
+                      </div>
+                    </form>
                   </div>
-
-                  <label for="observacao_finalizacao">Observação</label>
-                  <textarea name="observacao_finalizacao" rows="3" placeholder="Observação"></textarea>
-                  <div class="btn-group">
-                    <button type="submit" class="btn-finalizar">Confirmar</button>
-                    <button type="button" class="btn-fechar" onclick="toggleDropdown('finalizar-{{ m.id }}')">x</button>
-                  </div>
-                </form>
+                {% else %}
+                  <span class="status-ok">Finalizado</span>
+                {% endif %}
+                <a href="{{ url_for('movimentacoes.editar_movimentacao', id=m.id) }}" class="btn-editar">Editar</a>
               </div>
-              {% else %}
-              <span class="status-ok">Finalizado</span>
-              {% endif %}
-              <a href="{{ url_for('movimentacoes.editar_movimentacao', id=m.id) }}" class="btn-editar">Editar</a>
-            </div>
-          </td>
+            </td>
         </tr>
         {% endfor %}
       </tbody>
@@ -178,27 +177,5 @@
       document.querySelectorAll('.dropdown-acoes').forEach(el => el.style.display = 'none');
     }
   });
-
-  function addExtra(movId) {
-    const container = document.getElementById(`extras-${movId}`);
-    const wrapper = document.createElement("div");
-    wrapper.classList.add("extra-item");
-    wrapper.innerHTML = `
-      <select name="extra_nome[]" class="extra-select" required>
-        <option value="">Selecione o material</option>
-        {% for material in materiais_disponiveis %}
-        <option value="{{ material.nome }}">{{ material.nome }}</option>
-        {% endfor %}
-      </select>
-      <input type="number" name="extra_quantidade[]" min="1" placeholder="Qtd" required>
-      <button type="button" class="btn-remover-extra" onclick="this.parentElement.remove()">Remover</button>
-    `;
-    container.appendChild(wrapper);
-
-    $(wrapper).find(".extra-select").select2({
-      width: "200px",
-      placeholder: "Selecione ou pesquise"
-    });
-  }
 </script>
 {% endblock %}

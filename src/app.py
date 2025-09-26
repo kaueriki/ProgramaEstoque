@@ -577,7 +577,7 @@ def finalizar(id):
     try:
         resumo = []
 
-        # Processa os materiais da movimentação
+        # Apenas os materiais da movimentação
         for mm in m.materiais:
             input_name = f"quantidade_ok_{mm.id}"
             qtd_ok_str = request.form.get(input_name)
@@ -590,6 +590,7 @@ def finalizar(id):
 
                 mm.quantidade_ok = qtd_ok
 
+                # devolve a quantidade ao estoque
                 material = db.query(Material).get(mm.material_id)
                 material.quantidade += qtd_ok
 
@@ -600,44 +601,17 @@ def finalizar(id):
                 flash(f"Quantidade inválida para o material {mm.material.nome}", "error")
                 return redirect(url_for("movimentacoes.listar_movimentacoes"))
 
-        # Processa os materiais extras adicionados
-        extras_nomes = request.form.getlist("extra_nome[]")
-        extras_qtds = request.form.getlist("extra_quantidade[]")
-
-        for nome, qtd_str in zip(extras_nomes, extras_qtds):
-            if not nome.strip() or not qtd_str.strip():
-                continue
-            try:
-                qtd = int(qtd_str)
-                if qtd <= 0:
-                    continue
-
-                material = db.query(Material).filter(Material.nome == nome.strip()).first()
-                if material:
-                    material.quantidade += qtd
-                else:
-                    material = Material(nome=nome.strip(), quantidade=qtd)
-                    db.add(material)
-
-                resumo.append(f"{nome.strip()}: OK {qtd} (extra adicionado)")
-            except ValueError:
-                continue
-
         # Observação do usuário
         observacao_usuario = request.form.get("observacao_finalizacao", "").strip()
 
-        # Formata o resumo para observação com quebras de linha
+        # Monta texto final
         resumo_formatado = ""
         for item in resumo:
-            if "(extra adicionado)" in item:
-                nome, resto = item.split(":", 1)
-                resumo_formatado += f"\n{nome.strip()}:\n  - OK: {resto.strip()}\n"
-            else:
-                nome, detalhes = item.split(":", 1)
-                partes = detalhes.strip().split("/")
-                ok = partes[0].replace("OK", "").strip()
-                nao_ok = partes[1].replace("não OK", "").strip()
-                resumo_formatado += f"\n{nome.strip()}:\n  - OK: {ok} | Não OK: {nao_ok}\n"
+            nome, detalhes = item.split(":", 1)
+            partes = detalhes.strip().split("/")
+            ok = partes[0].replace("OK", "").strip()
+            nao_ok = partes[1].replace("não OK", "").strip()
+            resumo_formatado += f"\n{nome.strip()}:\n  - OK: {ok} | Não OK: {nao_ok}\n"
 
         if observacao_usuario:
             resumo_formatado += f"\n\nObs: {observacao_usuario}"
@@ -654,6 +628,7 @@ def finalizar(id):
         db.rollback()
         flash(f"Erro ao finalizar movimentação: {str(e)}", "error")
         return redirect(url_for("movimentacoes.listar_movimentacoes"))
+
 
 @movimentacoes_bp.route("/movimentacoes/export/excel")
 def export_excel():

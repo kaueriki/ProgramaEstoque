@@ -1,11 +1,11 @@
 .movimentacoes-container {
   display: flex;
   flex-direction: column;
-  height: 90vh;
   max-width: 1200px;
   width: 100%;
-  margin: 20px auto;
-  padding: 5px 20px;
+  padding: 10px 16px;
+  margin: 10px auto;
+  height: 94vh;
   background-color: #fdfdfd;
   border: 1px solid #ddd;
   border-radius: 10px;
@@ -41,11 +41,11 @@
 }
 
 .filtro-form-horizontal {
-  padding: 10px 14px;
+  padding: 8px 10px;
   background-color: #f9f9f9;
   border-radius: 8px;
   border: 1px solid #ddd;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .filtro-grid-horizontal {
@@ -70,8 +70,8 @@
 
 .filtro-item input,
 .filtro-item select {
-  padding: 6px 8px;
-  font-size: 0.85rem;
+  padding: 4px 6px;
+  font-size: 0.75rem;
   border-radius: 5px;
   border: 1px solid #ccc;
   width: 100%;
@@ -135,7 +135,6 @@
   background-color: #d96a00;
 }
 
-/* TABELA */
 .table-wrapper {
   max-height: calc(100vh - 350px);
   overflow-y: auto;
@@ -147,10 +146,10 @@
 
 .movimentacoes-table {
   border-collapse: collapse;
-  font-size: 0.8rem;
   background-color: #fff;
   width: 100%;
   min-width: 900px;
+  font-size: 0.75rem;
 }
 
 .movimentacoes-table thead th {
@@ -159,6 +158,8 @@
   background-color: #ff7b00;
   color: #fff;
   z-index: 2;
+  padding: 6px 4px;
+  font-size: 0.7rem;
 }
 
 .movimentacoes-table th,
@@ -505,12 +506,13 @@ button:hover {
 }
 
 .movimentacoes-table tbody td {
-  padding: 10px 8px;
   border-bottom: 1px solid #eee;
   text-align: center;
   vertical-align: middle;
-  font-size: 0.84rem;
   color: #333;
+  padding: 6px 4px;
+  border-color: black;
+  font-size: 0.74rem;
 }
 
 .movimentacoes-table td ul {
@@ -520,10 +522,10 @@ button:hover {
 }
 
 .movimentacoes-table td ul li {
-  padding: 2px 0;
+  padding: 1px 0;
+  font-size: 0.72rem;
 }
 
-/* Botões dentro da tabela */
 .btn-acao,
 .btn-editar {
   padding: 6px 10px;
