@@ -62,6 +62,12 @@
           <option value="100" {% if request.args.get('per_page') == '100' %}selected{% endif %}>100</option>
         </select>
       </div>
+      <div class="filtro-acoes-esquerda">
+        <label>
+          <input type="checkbox" name="mostrar_somente_nao_ok" value="1" {% if request.args.get('mostrar_somente_nao_ok') == '1' %}checked{% endif %}>
+          Somente NÃO OK
+        </label>
+      </div>
       <div class="filtro-acoes-direita">
         <a href="{{ url_for('movimentacoes.export_pdf', material=request.args.get('material', ''), cliente=request.args.get('cliente', ''), funcionario=request.args.get('funcionario', ''), status=request.args.get('status', ''), data_inicio=request.args.get('data_inicio', ''), data_fim=request.args.get('data_fim', '')) }}" class="btn-exportar">Exportar PDF</a>
         <a href="{{ url_for('movimentacoes.export_excel', material=request.args.get('material', ''), cliente=request.args.get('cliente', ''), funcionario=request.args.get('funcionario', ''), status=request.args.get('status', ''), data_inicio=request.args.get('data_inicio', ''), data_fim=request.args.get('data_fim', '')) }}" class="btn-exportar">Exportar Excel</a>
@@ -74,13 +80,15 @@
       <thead>
         <tr>
           <th>Material</th>
-          <th>Qtd</th>
+          <th>Qtd Retirada</th>
           <th>Funcionário</th>
           <th>Cliente</th>
           <th>OS</th>
           <th>Retirada</th>
           <th>Prazo</th>
           <th>Status</th>
+          <th>Retornou ao estoque</th>
+          <th>Qtd Não OK</th>
           <th>Observação</th>
           <th>Ações</th>
         </tr>
@@ -112,38 +120,60 @@
           <td>{{ m.data_retirada.strftime('%d/%m/%Y %H:%M') }}</td>
           <td>{{ m.prazo_devolucao.strftime('%d/%m/%Y') if m.prazo_devolucao else '-' }}</td>
           <td>{{ m.status_atual }}</td>
-          <td style="white-space: pre-wrap;">{{ m.observacao or '-' }}</td>
-            <td>
-              <div class="btn-group">
-                {% if not m.devolvido and not m.utilizado_cliente %}
-                  <button class="btn-acao" onclick="toggleDropdown('finalizar-{{ m.id }}')">Finalizar</button>
-                  <div id="finalizar-{{ m.id }}" class="dropdown-acoes">
-                    <h3>Finalizar Movimentação</h3>
-                    <form method="POST" action="{{ url_for('movimentacoes.finalizar', id=m.id) }}">
-                      {% for mov_mat in m.materiais %}
-                        <label for="quantidade_ok_{{ mov_mat.id }}">
-                          Quantidade que retornou ao estoque ({{ mov_mat.material.nome }})
-                        </label>
-                        <input type="number" 
-                              name="quantidade_ok_{{ mov_mat.id }}" 
-                              min="0" 
-                              max="{{ mov_mat.quantidade }}" 
-                              required>
-                      {% endfor %}
-                      <label for="observacao_finalizacao">Observação</label>
-                      <textarea name="observacao_finalizacao" rows="3" placeholder="Observação"></textarea>
-                      <div class="btn-group">
-                        <button type="submit" class="btn-finalizar">Confirmar</button>
-                        <button type="button" class="btn-fechar" onclick="toggleDropdown('finalizar-{{ m.id }}')">x</button>
-                      </div>
-                    </form>
-                  </div>
+          <td>
+            <ul>
+              {% for mov_mat in m.materiais %}
+              <li>{{ mov_mat.quantidade_ok if mov_mat.quantidade_ok is not none else '-' }}</li>
+              {% else %}
+              <li>-</li>
+              {% endfor %}
+            </ul>
+          </td>
+          <td>
+            <ul>
+              {% for mov_mat in m.materiais %}
+                {% if mov_mat.quantidade_ok is not none %}
+                  <li>{{ mov_mat.quantidade - mov_mat.quantidade_ok }}</li>
                 {% else %}
-                  <span class="status-ok">Finalizado</span>
+                  <li>-</li>
                 {% endif %}
-                <a href="{{ url_for('movimentacoes.editar_movimentacao', id=m.id) }}" class="btn-editar">Editar</a>
-              </div>
-            </td>
+              {% else %}
+                <li>-</li>
+              {% endfor %}
+            </ul>
+          </td>
+          <td style="white-space: pre-wrap;">{{ m.observacao or '-' }}</td>
+          <td>
+            <div class="btn-group">
+              {% if not m.devolvido and not m.utilizado_cliente %}
+                <button class="btn-acao" onclick="toggleDropdown('finalizar-{{ m.id }}')">Finalizar</button>
+                <div id="finalizar-{{ m.id }}" class="dropdown-acoes">
+                  <h3>Finalizar Movimentação</h3>
+                  <form method="POST" action="{{ url_for('movimentacoes.finalizar', id=m.id) }}">
+                    {% for mov_mat in m.materiais %}
+                      <label for="quantidade_ok_{{ mov_mat.id }}">
+                        Quantidade que retornou ao estoque ({{ mov_mat.material.nome }})
+                      </label>
+                      <input type="number" 
+                            name="quantidade_ok_{{ mov_mat.id }}" 
+                            min="0" 
+                            max="{{ mov_mat.quantidade }}" 
+                            required>
+                    {% endfor %}
+                    <label for="observacao_finalizacao">Observação</label>
+                    <textarea name="observacao_finalizacao" rows="3" placeholder="Observação"></textarea>
+                    <div class="btn-group">
+                      <button type="submit" class="btn-finalizar">Confirmar</button>
+                      <button type="button" class="btn-fechar" onclick="toggleDropdown('finalizar-{{ m.id }}')">x</button>
+                    </div>
+                  </form>
+                </div>
+              {% else %}
+                <span class="status-ok">Finalizado</span>
+              {% endif %}
+              <a href="{{ url_for('movimentacoes.editar_movimentacao', id=m.id) }}" class="btn-editar">Editar</a>
+            </div>
+          </td>
         </tr>
         {% endfor %}
       </tbody>

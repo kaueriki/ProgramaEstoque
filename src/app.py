@@ -284,6 +284,7 @@ def listar_movimentacoes():
     status_raw = request.args.get("status", "").strip().lower()
     data_inicio_str = request.args.get("data_inicio", "").strip()
     data_fim_str = request.args.get("data_fim", "").strip()
+    mostrar_somente_nao_ok = request.args.get('mostrar_somente_nao_ok') == '1'
 
     per_page = request.args.get("per_page", 50, type=int)
     page = request.args.get("page", 1, type=int)
@@ -344,11 +345,25 @@ def listar_movimentacoes():
             flash("Data de fim inválida", "error")
 
     total = query.distinct().count()
+
     movimentacoes = query.order_by(Movimentacao.data_retirada.desc()) \
                          .offset((page - 1) * per_page) \
                          .limit(per_page) \
                          .all()
-    total_pages = (total + per_page - 1) // per_page
+
+    if mostrar_somente_nao_ok:
+        movimentacoes = [
+            m for m in movimentacoes
+            if any(
+                mov_mat.quantidade_ok is not None and mov_mat.quantidade_ok < mov_mat.quantidade
+                for mov_mat in m.materiais
+            )
+        ]
+        total = len(movimentacoes)
+        total_pages = 1
+    else:
+        total_pages = (total + per_page - 1) // per_page
+
     materiais_disponiveis = db.query(Material).order_by(Material.nome).all()
 
     return render_template(
@@ -562,7 +577,6 @@ def editar_movimentacao(id):
                            movimentacao=movimentacao,
                            materiais=materiais_serializados,
                            clientes=clientes)
-
 @movimentacoes_bp.route("/movimentacoes/<int:id>/finalizar", methods=["POST"])
 def finalizar(id):
     if "usuario_id" not in session:
@@ -575,9 +589,6 @@ def finalizar(id):
         return redirect(url_for("movimentacoes.listar_movimentacoes"))
 
     try:
-        resumo = []
-
-        # Apenas os materiais da movimentação
         for mm in m.materiais:
             input_name = f"quantidade_ok_{mm.id}"
             qtd_ok_str = request.form.get(input_name)
@@ -590,33 +601,15 @@ def finalizar(id):
 
                 mm.quantidade_ok = qtd_ok
 
-                # devolve a quantidade ao estoque
                 material = db.query(Material).get(mm.material_id)
                 material.quantidade += qtd_ok
-
-                qtd_danificado = mm.quantidade - qtd_ok
-                resumo.append(f"{mm.material.nome}: OK {qtd_ok} / não OK {qtd_danificado}")
 
             except (ValueError, TypeError):
                 flash(f"Quantidade inválida para o material {mm.material.nome}", "error")
                 return redirect(url_for("movimentacoes.listar_movimentacoes"))
 
-        # Observação do usuário
-        observacao_usuario = request.form.get("observacao_finalizacao", "").strip()
-
-        # Monta texto final
-        resumo_formatado = ""
-        for item in resumo:
-            nome, detalhes = item.split(":", 1)
-            partes = detalhes.strip().split("/")
-            ok = partes[0].replace("OK", "").strip()
-            nao_ok = partes[1].replace("não OK", "").strip()
-            resumo_formatado += f"\n{nome.strip()}:\n  - OK: {ok} | Não OK: {nao_ok}\n"
-
-        if observacao_usuario:
-            resumo_formatado += f"\n\nObs: {observacao_usuario}"
-
-        m.observacao = resumo_formatado.strip()
+        # Apenas a observação do usuário
+        m.observacao = request.form.get("observacao_finalizacao", "").strip()
         m.devolvido = True
         m.status = "verde"
 
