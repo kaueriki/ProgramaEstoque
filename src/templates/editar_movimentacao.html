@@ -24,8 +24,12 @@
           </select>
         </div>
         <div class="col-md-3">
-          <label class="form-label">Quantidade:</label>
+          <label class="form-label">Qtd. Enviada:</label>
           <input type="number" class="form-control" name="quantidade[]" value="{{ mm.quantidade }}" required>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Qtd. OK:</label>
+          <input type="number" class="form-control" name="quantidade_ok[]" value="{{ mm.quantidade_ok or '' }}">
         </div>
         <div class="col-md-3">
           <button type="button" class="btn btn-danger btn-remove-material">Remover</button>

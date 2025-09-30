@@ -508,6 +508,8 @@ def editar_movimentacao(id):
 
             materiais_ids = request.form.getlist("material_id[]")
             quantidades = request.form.getlist("quantidade[]")
+            quantidades_ok = request.form.getlist("quantidade_ok[]")
+
 
             if not materiais_ids or not quantidades or len(materiais_ids) != len(quantidades):
                 flash("Informe pelo menos um material com quantidade!", "error")
@@ -544,11 +546,17 @@ def editar_movimentacao(id):
 
             db.query(MovimentacaoMaterial).filter(MovimentacaoMaterial.movimentacao_id == movimentacao.id).delete()
 
-            for mat_id, qtd in novos_materiais.items():
+            for i, (mat_id, qtd) in enumerate(novos_materiais.items()):
+                try:
+                    qtd_ok = int(quantidades_ok[i]) if quantidades_ok[i].strip() else None
+                except (ValueError, IndexError):
+                    qtd_ok = None
+
                 mov_mat = MovimentacaoMaterial(
                     movimentacao_id=movimentacao.id,
                     material_id=mat_id,
-                    quantidade=qtd
+                    quantidade=qtd,
+                    quantidade_ok=qtd_ok
                 )
                 db.add(mov_mat)
 
