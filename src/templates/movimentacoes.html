@@ -1,8 +1,8 @@
 {% extends "base.html" %}
 
 {% block extra_css %}
-  <link rel="stylesheet" href="{{ url_for('static', filename='movimentacoes.css') }}">
-  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link rel="stylesheet" href="{{ url_for('static', filename='movimentacoes.css') }}">
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 {% endblock %}
 
 {% block content %}
@@ -33,11 +33,11 @@
         <label for="status">Status</label>
         <select name="status" id="status">
           <option value="">Todos</option>
-          <option value="pendente" {% if request.args.get('status') == 'pendente' %}selected{% endif %}>Pendente</option>
-          <option value="atrasado" {% if request.args.get('status') == 'atrasado' %}selected{% endif %}>Atrasado</option>
-          <option value="verde" {% if request.args.get('status') == 'verde' %}selected{% endif %}>Finalizado</option>
-          <option value="devolvido" {% if request.args.get('status') == 'devolvido' %}selected{% endif %}>Devolvido</option>
-          <option value="cliente" {% if request.args.get('status') == 'cliente' %}selected{% endif %}>Ficou no cliente</option>
+          <option value="pendente" {% if request.args.get('status')=='pendente' %}selected{% endif %}>Pendente</option>
+          <option value="atrasado" {% if request.args.get('status')=='atrasado' %}selected{% endif %}>Atrasado</option>
+          <option value="verde" {% if request.args.get('status')=='verde' %}selected{% endif %}>Finalizado</option>
+          <option value="devolvido" {% if request.args.get('status')=='devolvido' %}selected{% endif %}>Devolvido</option>
+          <option value="cliente" {% if request.args.get('status')=='cliente' %}selected{% endif %}>Ficou no cliente</option>
         </select>
       </div>
       <div class="filtro-item">
@@ -56,15 +56,15 @@
         <button type="button" class="btn-limpar" onclick="window.location.href='{{ url_for('movimentacoes.listar_movimentacoes') }}'">Limpar</button>
         <label for="per_page">Itens por página</label>
         <select id="per_page" name="per_page" onchange="this.form.submit()">
-          <option value="10" {% if request.args.get('per_page', '10') == '10' %}selected{% endif %}>10</option>
-          <option value="25" {% if request.args.get('per_page') == '25' %}selected{% endif %}>25</option>
-          <option value="50" {% if request.args.get('per_page') == '50' %}selected{% endif %}>50</option>
-          <option value="100" {% if request.args.get('per_page') == '100' %}selected{% endif %}>100</option>
+          <option value="10" {% if request.args.get('per_page', '10' )=='10' %}selected{% endif %}>10</option>
+          <option value="25" {% if request.args.get('per_page')=='25' %}selected{% endif %}>25</option>
+          <option value="50" {% if request.args.get('per_page')=='50' %}selected{% endif %}>50</option>
+          <option value="100" {% if request.args.get('per_page')=='100' %}selected{% endif %}>100</option>
         </select>
       </div>
       <div class="filtro-acoes-esquerda">
         <label>
-          <input type="checkbox" name="mostrar_somente_nao_ok" value="1" {% if request.args.get('mostrar_somente_nao_ok') == '1' %}checked{% endif %}>
+          <input type="checkbox" name="mostrar_somente_nao_ok" value="1" {% if request.args.get('mostrar_somente_nao_ok')=='1' %}checked{% endif %}>
           Somente NÃO OK
         </label>
       </div>
@@ -81,14 +81,16 @@
         <tr>
           <th>Material</th>
           <th>Qtd Retirada</th>
-          <th>Funcionário</th>
-          <th>Cliente</th>
+          <th>Colaborador</th>
+          <th>Local Utilização</th>
           <th>OS</th>
-          <th>Retirada</th>
-          <th>Prazo</th>
+          <th>Motivo</th>
+          <th>Data Retirada</th>
+          <th>Prazo Devolução</th>
           <th>Status</th>
-          <th>Retornou ao estoque</th>
-          <th>Qtd Não OK</th>
+          <th>Retorno OK</th>
+          <th>Retorno NÃO OK</th>
+          <th>Sem retorno (utilizado)</th>
           <th>Observação</th>
           <th>Ações</th>
         </tr>
@@ -117,6 +119,7 @@
           <td>{{ m.funcionario }}</td>
           <td>{{ m.cliente.nome if m.cliente else '-' }}</td>
           <td>{{ m.ordem_servico }}</td>
+          <td>{{ m.motivo }}</td>
           <td>{{ m.data_retirada.strftime('%d/%m/%Y %H:%M') }}</td>
           <td>{{ m.prazo_devolucao.strftime('%d/%m/%Y') if m.prazo_devolucao else '-' }}</td>
           <td>{{ m.status_atual }}</td>
@@ -132,13 +135,26 @@
           <td>
             <ul>
               {% for mov_mat in m.materiais %}
-                {% if mov_mat.quantidade_ok is not none %}
-                  <li>{{ mov_mat.quantidade - mov_mat.quantidade_ok }}</li>
-                {% else %}
-                  <li>-</li>
-                {% endif %}
+              {% if mov_mat.quantidade_ok is not none %}
+              <li>{{ mov_mat.quantidade - mov_mat.quantidade_ok }}</li>
               {% else %}
-                <li>-</li>
+              <li>-</li>
+              {% endif %}
+              {% else %}
+              <li>-</li>
+              {% endfor %}
+            </ul>
+          </td>
+          <td>
+            <ul>
+              {% for mov_mat in m.materiais %}
+              {% if mov_mat.quantidade_sem_retorno is not none %}
+              <li>{{ mov_mat.quantidade_sem_retorno }}</li>
+              {% else %}
+              <li>-</li>
+              {% endif %}
+              {% else %}
+              <li>-</li>
               {% endfor %}
             </ul>
           </td>
@@ -146,30 +162,34 @@
           <td>
             <div class="btn-group">
               {% if not m.devolvido and not m.utilizado_cliente %}
-                <button class="btn-acao" onclick="toggleDropdown('finalizar-{{ m.id }}')">Finalizar</button>
-                <div id="finalizar-{{ m.id }}" class="dropdown-acoes">
-                  <h3>Finalizar Movimentação</h3>
-                  <form method="POST" action="{{ url_for('movimentacoes.finalizar', id=m.id) }}">
-                    {% for mov_mat in m.materiais %}
-                      <label for="quantidade_ok_{{ mov_mat.id }}">
-                        Quantidade que retornou ao estoque ({{ mov_mat.material.nome }})
-                      </label>
-                      <input type="number" 
-                            name="quantidade_ok_{{ mov_mat.id }}" 
-                            min="0" 
-                            max="{{ mov_mat.quantidade }}" 
-                            required>
-                    {% endfor %}
-                    <label for="observacao_finalizacao">Observação</label>
-                    <textarea name="observacao_finalizacao" rows="3" placeholder="Observação"></textarea>
-                    <div class="btn-group">
-                      <button type="submit" class="btn-finalizar">Confirmar</button>
-                      <button type="button" class="btn-fechar" onclick="toggleDropdown('finalizar-{{ m.id }}')">x</button>
-                    </div>
-                  </form>
-                </div>
+              <button class="btn-acao" onclick="toggleDropdown('finalizar-{{ m.id }}')">Finalizar</button>
+              <div id="finalizar-{{ m.id }}" class="dropdown-acoes" style="display: none;">
+                <h3>Finalizar Movimentação</h3>
+                <form method="POST" action="{{ url_for('movimentacoes.finalizar_movimentacao', id=m.id) }}" onsubmit="return validarCampos({{ m.id }})">
+                  {% for mov_mat in m.materiais %}
+                  <p><strong>{{ mov_mat.material.nome }}</strong></p>
+
+                  <label for="quantidade_ok_{{ mov_mat.id }}">Quantidade com retorno ao estoque (OK)</label>
+                  <input type="number" name="quantidade_ok_{{ mov_mat.id }}" id="quantidade_ok_{{ mov_mat.id }}" min="0" max="{{ mov_mat.quantidade }}" required>
+
+                  <label for="quantidade_sem_retorno_{{ mov_mat.id }}">Quantidade sem retorno (ficou com cliente)</label>
+                  <input type="number" name="quantidade_sem_retorno_{{ mov_mat.id }}" id="quantidade_sem_retorno_{{ mov_mat.id }}" min="0" max="{{ mov_mat.quantidade }}" required>
+
+                  <p>Total retirado: {{ mov_mat.quantidade }}</p>
+                  <hr>
+                  {% endfor %}
+
+                  <label for="observacao_finalizacao">Observação</label>
+                  <textarea name="observacao_finalizacao" rows="3" placeholder="Observação"></textarea>
+
+                  <div class="btn-group">
+                    <button type="submit" class="btn-finalizar">Confirmar</button>
+                    <button type="button" class="btn-fechar" onclick="toggleDropdown('finalizar-{{ m.id }}')">x</button>
+                  </div>
+                </form>
+              </div>
               {% else %}
-                <span class="status-ok">Finalizado</span>
+              <span class="status-ok">Finalizado</span>
               {% endif %}
               <a href="{{ url_for('movimentacoes.editar_movimentacao', id=m.id) }}" class="btn-editar">Editar</a>
             </div>
@@ -207,5 +227,30 @@
       document.querySelectorAll('.dropdown-acoes').forEach(el => el.style.display = 'none');
     }
   });
+
+  function validarCampos(movimentacaoId) {
+    const form = document.querySelector(`#finalizar-${movimentacaoId} form`);
+    const inputsOk = form.querySelectorAll('input[name^="quantidade_ok_"]');
+    const inputsSemRetorno = form.querySelectorAll('input[name^="quantidade_sem_retorno_"]');
+
+    for (let i = 0; i < inputsOk.length; i++) {
+      const ok = parseInt(inputsOk[i].value) || 0;
+      const semRetorno = parseInt(inputsSemRetorno[i].value) || 0;
+      const total = ok + semRetorno;
+      const max = parseInt(inputsOk[i].max);
+
+      if (total > max) {
+        alert(`A soma das quantidades não pode ser maior que ${max}.`);
+        return false;
+      }
+
+      if (ok > 0 && semRetorno > 0) {
+        alert("Preencha apenas um dos campos com valor maior que 0.");
+        return false;
+      }
+    }
+
+    return true;
+  }
 </script>
 {% endblock %}

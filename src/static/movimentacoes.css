@@ -1,7 +1,7 @@
 .movimentacoes-container {
   display: flex;
   flex-direction: column;
-  max-width: 1200px;
+  max-width: 1400px;
   width: 100%;
   padding: 10px 16px;
   margin: 10px auto;
@@ -470,7 +470,6 @@ button:hover {
   }
 }
 
-/* ======= TABELA ESTILIZADA ======= */
 
 .movimentacoes-table {
   width: 100%;

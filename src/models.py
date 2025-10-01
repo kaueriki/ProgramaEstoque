@@ -52,7 +52,7 @@ class Movimentacao(Base):
     responsavel_id = Column(Integer, ForeignKey("usuarios.id"), nullable=False)
     data_retirada = Column(DateTime, default=datetime.utcnow)
     prazo_devolucao = Column(Date)
-    motivo = Column(Enum("manutenção", "preventiva", "teste", "instalação"), nullable=True)
+    motivo = Column(Enum("manutenção", "emprestimo", "teste", "instalação", "preventiva"), nullable=True)
     status = Column(Enum("verde", "amarelo", "vermelho"), default="amarelo")
     devolvido = Column(Boolean, default=False)
     utilizado_cliente = Column(Boolean, default=False)
@@ -85,6 +85,7 @@ class MovimentacaoMaterial(Base):
     material_id = Column(Integer, ForeignKey("materiais.id"), nullable=False)
     quantidade = Column(Integer, nullable=False)
     quantidade_ok = Column(Integer)
+    quantidade_sem_retorno = Column(Integer)
 
     movimentacao = relationship("Movimentacao", back_populates="materiais")
     material = relationship("Material")

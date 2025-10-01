@@ -110,7 +110,7 @@
       <select name="motivo" id="motivo" class="form-select select2">
         <option value="">-- Selecione --</option>
         <option value="manutenção" {% if movimentacao.motivo == 'manutenção' %}selected{% endif %}>Manutenção</option>
-        <option value="preventiva" {% if movimentacao.motivo == 'preventiva' %}selected{% endif %}>Preventiva</option>
+        <option value="emprestimo" {% if movimentacao.motivo == 'emprestimo' %}selected{% endif %}>Empréstimo</option>
         <option value="teste" {% if movimentacao.motivo == 'teste' %}selected{% endif %}>Teste</option>
         <option value="instalação" {% if movimentacao.motivo == 'instalação' %}selected{% endif %}>Instalação</option>
       </select>
