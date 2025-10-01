@@ -27,9 +27,20 @@
           <label class="form-label">Qtd. Enviada:</label>
           <input type="number" class="form-control" name="quantidade[]" value="{{ mm.quantidade }}" required>
         </div>
-        <div class="col-md-3">
+        <div class="col-md-2">
           <label class="form-label">Qtd. OK:</label>
           <input type="number" class="form-control" name="quantidade_ok[]" value="{{ mm.quantidade_ok or '' }}">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Qtd. Sem Retorno:</label>
+          <input type="number" class="form-control" name="quantidade_sem_retorno[]" value="{{ mm.quantidade_sem_retorno or '' }}">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Qtd. Não OK:</label>
+          {% set ok = mm.quantidade_ok or 0 %}
+          {% set sem_retorno = mm.quantidade_sem_retorno or 0 %}
+          <input type="number" class="form-control" name="quantidade_nao_ok[]" readonly
+                 value="{{ mm.quantidade - (ok + sem_retorno) }}">
         </div>
         <div class="col-md-3">
           <button type="button" class="btn btn-danger btn-remove-material">Remover</button>
@@ -62,40 +73,17 @@
       <label for="funcionario" class="form-label">Funcionário</label>
       <select name="funcionario" id="funcionario" class="form-select select2" required>
         <option value="{{ movimentacao.funcionario }}">{{ movimentacao.funcionario }}</option>
-        <option value="Adauto">Adauto</option>
-        <option value="Andre">André</option>
-        <option value="Daniel">Daniel</option>
-        <option value="Dener">Dener</option>
-        <option value="Denilson">Denilson</option>
-        <option value="Domerice">Domerice</option>
-        <option value="Duda">Duda</option>
-        <option value="Eduardo">Eduardo</option>
-        <option value="Elvis">Élvis</option>
-        <option value="Fabiano">Fabiano</option>
-        <option value="Felipe">Felipe</option>
-        <option value="Gabriel">Gabriel</option>
-        <option value="Geraldo">Geraldo</option>
-        <option value="Guilherme">Guilherme</option>
-        <option value="Hudson">Hudson</option>
-        <option value="Jason">Jason</option>
-        <option value="Joao Vitor">João Vitor</option>
-        <option value="Jonielson">Jonielson</option>
-        <option value="Kaue">Kauê</option>
-        <option value="Leonardo">Leonardo</option>
-        <option value="Luan">Luan</option>
-        <option value="Lucas">Lucas</option>
-        <option value="Lucas Febba">Lucas Febba</option>
-        <option value="Marcus">Marcus Bidu</option>
-        <option value="Marlon">Marlon</option>
-        <option value="Matheus Barbosa">Matheus Barbosa</option>
-        <option value="Matheus Miranda">Matheus Miranda</option>
-        <option value="Pablo">Pablo</option>
-        <option value="Renan">Renan</option>
-        <option value="Ricardo">Ricardo</option>
-        <option value="Robert">Robert</option>
-        <option value="Thais">Thais</option>
-        <option value="Thiago">Thiago</option>
-        <option value="Vanderson">Vanderson</option>
+        {% set funcionarios = [
+          "Adauto", "Andre", "Daniel", "Dener", "Denilson", "Domerice", "Duda", "Eduardo", "Elvis", "Fabiano", "Felipe",
+          "Gabriel", "Geraldo", "Guilherme", "Hudson", "Jason", "Joao Vitor", "Jonielson", "Kaue", "Leonardo", "Luan",
+          "Lucas", "Lucas Febba", "Marcus", "Marlon", "Matheus Barbosa", "Matheus Miranda", "Pablo", "Renan", "Ricardo",
+          "Robert", "Thais", "Thiago", "Vanderson"
+        ] %}
+        {% for nome in funcionarios %}
+        {% if nome != movimentacao.funcionario %}
+        <option value="{{ nome }}">{{ nome }}</option>
+        {% endif %}
+        {% endfor %}
       </select>
     </div>
 
@@ -118,8 +106,7 @@
 
     <div class="mb-3">
       <label for="observacao" class="form-label">Observação</label>
-      <textarea class="form-control" id="observacao" name="observacao"
-        rows="3">{{ movimentacao.observacao or '' }}</textarea>
+      <textarea class="form-control" id="observacao" name="observacao" rows="3">{{ movimentacao.observacao or '' }}</textarea>
     </div>
 
     <button type="submit" class="btn btn-primary">Salvar Alterações</button>
@@ -130,6 +117,7 @@
 <div id="material-template" style="display: none;">
   <div class="row align-items-end mb-3 material-item">
     <div class="col-md-6">
+      <label class="form-label">Material</label>
       <select class="form-select select2-material" name="material_id[]" required>
         {% for mat in materiais %}
         <option value="{{ mat.id }}">{{ mat.nome }} (Estoque: {{ mat.quantidade }})</option>
@@ -137,9 +125,22 @@
       </select>
     </div>
     <div class="col-md-3">
+      <label class="form-label">Qtd. Enviada:</label>
       <input type="number" class="form-control" name="quantidade[]" required>
     </div>
-    <div class="col-md-3">
+    <div class="col-md-2">
+      <label class="form-label">Qtd. OK:</label>
+      <input type="number" class="form-control" name="quantidade_ok[]">
+    </div>
+    <div class="col-md-2">
+      <label class="form-label">Qtd. Sem Retorno:</label>
+      <input type="number" class="form-control" name="quantidade_sem_retorno[]">
+    </div>
+    <div class="col-md-2">
+      <label class="form-label">Qtd. Não OK:</label>
+      <input type="number" class="form-control" name="quantidade_nao_ok[]" readonly>
+    </div>
+    <div class="col-md-3 mt-2">
       <button type="button" class="btn btn-danger btn-remove-material">Remover</button>
     </div>
   </div>
@@ -147,26 +148,19 @@
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-
 <script>
   $(document).ready(function () {
-    $('.select2').select2({
-      width: '100%',
-      language: "pt-BR"
-    });
-
-    $('.select2-material').select2({
-      width: '100%',
-      placeholder: 'Selecione um material',
-      language: "pt-BR"
-    });
+    $('.select2').select2({ width: '100%', language: "pt-BR" });
+    $('.select2-material').select2({ width: '100%', placeholder: 'Selecione um material', language: "pt-BR" });
 
     $('#add-material').on('click', function () {
       const container = $('#materiais-container');
-      const template = $('#material-template').html();
-      container.append(template);
+      const templateHtml = $('#material-template').html();
+      const newMaterial = $(templateHtml);
 
-      container.find('.select2-material').last().select2({
+      container.append(newMaterial);
+
+      newMaterial.find('.select2-material').select2({
         width: '100%',
         placeholder: 'Selecione um material',
         language: "pt-BR"
@@ -175,6 +169,19 @@
 
     $(document).on('click', '.btn-remove-material', function () {
       $(this).closest('.material-item').remove();
+    });
+
+    function calcularNaoOk(item) {
+      const qtdEnviada = parseInt(item.find('input[name="quantidade[]"]').val()) || 0;
+      const qtdOk = parseInt(item.find('input[name="quantidade_ok[]"]').val()) || 0;
+      const qtdSemRetorno = parseInt(item.find('input[name="quantidade_sem_retorno[]"]').val()) || 0;
+      const naoOk = qtdEnviada - (qtdOk + qtdSemRetorno);
+      item.find('input[name="quantidade_nao_ok[]"]').val(naoOk >= 0 ? naoOk : 0);
+    }
+
+    $(document).on('input', 'input[name="quantidade[]"], input[name="quantidade_ok[]"], input[name="quantidade_sem_retorno[]"]', function () {
+      const item = $(this).closest('.material-item');
+      calcularNaoOk(item);
     });
   });
 </script>

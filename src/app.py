@@ -283,7 +283,11 @@ def listar_movimentacoes():
     status_raw = request.args.get("status", "").strip().lower()
     data_inicio_str = request.args.get("data_inicio", "").strip()
     data_fim_str = request.args.get("data_fim", "").strip()
-    mostrar_somente_nao_ok = request.args.get('mostrar_somente_nao_ok') == '1'
+    os_numero = request.args.get("os", "").strip()
+
+    mostrar_somente_nao_ok = request.args.get("mostrar_somente_nao_ok") == "1"
+    mostrar_somente_ok = request.args.get("mostrar_somente_ok") == "1"
+    mostrar_ficou_cliente = request.args.get("mostrar_ficou_cliente") == "1"
 
     per_page = request.args.get("per_page", 50, type=int)
     page = request.args.get("page", 1, type=int)
@@ -299,18 +303,22 @@ def listar_movimentacoes():
     if funcionario_nome:
         query = query.filter(Movimentacao.funcionario.ilike(f"%{funcionario_nome}%"))
 
+    if os_numero:
+        query = query.filter(Movimentacao.ordem_servico.ilike(f"%{os_numero}%"))
+
     if status_raw:
         if status_raw in ("verde", "finalizado", "concluido", "concluído"):
             query = query.filter(Movimentacao.status == "verde")
-
         elif status_raw in ("amarelo", "pendente", "pendentes"):
             query = query.filter(
                 or_(
                     Movimentacao.status == "amarelo",
-                    and_(Movimentacao.prazo_devolucao != None, Movimentacao.prazo_devolucao < date.today())
+                    and_(
+                        Movimentacao.prazo_devolucao != None,
+                        Movimentacao.prazo_devolucao < date.today()
+                    )
                 )
             )
-
         elif status_raw in ("atrasado", "vencido", "overdue"):
             query = query.filter(
                 Movimentacao.prazo_devolucao != None,
@@ -318,13 +326,10 @@ def listar_movimentacoes():
                 Movimentacao.devolvido == False,
                 Movimentacao.utilizado_cliente == False
             )
-
         elif status_raw in ("devolvido", "retorno"):
             query = query.filter(Movimentacao.devolvido == True)
-
         elif status_raw in ("cliente", "ficou no cliente", "utilizado_cliente"):
             query = query.filter(Movimentacao.utilizado_cliente == True)
-
         elif status_raw in ("amarelo", "vermelho"):
             query = query.filter(Movimentacao.status == status_raw)
 
@@ -361,6 +366,30 @@ def listar_movimentacoes():
         ]
         total = len(movimentacoes)
         total_pages = 1
+
+    elif mostrar_somente_ok:
+        movimentacoes = [
+            m for m in movimentacoes
+            if all(
+                mov_mat.quantidade_ok == mov_mat.quantidade and
+                (mov_mat.quantidade_sem_retorno or 0) == 0
+                for mov_mat in m.materiais
+            )
+        ]
+        total = len(movimentacoes)
+        total_pages = 1
+
+    elif mostrar_ficou_cliente:
+        movimentacoes = [
+            m for m in movimentacoes
+            if any(
+                (mov_mat.quantidade_sem_retorno or 0) > 0
+                for mov_mat in m.materiais
+            )
+        ]
+        total = len(movimentacoes)
+        total_pages = 1
+
     else:
         total_pages = (total + per_page - 1) // per_page
 
@@ -374,7 +403,6 @@ def listar_movimentacoes():
         per_page=per_page,
         materiais_disponiveis=materiais_disponiveis
     )
-
 
 @movimentacoes_bp.route("/movimentacoes/nova", methods=["GET", "POST"])
 def nova_movimentacao():

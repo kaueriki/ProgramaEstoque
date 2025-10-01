@@ -272,8 +272,6 @@ td {
 .btn-editar:hover {
   background-color: #d96a00;
 }
-
-/* MODAL MAIS ELEGANTE */
 .dropdown-acoes {
   position: fixed;
   top: 50%;
@@ -284,6 +282,9 @@ td {
   display: none;
   width: 420px;
   max-width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;  
+  overflow-x: hidden;
   background: #fff;
   border-radius: 14px;
   font-family: 'Segoe UI', sans-serif;
