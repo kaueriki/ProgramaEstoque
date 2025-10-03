@@ -72,45 +72,20 @@
   <label>Ordem de Serviço:</label>
   <input type="text" name="ordem_servico"><br>
 
-  <label>Funcionário:</label>
-  <select name="funcionario" required>
-    <option value="">-- Selecione --</option>
-    <option value="Adauto">Adauto</option>
-    <option value="Andre">André</option>
-    <option value="Daniel">Daniel</option>
-    <option value="Dener">Dener</option>
-    <option value="Denilson">Denilson</option>
-    <option value="Domerice">Domerice</option>
-    <option value="Duda">Duda</option>
-    <option value="Eduardo">Eduardo</option>
-    <option value="Elvis">Élvis</option>
-    <option value="Fabiano">Fabiano</option>
-    <option value="Felipe">Felipe</option>
-    <option value="Gabriel">Gabriel</option>
-    <option value="Geraldo">Geraldo</option>
-    <option value="Guilherme">Guilherme</option>
-    <option value="Hudson">Hudson</option>
-    <option value="Jason">Jason</option>
-    <option value="Joao Vitor">João Vitor</option>
-    <option value="Jonielson">Jonielson</option>
-    <option value="Kaue">Kauê</option>
-    <option value="Leonardo">Leonardo</option>
-    <option value="Luan">Luan</option>
-    <option value="Lucas">Lucas</option>
-    <option value="Lucas Febba">Lucas Febba</option>
-    <option value="Marcus">Marcus Bidu</option>
-    <option value="Marlon">Marlon</option>
-    <option value="Matheus Barbosa">Matheus Barbosa</option>
-    <option value="Matheus Miranda">Matheus Miranda</option>
-    <option value="Pablo">Pablo</option>
-    <option value="Renan">Renan</option>
-    <option value="Ricardo">Ricardo</option>
-    <option value="Robert">Robert</option>
-    <option value="Thais">Thais</option>
-    <option value="Thiago">Thiago</option>
-    <option value="Vanderson">Vanderson</option>
-  </select>
-  <br>
+  <label>Colaborador:</label>
+    <div class="input-with-button">
+      <select name="funcionario" id="colaborador-select" required>
+        <option value="">-- Selecione --</option>
+        {% for nome in colaboradores %}
+          <option value="{{ nome }}">{{ nome }}</option>
+        {% endfor %}
+      </select>
+      <button type="button" class="add-button" onclick="abrirModal('modal-colaborador')">+</button>
+    </div>
+
+
+  <label>Data de Retirada:</label>
+  <input type="datetime-local" name="data_retirada" id="data-retirada" required><br>
 
   <label>Prazo de Devolução:</label>
   <input type="datetime-local" name="prazo_devolucao"><br>
@@ -154,12 +129,40 @@
       <button type="submit" class="btn-salvar">Salvar</button>
     </form>
   </div>
-</div>
+
+  </div>
+  <div class="modal" id="modal-colaborador">
+    <div class="modal-content">
+      <span class="close" onclick="fecharModal('modal-colaborador')">&times;</span>
+      <h3>Novo Colaborador</h3>
+      <form id="form-colaborador" class="form-modal">
+        <input type="text" name="nome" placeholder="Nome do colaborador" required>
+        <button type="submit" class="btn-salvar">Salvar</button>
+      </form>
+    </div>
+  </div>
+
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
 <script>
+  function formatDateToLocal(date) {
+    const pad = (n) => n.toString().padStart(2, '0');
+    const year = date.getFullYear();
+    const month = pad(date.getMonth() + 1);
+    const day = pad(date.getDate());
+    const hours = pad(date.getHours());
+    const minutes = pad(date.getMinutes());
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    const dataRetiradaInput = document.getElementById("data-retirada");
+    if (dataRetiradaInput) {
+      dataRetiradaInput.value = formatDateToLocal(new Date());
+    }
+  });
   const materiaisData = {{ materiais|tojson }};
   function abrirModal(id) {
     document.getElementById(id).style.display = 'block';
@@ -291,5 +294,32 @@
       alert('Erro ao cadastrar cliente.');
     }
   });
+
+    document.getElementById('form-colaborador').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+
+    const response = await fetch('/colaboradores/novo', {
+      method: 'POST',
+      body: formData
+    });
+
+    if (response.ok) {
+      const nome = formData.get('nome');
+      const colaboradorSelect = document.getElementById('colaborador-select');
+      const option = document.createElement('option');
+      option.text = nome;
+      option.value = nome;
+      colaboradorSelect.appendChild(option);
+
+      $(colaboradorSelect).val(nome).trigger('change');
+
+      fecharModal('modal-colaborador');
+      this.reset();
+    } else {
+      alert('Erro ao cadastrar colaborador.');
+    }
+  });
+
 </script>
 {% endblock %}

@@ -1,188 +1,329 @@
 {% extends "base.html" %}
 
 {% block extra_css %}
-  <link rel="stylesheet" href="{{ url_for('static', filename='editar_movimentacao.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='nova_movimentacao.css') }}">
   <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
+  <style>
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0; top: 0;
+      width: 100%; height: 100%;
+      overflow: auto;
+      background-color: rgba(0, 0, 0, 0.5);
+    }
+
+    .modal-content {
+      background-color: #fff;
+      margin: 10% auto;
+      padding: 20px;
+      border-radius: 8px;
+      width: 400px;
+      position: relative;
+    }
+
+    .close {
+      position: absolute;
+      top: 8px;
+      right: 12px;
+      font-size: 20px;
+      cursor: pointer;
+    }
+  </style>
 {% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-  <h2>Editar Movimentação</h2>
-
-  <form method="POST">
-    <div id="materiais-container" class="mb-3">
-      {% for mm in movimentacao.materiais %}
-      <div class="row align-items-end mb-3 material-item">
-        <div class="col-md-6">
-          <label class="form-label">Material</label>
-          <select class="form-select select2-material" name="material_id[]" required>
-            {% for mat in materiais %}
-            <option value="{{ mat.id }}" {% if mat.id == mm.material_id %}selected{% endif %}>
-              {{ mat.nome }}
-            </option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="col-md-3">
-          <label class="form-label">Qtd. Enviada:</label>
-          <input type="number" class="form-control" name="quantidade[]" value="{{ mm.quantidade }}" required>
-        </div>
-        <div class="col-md-2">
-          <label class="form-label">Qtd. OK:</label>
-          <input type="number" class="form-control" name="quantidade_ok[]" value="{{ mm.quantidade_ok or '' }}">
-        </div>
-        <div class="col-md-2">
-          <label class="form-label">Qtd. Sem Retorno:</label>
-          <input type="number" class="form-control" name="quantidade_sem_retorno[]" value="{{ mm.quantidade_sem_retorno or '' }}">
-        </div>
-        <div class="col-md-2">
-          <label class="form-label">Qtd. Não OK:</label>
-          {% set ok = mm.quantidade_ok or 0 %}
-          {% set sem_retorno = mm.quantidade_sem_retorno or 0 %}
-          <input type="number" class="form-control" name="quantidade_nao_ok[]" readonly
-                 value="{{ mm.quantidade - (ok + sem_retorno) }}">
-        </div>
-        <div class="col-md-3">
-          <button type="button" class="btn btn-danger btn-remove-material">Remover</button>
-        </div>
-      </div>
-      {% endfor %}
-    </div>
-
-    <button type="button" class="btn btn-success mb-3" id="add-material">+ Adicionar Material</button>
-
-    <div class="mb-3">
-      <label for="cliente_id" class="form-label">Cliente</label>
-      <select class="form-select select2" id="cliente_id" name="cliente_id">
-        <option value="">- Nenhum -</option>
-        {% for cli in clientes %}
-        <option value="{{ cli.id }}" {% if movimentacao.cliente_id == cli.id %}selected{% endif %}>
-          {{ cli.nome }}
-        </option>
-        {% endfor %}
-      </select>
-    </div>
-
-    <div class="mb-3">
-      <label for="ordem_servico" class="form-label">Ordem de Serviço</label>
-      <input type="text" class="form-control" id="ordem_servico" name="ordem_servico"
-        value="{{ movimentacao.ordem_servico }}">
-    </div>
-
-    <div class="mb-3">
-      <label for="funcionario" class="form-label">Funcionário</label>
-      <select name="funcionario" id="funcionario" class="form-select select2" required>
-        <option value="{{ movimentacao.funcionario }}">{{ movimentacao.funcionario }}</option>
-        {% set funcionarios = [
-          "Adauto", "Andre", "Daniel", "Dener", "Denilson", "Domerice", "Duda", "Eduardo", "Elvis", "Fabiano", "Felipe",
-          "Gabriel", "Geraldo", "Guilherme", "Hudson", "Jason", "Joao Vitor", "Jonielson", "Kaue", "Leonardo", "Luan",
-          "Lucas", "Lucas Febba", "Marcus", "Marlon", "Matheus Barbosa", "Matheus Miranda", "Pablo", "Renan", "Ricardo",
-          "Robert", "Thais", "Thiago", "Vanderson"
-        ] %}
-        {% for nome in funcionarios %}
-        {% if nome != movimentacao.funcionario %}
-        <option value="{{ nome }}">{{ nome }}</option>
-        {% endif %}
-        {% endfor %}
-      </select>
-    </div>
-
-    <div class="mb-3">
-      <label for="prazo_devolucao" class="form-label">Prazo de Devolução</label>
-      <input type="datetime-local" class="form-control" id="prazo_devolucao" name="prazo_devolucao"
-        value="{{ movimentacao.prazo_devolucao.strftime('%Y-%m-%dT%H:%M') if movimentacao.prazo_devolucao }}">
-    </div>
-
-    <div class="mb-3">
-      <label for="motivo" class="form-label">Motivo</label>
-      <select name="motivo" id="motivo" class="form-select select2">
+<form method="POST" class="form-movimentacao">
+  <div class="form-header">
+    <h3>Materiais:</h3>
+    <button type="button" class="add-button" onclick="abrirModal('modal-material')">+</button>
+  </div>
+  <div id="materiais-container">
+    <div class="material-row">
+      <select name="material_id[]" class="material-select" required>
         <option value="">-- Selecione --</option>
-        <option value="manutenção" {% if movimentacao.motivo == 'manutenção' %}selected{% endif %}>Manutenção</option>
-        <option value="emprestimo" {% if movimentacao.motivo == 'emprestimo' %}selected{% endif %}>Empréstimo</option>
-        <option value="teste" {% if movimentacao.motivo == 'teste' %}selected{% endif %}>Teste</option>
-        <option value="instalação" {% if movimentacao.motivo == 'instalação' %}selected{% endif %}>Instalação</option>
+        {% for material in materiais %}
+          <option value="{{ material.id }}">{{ material.nome }}</option>
+        {% endfor %}
       </select>
-    </div>
 
-    <div class="mb-3">
-      <label for="observacao" class="form-label">Observação</label>
-      <textarea class="form-control" id="observacao" name="observacao" rows="3">{{ movimentacao.observacao or '' }}</textarea>
-    </div>
+      <input type="number" name="quantidade[]" min="1" placeholder="1" value="1" required>
 
-    <button type="submit" class="btn btn-primary">Salvar Alterações</button>
-    <a href="{{ url_for('movimentacoes.listar_movimentacoes') }}" class="btn btn-secondary">Cancelar</a>
-  </form>
+      <button type="button" class="remove-button" onclick="removerLinha(this)">X</button>
+    </div>
+  </div>
+
+  <button type="button" class="add-button" onclick="adicionarLinha()">+ Adicionar Material</button>
+  <br><br>
+
+  <label>Cliente (opcional):</label>
+  <div class="input-with-button">
+    <select name="cliente_id" id="cliente-select">
+      <option value="">-- Selecione --</option>
+      {% for cliente in clientes %}
+        <option value="{{ cliente.id }}">{{ cliente.nome }}</option>
+      {% endfor %}
+    </select>
+    <button type="button" class="add-button" onclick="abrirModal('modal-cliente')">+</button>
+  </div>
+
+  <label>Ordem de Serviço:</label>
+  <input type="text" name="ordem_servico"><br>
+
+  <label>Colaborador:</label>
+  <div class="input-with-button">
+    <select name="funcionario" id="colaborador-select" required>
+      <option value="">-- Selecione --</option>
+      {% for nome in colaboradores %}
+        <option value="{{ nome }}">{{ nome }}</option>
+      {% endfor %}
+    </select>
+    <button type="button" class="add-button" onclick="abrirModal('modal-colaborador')">+</button>
+  </div>
+
+  <label>Data de Retirada:</label>
+  <input type="datetime-local" name="data_retirada" id="data-retirada" required><br>
+
+  <label>Prazo de Devolução:</label>
+  <input type="datetime-local" name="prazo_devolucao"><br>
+
+  <label>Motivo:</label>
+  <select name="motivo">
+    <option value="">-- Selecione --</option>
+    <option value="manutenção">Manutenção</option>
+    <option value="emprestimo">Empréstimo</option>
+    <option value="teste">Teste</option>
+    <option value="instalação">Instalação</option>
+  </select><br>
+
+  <label>Observação:</label>
+  <textarea name="observacao"></textarea><br>
+
+  <button type="submit" class="btn-salvar-form">Salvar</button>
+</form>
+
+
+<div class="modal" id="modal-material">
+  <div class="modal-content">
+    <span class="close" onclick="fecharModal('modal-material')">&times;</span>
+    <h3>Novo Material</h3>
+    <form id="form-material" class="form-modal">
+      <input type="text" name="nome" placeholder="Nome" required>
+      <input type="number" name="quantidade" placeholder="Quantidade" required>
+      <input type="number" name="lote" placeholder="Lote">
+      <input type="number" name="estoque_minimo_chuva" placeholder="Estoque Mínimo (Chuva)" required>
+      <input type="number" name="estoque_minimo_seco" placeholder="Estoque Mínimo (Seco)" required>
+      <button type="submit" class="btn-salvar">Salvar</button>
+    </form>
+  </div>
 </div>
 
-<div id="material-template" style="display: none;">
-  <div class="row align-items-end mb-3 material-item">
-    <div class="col-md-6">
-      <label class="form-label">Material</label>
-      <select class="form-select select2-material" name="material_id[]" required>
-        {% for mat in materiais %}
-        <option value="{{ mat.id }}">{{ mat.nome }} (Estoque: {{ mat.quantidade }})</option>
-        {% endfor %}
-      </select>
-    </div>
-    <div class="col-md-3">
-      <label class="form-label">Qtd. Enviada:</label>
-      <input type="number" class="form-control" name="quantidade[]" required>
-    </div>
-    <div class="col-md-2">
-      <label class="form-label">Qtd. OK:</label>
-      <input type="number" class="form-control" name="quantidade_ok[]">
-    </div>
-    <div class="col-md-2">
-      <label class="form-label">Qtd. Sem Retorno:</label>
-      <input type="number" class="form-control" name="quantidade_sem_retorno[]">
-    </div>
-    <div class="col-md-2">
-      <label class="form-label">Qtd. Não OK:</label>
-      <input type="number" class="form-control" name="quantidade_nao_ok[]" readonly>
-    </div>
-    <div class="col-md-3 mt-2">
-      <button type="button" class="btn btn-danger btn-remove-material">Remover</button>
-    </div>
+<div class="modal" id="modal-cliente">
+  <div class="modal-content">
+    <span class="close" onclick="fecharModal('modal-cliente')">&times;</span>
+    <h3>Novo Cliente</h3>
+    <form id="form-cliente" class="form-modal">
+      <input type="text" name="nome" placeholder="Nome do cliente" required>
+      <button type="submit" class="btn-salvar">Salvar</button>
+    </form>
+  </div>
+</div>
+
+<div class="modal" id="modal-colaborador">
+  <div class="modal-content">
+    <span class="close" onclick="fecharModal('modal-colaborador')">&times;</span>
+    <h3>Novo Colaborador</h3>
+    <form id="form-colaborador" class="form-modal">
+      <input type="text" name="nome" placeholder="Nome do colaborador" required>
+      <button type="submit" class="btn-salvar">Salvar</button>
+    </form>
   </div>
 </div>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
 <script>
-  $(document).ready(function () {
-    $('.select2').select2({ width: '100%', language: "pt-BR" });
-    $('.select2-material').select2({ width: '100%', placeholder: 'Selecione um material', language: "pt-BR" });
+  function formatDateToLocal(date) {
+    const pad = (n) => n.toString().padStart(2, '0');
+    const year = date.getFullYear();
+    const month = pad(date.getMonth() + 1);
+    const day = pad(date.getDate());
+    const hours = pad(date.getHours());
+    const minutes = pad(date.getMinutes());
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  }
 
-    $('#add-material').on('click', function () {
-      const container = $('#materiais-container');
-      const templateHtml = $('#material-template').html();
-      const newMaterial = $(templateHtml);
-
-      container.append(newMaterial);
-
-      newMaterial.find('.select2-material').select2({
-        width: '100%',
-        placeholder: 'Selecione um material',
-        language: "pt-BR"
-      });
-    });
-
-    $(document).on('click', '.btn-remove-material', function () {
-      $(this).closest('.material-item').remove();
-    });
-
-    function calcularNaoOk(item) {
-      const qtdEnviada = parseInt(item.find('input[name="quantidade[]"]').val()) || 0;
-      const qtdOk = parseInt(item.find('input[name="quantidade_ok[]"]').val()) || 0;
-      const qtdSemRetorno = parseInt(item.find('input[name="quantidade_sem_retorno[]"]').val()) || 0;
-      const naoOk = qtdEnviada - (qtdOk + qtdSemRetorno);
-      item.find('input[name="quantidade_nao_ok[]"]').val(naoOk >= 0 ? naoOk : 0);
+  document.addEventListener("DOMContentLoaded", function () {
+    const dataRetiradaInput = document.getElementById("data-retirada");
+    if (dataRetiradaInput) {
+      dataRetiradaInput.value = formatDateToLocal(new Date());
     }
+  });
 
-    $(document).on('input', 'input[name="quantidade[]"], input[name="quantidade_ok[]"], input[name="quantidade_sem_retorno[]"]', function () {
-      const item = $(this).closest('.material-item');
-      calcularNaoOk(item);
+  const materiaisData = {{ materiais|tojson }};
+
+  function abrirModal(id) {
+    document.getElementById(id).style.display = 'block';
+  }
+
+  function fecharModal(id) {
+    document.getElementById(id).style.display = 'none';
+  }
+
+  function adicionarLinha() {
+    const container = document.getElementById("materiais-container");
+    const novaLinha = document.createElement("div");
+    novaLinha.className = "material-row";
+
+    const select = document.createElement("select");
+    select.name = "material_id[]";
+    select.required = true;
+    select.className = "material-select";
+
+    const defaultOption = document.createElement("option");
+    defaultOption.value = "";
+    defaultOption.text = "-- Selecione --";
+    select.appendChild(defaultOption);
+
+    materiaisData.forEach(material => {
+      const option = document.createElement("option");
+      option.value = material.id;
+      option.textContent = `${material.nome} (${material.quantidade} disponíveis)`;
+      select.appendChild(option);
     });
+
+    const input = document.createElement("input");
+    input.type = "number";
+    input.name = "quantidade[]";
+    input.min = "1";
+    input.placeholder = "Qtd";
+    input.required = true;
+
+    const removeButton = document.createElement("button");
+    removeButton.type = "button";
+    removeButton.className = "remove-button";
+    removeButton.textContent = "X";
+    removeButton.onclick = function () {
+      removerLinha(removeButton);
+    };
+
+    novaLinha.appendChild(select);
+    novaLinha.appendChild(input);
+    novaLinha.appendChild(removeButton);
+    container.appendChild(novaLinha);
+
+    $(select).select2({
+      placeholder: 'Selecione ou pesquise um material',
+      width: '100%'
+    });
+  }
+
+  function removerLinha(botao) {
+    const container = document.getElementById("materiais-container");
+    if (container.children.length > 1) {
+      botao.parentElement.remove();
+    }
+  }
+
+  $(document).ready(function () {
+    $('.material-select').select2({
+      placeholder: 'Selecione ou pesquise um material',
+      width: '100%'
+    });
+
+    $('#cliente-select').select2({
+      placeholder: 'Selecione ou pesquise um cliente',
+      allowClear: true,
+      width: '100%'
+    });
+
+    $('#colaborador-select').select2({
+      placeholder: 'Selecione ou pesquise um colaborador',
+      allowClear: true,
+      width: '100%'
+    });
+  });
+
+  document.getElementById('form-material').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+
+    const response = await fetch('/materiais/novo', {
+      method: 'POST',
+      body: formData
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+
+      document.querySelectorAll('.material-select').forEach(select => {
+        const option = document.createElement('option');
+        option.text = data.nome;
+        option.value = data.id;
+        select.appendChild(option);
+      });
+
+      fecharModal('modal-material');
+      this.reset();
+    } else {
+      alert('Erro ao cadastrar material.');
+    }
+  });
+
+  document.getElementById('form-cliente').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+
+    const response = await fetch('/clientes/novo', {
+      method: 'POST',
+      body: formData
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+
+      const clienteSelect = document.getElementById('cliente-select');
+      const option = document.createElement('option');
+      option.text = data.nome;
+      option.value = data.id;
+      clienteSelect.appendChild(option);
+
+      $(clienteSelect).val(data.id).trigger('change');
+
+      fecharModal('modal-cliente');
+      this.reset();
+    } else {
+      alert('Erro ao cadastrar cliente.');
+    }
+  });
+
+  document.getElementById('form-colaborador').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+
+    const response = await fetch('/colaboradores/novo', {
+      method: 'POST',
+      body: formData
+    });
+
+    if (response.ok) {
+      const nome = formData.get('nome');
+      const colaboradorSelect = document.getElementById('colaborador-select');
+      const option = document.createElement('option');
+      option.text = nome;
+      option.value = nome;
+      colaboradorSelect.appendChild(option);
+
+      $(colaboradorSelect).val(nome).trigger('change');
+
+      fecharModal('modal-colaborador');
+      this.reset();
+    } else {
+      alert('Erro ao cadastrar colaborador.');
+    }
   });
 </script>
 {% endblock %}

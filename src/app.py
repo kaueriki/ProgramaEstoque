@@ -2,7 +2,7 @@ from flask import Flask, render_template, request, redirect, url_for, session, f
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import IntegrityError
 from datetime import datetime, timezone, date
-from models import engine, Usuario, Material, Cliente, Movimentacao, MovimentacaoMaterial
+from models import engine, Usuario, Material, Cliente, Movimentacao, MovimentacaoMaterial, Colaborador
 from collections import defaultdict
 import io
 import pandas as pd
@@ -412,6 +412,7 @@ def nova_movimentacao():
 
     materiais = db.query(Material).all()
     clientes = db.query(Cliente).all()
+    colaboradores = [c.nome for c in db.query(Colaborador).all()]
 
     materiais_serializados = [
         {"id": m.id, "nome": m.nome, "quantidade": m.quantidade}
@@ -424,6 +425,13 @@ def nova_movimentacao():
             funcionario = request.form["funcionario"].strip()
             cliente_id = request.form.get("cliente_id")
             cliente_id = int(cliente_id) if cliente_id else None
+
+            data_retirada_str = request.form.get("data_retirada", "").strip()
+            data_retirada = (
+                datetime.strptime(data_retirada_str, "%Y-%m-%dT%H:%M")
+                if data_retirada_str
+                else None
+            )
 
             prazo_str = request.form.get("prazo_devolucao", "").strip()
             prazo_devolucao = (
@@ -442,14 +450,15 @@ def nova_movimentacao():
                 flash("Informe pelo menos um material com quantidade!", "error")
                 return render_template("nova_movimentacao.html",
                                        materiais=materiais_serializados,
-                                       clientes=clientes)
+                                       clientes=clientes,
+                                       colaboradores=colaboradores)
 
             nova_mov = Movimentacao(
                 cliente_id=cliente_id,
                 ordem_servico=ordem_servico,
                 funcionario=funcionario,
                 responsavel_id=session["usuario_id"],
-                data_retirada=datetime.now(timezone.utc),
+                data_retirada=data_retirada,
                 prazo_devolucao=prazo_devolucao,
                 motivo=motivo or None,
                 status="amarelo",
@@ -463,6 +472,10 @@ def nova_movimentacao():
             db.flush()
 
             for mat_id_str, qtd_str in zip(materiais_ids, quantidades):
+                # Ignorar IDs temporários ou inválidos
+                if not mat_id_str.isdigit():
+                    continue
+
                 mat_id = int(mat_id_str)
                 qtd = int(qtd_str)
 
@@ -492,11 +505,14 @@ def nova_movimentacao():
             flash(f"Erro ao cadastrar movimentação: {str(e)}", "error")
             return render_template("nova_movimentacao.html",
                                    materiais=materiais_serializados,
-                                   clientes=clientes)
+                                   clientes=clientes,
+                                   colaboradores=colaboradores)
+
 
     return render_template("nova_movimentacao.html",
                            materiais=materiais_serializados,
-                           clientes=clientes)
+                           clientes=clientes,
+                           colaboradores=colaboradores)
 
 
 @movimentacoes_bp.route("/movimentacoes/<int:id>/editar", methods=["GET", "POST"])
@@ -512,12 +528,6 @@ def editar_movimentacao(id):
 
     materiais = db.query(Material).all()
     clientes = db.query(Cliente).all()
-    materiais_atual = { mm.material_id: mm.quantidade for mm in movimentacao.materiais }
-
-    materiais_serializados = [
-        {"id": m.id, "nome": m.nome, "quantidade": m.quantidade}
-        for m in materiais
-    ]
 
     if request.method == "POST":
         try:
@@ -525,6 +535,13 @@ def editar_movimentacao(id):
             funcionario = request.form["funcionario"].strip()
             cliente_id = request.form.get("cliente_id")
             cliente_id = int(cliente_id) if cliente_id else None
+
+            data_retirada_str = request.form.get("data_retirada", "").strip()
+            data_retirada = (
+                datetime.strptime(data_retirada_str, "%Y-%m-%dT%H:%M")
+                if data_retirada_str
+                else None
+            )
 
             prazo_str = request.form.get("prazo_devolucao", "").strip()
             prazo_devolucao = (
@@ -545,38 +562,21 @@ def editar_movimentacao(id):
                 flash("Informe pelo menos um material com quantidade!", "error")
                 return render_template("editar_movimentacao.html",
                                        movimentacao=movimentacao,
-                                       materiais=materiais_serializados,
+                                       materiais=materiais,
                                        clientes=clientes)
 
-            novos_materiais = {}
-            for mat_id_str, qtd_str in zip(materiais_ids, quantidades):
-                mat_id = int(mat_id_str)
-                qtd = int(qtd_str)
-                novos_materiais[mat_id] = qtd
+            # Ajustar estoque dos materiais antigos (revertendo)
+            for mm in movimentacao.materiais:
+                material = db.query(Material).get(mm.material_id)
+                material.quantidade += mm.quantidade
 
-            for mat_id, qtd_atual in materiais_atual.items():
-                qtd_nova = novos_materiais.get(mat_id, 0)
-                diferenca = qtd_atual - qtd_nova
-                if diferenca > 0:
-                    material = db.query(Material).get(mat_id)
-                    material.quantidade += diferenca
-
-            for mat_id, qtd_nova in novos_materiais.items():
-                qtd_atual = materiais_atual.get(mat_id, 0)
-                diferenca = qtd_nova - qtd_atual
-                if diferenca > 0:
-                    material = db.query(Material).get(mat_id)
-                    if material.quantidade < diferenca:
-                        flash(f"Estoque insuficiente do material {material.nome}. Estoque atual: {material.quantidade}", "error")
-                        return render_template("editar_movimentacao.html",
-                                               movimentacao=movimentacao,
-                                               materiais=materiais_serializados,
-                                               clientes=clientes)
-                    material.quantidade -= diferenca
-
+            # Limpar materiais da movimentação para atualizar
             db.query(MovimentacaoMaterial).filter(MovimentacaoMaterial.movimentacao_id == movimentacao.id).delete()
 
-            for i, (mat_id, qtd) in enumerate(novos_materiais.items()):
+            for i, (mat_id_str, qtd_str) in enumerate(zip(materiais_ids, quantidades)):
+                mat_id = int(mat_id_str)
+                qtd = int(qtd_str)
+
                 try:
                     qtd_ok = int(quantidades_ok[i]) if quantidades_ok[i].strip() else None
                 except (ValueError, IndexError):
@@ -592,8 +592,19 @@ def editar_movimentacao(id):
                     flash(f"A soma de Quantidade OK e Sem Retorno não pode ser maior que a quantidade total para o material {mat_id}", "error")
                     return render_template("editar_movimentacao.html",
                                            movimentacao=movimentacao,
-                                           materiais=materiais_serializados,
+                                           materiais=materiais,
                                            clientes=clientes)
+
+                material = db.query(Material).get(mat_id)
+                if material.quantidade < qtd:
+                    flash(f"Estoque insuficiente do material {material.nome}. Estoque atual: {material.quantidade}", "error")
+                    return render_template("editar_movimentacao.html",
+                                           movimentacao=movimentacao,
+                                           materiais=materiais,
+                                           clientes=clientes)
+
+                # Deduzir do estoque
+                material.quantidade -= qtd
 
                 mov_mat = MovimentacaoMaterial(
                     movimentacao_id=movimentacao.id,
@@ -607,6 +618,7 @@ def editar_movimentacao(id):
             movimentacao.cliente_id = cliente_id
             movimentacao.ordem_servico = ordem_servico
             movimentacao.funcionario = funcionario
+            movimentacao.data_retirada = data_retirada
             movimentacao.prazo_devolucao = prazo_devolucao
             movimentacao.motivo = motivo or None
             movimentacao.observacao = observacao
@@ -622,12 +634,12 @@ def editar_movimentacao(id):
             flash(f"Erro ao atualizar movimentação: {str(e)}", "error")
             return render_template("editar_movimentacao.html",
                                    movimentacao=movimentacao,
-                                   materiais=materiais_serializados,
+                                   materiais=materiais,
                                    clientes=clientes)
 
     return render_template("editar_movimentacao.html",
                            movimentacao=movimentacao,
-                           materiais=materiais_serializados,
+                           materiais=materiais,
                            clientes=clientes)
 
 
@@ -850,6 +862,23 @@ def alterar(id):
     return redirect(url_for("estoque.controle"))
 
 app.register_blueprint(estoque_bp)
+
+@app.route("/colaboradores/novo", methods=["POST"])
+def novo_colaborador():
+    nome = request.form.get("nome", "").strip()
+    if not nome:
+        return "Nome inválido", 400
+
+    colaborador_existente = db.query(Colaborador).filter_by(nome=nome).first()
+    if colaborador_existente:
+        return "Já existe", 400
+
+    novo = Colaborador(nome=nome)
+    db.add(novo)
+    db.commit()
+
+    return "OK", 200
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)

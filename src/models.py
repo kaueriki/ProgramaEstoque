@@ -89,7 +89,15 @@ class MovimentacaoMaterial(Base):
 
     movimentacao = relationship("Movimentacao", back_populates="materiais")
     material = relationship("Material")
+    
+class Colaborador(Base):
+    __tablename__ = "colaboradores"
 
+    id = Column(Integer, primary_key=True)
+    nome = Column(String(100), unique=True, nullable=False)  # <- Correção aqui
+
+    def __repr__(self):
+        return f"<Colaborador(nome={self.nome})>"
 
 
 Base.metadata.create_all(engine)
