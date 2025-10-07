@@ -272,6 +272,25 @@ td {
 .btn-editar:hover {
   background-color: #d96a00;
 }
+
+.btn-excluir {
+  background-color: #ff3636;
+  color: white;
+  padding: 2px 4px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  text-decoration: none;
+  display: inline-block;
+  cursor: pointer;
+  width: 100%;
+  text-align: center;
+  transition: background-color 0.3s ease;
+}
+
+.btn-excluir:hover {
+  background-color: #c0392b;
+}
 .dropdown-acoes {
   position: fixed;
   top: 50%;
@@ -527,7 +546,8 @@ button:hover {
 }
 
 .btn-acao,
-.btn-editar {
+.btn-editar,
+.btn-excluir {
   padding: 6px 10px;
   font-size: 0.75rem;
   border-radius: 6px;
@@ -536,7 +556,8 @@ button:hover {
   white-space: nowrap;
 }
 
-.btn-editar {
+.btn-editar,
+.btn-excluir {
   font-weight: 500;
 }
 

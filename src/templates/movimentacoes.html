@@ -222,6 +222,9 @@
               <span class="status-ok">Finalizado</span>
               {% endif %}
               <a href="{{ url_for('movimentacoes.editar_movimentacao', id=m.id) }}" class="btn-editar">Editar</a>
+              <form method="POST" action="{{ url_for('movimentacoes.excluir_movimentacao', id=m.id) }}" onsubmit="return confirm('Tem certeza que deseja excluir esta movimentação? Esta ação não pode ser desfeita.');">
+                <button type="submit" class="btn-excluir">Excluir</button>
+              </form>
             </div>
           </td>
         </tr>

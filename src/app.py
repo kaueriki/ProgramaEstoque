@@ -719,6 +719,36 @@ def finalizar_movimentacao(id):
 
     return render_template("finalizar_movimentacao.html", movimentacao=movimentacao)
 
+@movimentacoes_bp.route("/movimentacoes/<int:id>/excluir", methods=["POST"])
+def excluir_movimentacao(id):
+    if "usuario_id" not in session:
+        flash("Você precisa estar logado!", "error")
+        return redirect(url_for("index"))
+
+    movimentacao = db.get(Movimentacao, id)
+
+    if not movimentacao:
+        flash("Movimentação não encontrada!", "error")
+        return redirect(url_for("movimentacoes.listar_movimentacoes"))
+
+    try:
+        # Repor o estoque dos materiais
+        for mov_mat in movimentacao.materiais:
+            material = db.get(Material, mov_mat.material_id)
+            if material:
+                material.quantidade += mov_mat.quantidade
+
+        db.delete(movimentacao)
+        db.commit()
+        flash("Movimentação excluída com sucesso!", "success")
+    except Exception as e:
+        db.rollback()
+        import traceback
+        traceback.print_exc()
+        flash(f"Erro ao excluir movimentação: {str(e)}", "error")
+
+    return redirect(url_for("movimentacoes.listar_movimentacoes"))
+
 @movimentacoes_bp.route("/movimentacoes/export/excel")
 def export_excel():
     query = db.query(Movimentacao).outerjoin(Movimentacao.materiais).outerjoin(Material).outerjoin(Cliente)
