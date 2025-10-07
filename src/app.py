@@ -348,13 +348,13 @@ def listar_movimentacoes():
         except ValueError:
             flash("Data de fim inválida", "error")
 
-    total = query.distinct().count()
+    # Ordenação por data de retirada DESC (mais recente primeiro)
+    query = query.order_by(Movimentacao.data_retirada.desc())
 
-    movimentacoes = query.order_by(Movimentacao.data_retirada.desc()) \
-                         .offset((page - 1) * per_page) \
-                         .limit(per_page) \
-                         .all()
+    # Pega todos os resultados antes da filtragem personalizada
+    movimentacoes = query.all()
 
+    # Filtros adicionais personalizados
     if mostrar_somente_nao_ok:
         movimentacoes = [
             m for m in movimentacoes
@@ -364,9 +364,6 @@ def listar_movimentacoes():
                 for mov_mat in m.materiais
             )
         ]
-        total = len(movimentacoes)
-        total_pages = 1
-
     elif mostrar_somente_ok:
         movimentacoes = [
             m for m in movimentacoes
@@ -376,9 +373,6 @@ def listar_movimentacoes():
                 for mov_mat in m.materiais
             )
         ]
-        total = len(movimentacoes)
-        total_pages = 1
-
     elif mostrar_ficou_cliente:
         movimentacoes = [
             m for m in movimentacoes
@@ -387,11 +381,12 @@ def listar_movimentacoes():
                 for mov_mat in m.materiais
             )
         ]
-        total = len(movimentacoes)
-        total_pages = 1
 
-    else:
-        total_pages = (total + per_page - 1) // per_page
+    total = len(movimentacoes)
+    total_pages = (total + per_page - 1) // per_page
+
+    # Paginação manual após filtro
+    movimentacoes = movimentacoes[(page - 1) * per_page: page * per_page]
 
     materiais_disponiveis = db.query(Material).order_by(Material.nome).all()
 
@@ -403,6 +398,7 @@ def listar_movimentacoes():
         per_page=per_page,
         materiais_disponiveis=materiais_disponiveis
     )
+
 
 @movimentacoes_bp.route("/movimentacoes/nova", methods=["GET", "POST"])
 def nova_movimentacao():
@@ -514,7 +510,6 @@ def nova_movimentacao():
                            clientes=clientes,
                            colaboradores=colaboradores)
 
-
 @movimentacoes_bp.route("/movimentacoes/<int:id>/editar", methods=["GET", "POST"])
 def editar_movimentacao(id):
     if "usuario_id" not in session:
@@ -528,6 +523,15 @@ def editar_movimentacao(id):
 
     materiais = db.query(Material).all()
     clientes = db.query(Cliente).all()
+    colaboradores = [c.nome for c in db.query(Colaborador).all()]  # Adicionado aqui
+
+    materiais_json = [
+        {
+            "id": m.id,
+            "nome": m.nome,
+            "quantidade": m.quantidade
+        } for m in materiais
+    ]
 
     if request.method == "POST":
         try:
@@ -563,7 +567,9 @@ def editar_movimentacao(id):
                 return render_template("editar_movimentacao.html",
                                        movimentacao=movimentacao,
                                        materiais=materiais,
-                                       clientes=clientes)
+                                       clientes=clientes,
+                                       colaboradores=colaboradores,
+                                       materiais_json=materiais_json)
 
             # Ajustar estoque dos materiais antigos (revertendo)
             for mm in movimentacao.materiais:
@@ -593,7 +599,9 @@ def editar_movimentacao(id):
                     return render_template("editar_movimentacao.html",
                                            movimentacao=movimentacao,
                                            materiais=materiais,
-                                           clientes=clientes)
+                                           clientes=clientes,
+                                           colaboradores=colaboradores,
+                                           materiais_json=materiais_json)
 
                 material = db.query(Material).get(mat_id)
                 if material.quantidade < qtd:
@@ -601,7 +609,9 @@ def editar_movimentacao(id):
                     return render_template("editar_movimentacao.html",
                                            movimentacao=movimentacao,
                                            materiais=materiais,
-                                           clientes=clientes)
+                                           clientes=clientes,
+                                           colaboradores=colaboradores,
+                                           materiais_json=materiais_json)
 
                 # Deduzir do estoque
                 material.quantidade -= qtd
@@ -635,12 +645,17 @@ def editar_movimentacao(id):
             return render_template("editar_movimentacao.html",
                                    movimentacao=movimentacao,
                                    materiais=materiais,
-                                   clientes=clientes)
+                                   clientes=clientes,
+                                   colaboradores=colaboradores,
+                                   materiais_json=materiais_json)
 
     return render_template("editar_movimentacao.html",
                            movimentacao=movimentacao,
                            materiais=materiais,
-                           clientes=clientes)
+                           clientes=clientes,
+                           colaboradores=colaboradores,
+                           materiais_json=materiais_json)
+
 
 
 @movimentacoes_bp.route("/movimentacoes/<int:id>/finalizar", methods=["GET", "POST"])

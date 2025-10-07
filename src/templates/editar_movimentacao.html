@@ -41,6 +41,26 @@
     <button type="button" class="add-button" onclick="abrirModal('modal-material')">+</button>
   </div>
   <div id="materiais-container">
+    {% for mm in movimentacao.materiais %}
+    <div class="material-row">
+      <select name="material_id[]" class="material-select" required>
+        <option value="">-- Selecione --</option>
+        {% for material in materiais %}
+          <option value="{{ material.id }}" {% if material.id == mm.material_id %}selected{% endif %}>
+            {{ material.nome }}
+          </option>
+        {% endfor %}
+      </select>
+
+      <input type="number" name="quantidade[]" min="1" value="{{ mm.quantidade }}" required>
+
+      <input type="number" name="quantidade_ok[]" min="0" placeholder="OK" value="{{ mm.quantidade_ok or '' }}">
+
+      <input type="number" name="quantidade_sem_retorno[]" min="0" placeholder="Sem Retorno" value="{{ mm.quantidade_sem_retorno or '' }}">
+
+      <button type="button" class="remove-button" onclick="removerLinha(this)">X</button>
+    </div>
+    {% else %}
     <div class="material-row">
       <select name="material_id[]" class="material-select" required>
         <option value="">-- Selecione --</option>
@@ -51,8 +71,13 @@
 
       <input type="number" name="quantidade[]" min="1" placeholder="1" value="1" required>
 
+      <input type="number" name="quantidade_ok[]" min="0" placeholder="Qtd OK">
+
+      <input type="number" name="quantidade_sem_retorno[]" min="0" placeholder="Qtd Sem Retorno">
+
       <button type="button" class="remove-button" onclick="removerLinha(this)">X</button>
     </div>
+    {% endfor %}
   </div>
 
   <button type="button" class="add-button" onclick="adicionarLinha()">+ Adicionar Material</button>
@@ -63,47 +88,43 @@
     <select name="cliente_id" id="cliente-select">
       <option value="">-- Selecione --</option>
       {% for cliente in clientes %}
-        <option value="{{ cliente.id }}">{{ cliente.nome }}</option>
+        <option value="{{ cliente.id }}" {% if movimentacao.cliente_id == cliente.id %}selected{% endif %}>{{ cliente.nome }}</option>
       {% endfor %}
     </select>
     <button type="button" class="add-button" onclick="abrirModal('modal-cliente')">+</button>
   </div>
 
   <label>Ordem de Serviço:</label>
-  <input type="text" name="ordem_servico"><br>
+  <input type="text" name="ordem_servico" value="{{ movimentacao.ordem_servico or '' }}"><br>
 
-  <label>Colaborador:</label>
-  <div class="input-with-button">
-    <select name="funcionario" id="colaborador-select" required>
-      <option value="">-- Selecione --</option>
-      {% for nome in colaboradores %}
-        <option value="{{ nome }}">{{ nome }}</option>
-      {% endfor %}
-    </select>
-    <button type="button" class="add-button" onclick="abrirModal('modal-colaborador')">+</button>
-  </div>
+  <label>Colaboradores:</label>
+  <select name="funcionario" id="colaborador-select" required>
+    <option value="">-- Selecione --</option>
+    {% for nome in colaboradores %}
+      <option value="{{ nome }}" {% if movimentacao.funcionario == nome %}selected{% endif %}>{{ nome }}</option>
+    {% endfor %}
+  </select>
 
   <label>Data de Retirada:</label>
-  <input type="datetime-local" name="data_retirada" id="data-retirada" required><br>
+  <input type="datetime-local" name="data_retirada" id="data-retirada" value="{{ movimentacao.data_retirada.strftime('%Y-%m-%dT%H:%M') if movimentacao.data_retirada else '' }}" required><br>
 
   <label>Prazo de Devolução:</label>
-  <input type="datetime-local" name="prazo_devolucao"><br>
+  <input type="datetime-local" name="prazo_devolucao" value="{{ movimentacao.prazo_devolucao.strftime('%Y-%m-%dT%H:%M') if movimentacao.prazo_devolucao else '' }}"><br>
 
   <label>Motivo:</label>
   <select name="motivo">
     <option value="">-- Selecione --</option>
-    <option value="manutenção">Manutenção</option>
-    <option value="emprestimo">Empréstimo</option>
-    <option value="teste">Teste</option>
-    <option value="instalação">Instalação</option>
+    <option value="manutenção" {% if movimentacao.motivo == 'manutenção' %}selected{% endif %}>Manutenção</option>
+    <option value="emprestimo" {% if movimentacao.motivo == 'emprestimo' %}selected{% endif %}>Empréstimo</option>
+    <option value="teste" {% if movimentacao.motivo == 'teste' %}selected{% endif %}>Teste</option>
+    <option value="instalação" {% if movimentacao.motivo == 'instalação' %}selected{% endif %}>Instalação</option>
   </select><br>
 
   <label>Observação:</label>
-  <textarea name="observacao"></textarea><br>
+  <textarea name="observacao">{{ movimentacao.observacao or '' }}</textarea><br>
 
   <button type="submit" class="btn-salvar-form">Salvar</button>
 </form>
-
 
 <div class="modal" id="modal-material">
   <div class="modal-content">
@@ -120,6 +141,7 @@
   </div>
 </div>
 
+<!-- Modal Novo Cliente -->
 <div class="modal" id="modal-cliente">
   <div class="modal-content">
     <span class="close" onclick="fecharModal('modal-cliente')">&times;</span>
@@ -131,6 +153,7 @@
   </div>
 </div>
 
+<!-- Modal Novo Colaborador -->
 <div class="modal" id="modal-colaborador">
   <div class="modal-content">
     <span class="close" onclick="fecharModal('modal-colaborador')">&times;</span>
@@ -157,13 +180,15 @@
   }
 
   document.addEventListener("DOMContentLoaded", function () {
+  
     const dataRetiradaInput = document.getElementById("data-retirada");
-    if (dataRetiradaInput) {
+    if (dataRetiradaInput && !dataRetiradaInput.value) {
       dataRetiradaInput.value = formatDateToLocal(new Date());
     }
   });
 
-  const materiaisData = {{ materiais|tojson }};
+
+  const materiaisData = {{ materiais_json|tojson }};
 
   function abrirModal(id) {
     document.getElementById(id).style.display = 'block';
@@ -191,16 +216,28 @@
     materiaisData.forEach(material => {
       const option = document.createElement("option");
       option.value = material.id;
-      option.textContent = `${material.nome} (${material.quantidade} disponíveis)`;
+      option.textContent = `${material.nome}`;
       select.appendChild(option);
     });
 
-    const input = document.createElement("input");
-    input.type = "number";
-    input.name = "quantidade[]";
-    input.min = "1";
-    input.placeholder = "Qtd";
-    input.required = true;
+    const inputQtd = document.createElement("input");
+    inputQtd.type = "number";
+    inputQtd.name = "quantidade[]";
+    inputQtd.min = "1";
+    inputQtd.placeholder = "Qtd";
+    inputQtd.required = true;
+
+    const inputQtdOk = document.createElement("input");
+    inputQtdOk.type = "number";
+    inputQtdOk.name = "quantidade_ok[]";
+    inputQtdOk.min = "0";
+    inputQtdOk.placeholder = "Qtd OK";
+
+    const inputQtdSemRetorno = document.createElement("input");
+    inputQtdSemRetorno.type = "number";
+    inputQtdSemRetorno.name = "quantidade_sem_retorno[]";
+    inputQtdSemRetorno.min = "0";
+    inputQtdSemRetorno.placeholder = "Qtd Sem Retorno";
 
     const removeButton = document.createElement("button");
     removeButton.type = "button";
@@ -211,7 +248,9 @@
     };
 
     novaLinha.appendChild(select);
-    novaLinha.appendChild(input);
+    novaLinha.appendChild(inputQtd);
+    novaLinha.appendChild(inputQtdOk);
+    novaLinha.appendChild(inputQtdSemRetorno);
     novaLinha.appendChild(removeButton);
     container.appendChild(novaLinha);
 

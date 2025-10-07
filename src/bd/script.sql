@@ -32,7 +32,7 @@ CREATE TABLE movimentacoes (
     responsavel_id INT NOT NULL,
     data_retirada TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     prazo_devolucao DATE,
-    motivo ENUM('manutenção','emprestimo','teste','instalação'),
+    motivo ENUM('manutenção','preventiva','teste','instalação'),
     status ENUM('verde','amarelo','vermelho') DEFAULT 'amarelo',
     devolvido BOOLEAN DEFAULT FALSE,
     utilizado_cliente BOOLEAN DEFAULT FALSE,
