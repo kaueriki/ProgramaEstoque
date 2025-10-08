@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash, Blueprint, send_file
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import joinedload
 from sqlalchemy.exc import IntegrityError
 from datetime import datetime, timezone, date
 from models import engine, Usuario, Material, Cliente, Movimentacao, MovimentacaoMaterial, Colaborador
@@ -268,7 +269,6 @@ def excluir_cliente(id):
 
 app.register_blueprint(clientes_bp)
 
-
 movimentacoes_bp = Blueprint("movimentacoes", __name__)
 
 @movimentacoes_bp.route("/movimentacoes")
@@ -292,13 +292,20 @@ def listar_movimentacoes():
     per_page = request.args.get("per_page", 50, type=int)
     page = request.args.get("page", 1, type=int)
 
-    query = db.query(Movimentacao).join(Movimentacao.materiais).outerjoin(Cliente)
+    # IMPORTANTE: Importe os modelos MovimentacaoMaterial, Cliente, Material antes disso
+    # from seu_pacote.models import Movimentacao, MovimentacaoMaterial, Cliente, Material
 
+    query = db.query(Movimentacao).options(
+        joinedload(Movimentacao.materiais).joinedload(MovimentacaoMaterial.material),
+        joinedload(Movimentacao.cliente)
+    )
+
+    # Filtros básicos
     if cliente_nome:
-        query = query.filter(Cliente.nome.ilike(f"%{cliente_nome}%"))
+        query = query.join(Movimentacao.cliente).filter(Cliente.nome.ilike(f"%{cliente_nome}%"))
 
     if material_nome:
-        query = query.filter(Material.nome.ilike(f"%{material_nome}%"))
+        query = query.join(Movimentacao.materiais).join(MovimentacaoMaterial.material).filter(Material.nome.ilike(f"%{material_nome}%"))
 
     if funcionario_nome:
         query = query.filter(Movimentacao.funcionario.ilike(f"%{funcionario_nome}%"))
@@ -306,6 +313,7 @@ def listar_movimentacoes():
     if os_numero:
         query = query.filter(Movimentacao.ordem_servico.ilike(f"%{os_numero}%"))
 
+    # Filtro de status
     if status_raw:
         if status_raw in ("verde", "finalizado", "concluido", "concluído"):
             query = query.filter(Movimentacao.status == "verde")
@@ -333,6 +341,7 @@ def listar_movimentacoes():
         elif status_raw in ("amarelo", "vermelho"):
             query = query.filter(Movimentacao.status == status_raw)
 
+    # Filtros de datas
     if data_inicio_str:
         try:
             data_inicio = datetime.strptime(data_inicio_str, "%Y-%m-%d")
@@ -348,16 +357,14 @@ def listar_movimentacoes():
         except ValueError:
             flash("Data de fim inválida", "error")
 
-    # Ordenação por data de retirada DESC (mais recente primeiro)
     query = query.order_by(Movimentacao.data_retirada.desc())
 
-    # Pega todos os resultados antes da filtragem personalizada
-    movimentacoes = query.all()
+    movimentacoes_all = query.all()
 
-    # Filtros adicionais personalizados
+    # Aplicar filtros adicionais no Python
     if mostrar_somente_nao_ok:
-        movimentacoes = [
-            m for m in movimentacoes
+        movimentacoes_filtradas = [
+            m for m in movimentacoes_all
             if any(
                 ((mov_mat.quantidade_ok or 0) < mov_mat.quantidade) or
                 ((mov_mat.quantidade_sem_retorno or 0) > 0)
@@ -365,8 +372,8 @@ def listar_movimentacoes():
             )
         ]
     elif mostrar_somente_ok:
-        movimentacoes = [
-            m for m in movimentacoes
+        movimentacoes_filtradas = [
+            m for m in movimentacoes_all
             if all(
                 mov_mat.quantidade_ok == mov_mat.quantidade and
                 (mov_mat.quantidade_sem_retorno or 0) == 0
@@ -374,25 +381,28 @@ def listar_movimentacoes():
             )
         ]
     elif mostrar_ficou_cliente:
-        movimentacoes = [
-            m for m in movimentacoes
+        movimentacoes_filtradas = [
+            m for m in movimentacoes_all
             if any(
                 (mov_mat.quantidade_sem_retorno or 0) > 0
                 for mov_mat in m.materiais
             )
         ]
+    else:
+        movimentacoes_filtradas = movimentacoes_all
 
-    total = len(movimentacoes)
+    total = len(movimentacoes_filtradas)
     total_pages = (total + per_page - 1) // per_page
 
-    # Paginação manual após filtro
-    movimentacoes = movimentacoes[(page - 1) * per_page: page * per_page]
+    start = (page - 1) * per_page
+    end = start + per_page
+    movimentacoes_paginated = movimentacoes_filtradas[start:end]
 
     materiais_disponiveis = db.query(Material).order_by(Material.nome).all()
 
     return render_template(
         "movimentacoes.html",
-        movimentacoes=movimentacoes,
+        movimentacoes=movimentacoes_paginated,
         page=page,
         total_pages=total_pages,
         per_page=per_page,
@@ -468,7 +478,6 @@ def nova_movimentacao():
             db.flush()
 
             for mat_id_str, qtd_str in zip(materiais_ids, quantidades):
-                # Ignorar IDs temporários ou inválidos
                 if not mat_id_str.isdigit():
                     continue
 
@@ -523,7 +532,7 @@ def editar_movimentacao(id):
 
     materiais = db.query(Material).all()
     clientes = db.query(Cliente).all()
-    colaboradores = [c.nome for c in db.query(Colaborador).all()]  # Adicionado aqui
+    colaboradores = [c.nome for c in db.query(Colaborador).all()] 
 
     materiais_json = [
         {
@@ -571,12 +580,10 @@ def editar_movimentacao(id):
                                        colaboradores=colaboradores,
                                        materiais_json=materiais_json)
 
-            # Ajustar estoque dos materiais antigos (revertendo)
             for mm in movimentacao.materiais:
                 material = db.query(Material).get(mm.material_id)
                 material.quantidade += mm.quantidade
 
-            # Limpar materiais da movimentação para atualizar
             db.query(MovimentacaoMaterial).filter(MovimentacaoMaterial.movimentacao_id == movimentacao.id).delete()
 
             for i, (mat_id_str, qtd_str) in enumerate(zip(materiais_ids, quantidades)):
@@ -613,7 +620,6 @@ def editar_movimentacao(id):
                                            colaboradores=colaboradores,
                                            materiais_json=materiais_json)
 
-                # Deduzir do estoque
                 material.quantidade -= qtd
 
                 mov_mat = MovimentacaoMaterial(
@@ -656,8 +662,6 @@ def editar_movimentacao(id):
                            colaboradores=colaboradores,
                            materiais_json=materiais_json)
 
-
-
 @movimentacoes_bp.route("/movimentacoes/<int:id>/finalizar", methods=["GET", "POST"])
 def finalizar_movimentacao(id):
     if "usuario_id" not in session:
@@ -678,6 +682,8 @@ def finalizar_movimentacao(id):
 
             movimentacao.funcionando = funcionando
 
+            todos_devolvidos = True 
+
             for mm in movimentacao.materiais:
                 input_ok = f"quantidade_ok_{mm.id}"
                 input_sem_retorno = f"quantidade_sem_retorno_{mm.id}"
@@ -685,11 +691,15 @@ def finalizar_movimentacao(id):
                 qtd_ok_str = request.form.get(input_ok)
                 qtd_sem_retorno_str = request.form.get(input_sem_retorno)
 
-                try:
-                    qtd_ok = int(qtd_ok_str or 0)
-                    qtd_sem_retorno = int(qtd_sem_retorno_str or 0)
+                if not qtd_ok_str or not qtd_sem_retorno_str:
+                    todos_devolvidos = False
+                    break
 
-                    if qtd_ok < 0 or qtd_sem_retorno < 0 or (qtd_ok + qtd_sem_retorno) > mm.quantidade:
+                try:
+                    qtd_ok = int(qtd_ok_str)
+                    qtd_sem_retorno = int(qtd_sem_retorno_str)
+
+                    if (qtd_ok < 0 or qtd_sem_retorno < 0 or (qtd_ok + qtd_sem_retorno) > mm.quantidade):
                         flash(f"Quantidades inválidas para o material {mm.material.nome}", "error")
                         return redirect(url_for("movimentacoes.listar_movimentacoes"))
 
@@ -697,14 +707,28 @@ def finalizar_movimentacao(id):
                     mm.quantidade_sem_retorno = qtd_sem_retorno
 
                     material = db.query(Material).get(mm.material_id)
-                    material.quantidade += qtd_ok
+                    if qtd_ok:
+                        material.quantidade += qtd_ok
+
+                    if (qtd_ok + qtd_sem_retorno) < mm.quantidade:
+                        todos_devolvidos = False
 
                 except (ValueError, TypeError):
                     flash(f"Quantidade inválida para o material {mm.material.nome}", "error")
                     return redirect(url_for("movimentacoes.listar_movimentacoes"))
 
-            movimentacao.status = "verde"
-            movimentacao.devolvido = True
+
+            observacao = request.form.get("observacao_finalizacao", "").strip()
+            if observacao:
+                movimentacao.observacao = observacao
+
+
+            if todos_devolvidos:
+                movimentacao.status = "verde"
+                movimentacao.devolvido = True
+            else:
+                movimentacao.status = "amarelo"
+                movimentacao.devolvido = False
 
             db.commit()
             flash("Movimentação finalizada com sucesso!", "success")
@@ -732,7 +756,6 @@ def excluir_movimentacao(id):
         return redirect(url_for("movimentacoes.listar_movimentacoes"))
 
     try:
-        # Repor o estoque dos materiais
         for mov_mat in movimentacao.materiais:
             material = db.get(Material, mov_mat.material_id)
             if material:
@@ -753,35 +776,63 @@ def excluir_movimentacao(id):
 def export_excel():
     query = db.query(Movimentacao).outerjoin(Movimentacao.materiais).outerjoin(Material).outerjoin(Cliente)
 
-    material = request.args.get("material")
-    cliente = request.args.get("cliente")
-    funcionario = request.args.get("funcionario")
-    status = request.args.get("status")
-    data_inicio = request.args.get("data_inicio")
-    data_fim = request.args.get("data_fim")
+    material_filtro = request.args.get("material", "").strip()
+    cliente_filtro = request.args.get("cliente", "").strip()
+    funcionario_filtro = request.args.get("funcionario", "").strip()
+    status_filtro = request.args.get("status", "").strip()
+    data_inicio = request.args.get("data_inicio", "").strip()
+    data_fim = request.args.get("data_fim", "").strip()
 
-    if material:
-        query = query.filter(Material.nome.ilike(f"%{material}%"))
-    if cliente:
-        query = query.filter(Cliente.nome.ilike(f"%{cliente}%"))
-    if funcionario:
-        query = query.filter(Movimentacao.funcionario.ilike(f"%{funcionario}%"))
-    if status:
-        query = query.filter(Movimentacao.status == status)
+    if material_filtro:
+        query = query.filter(Material.nome.ilike(f"%{material_filtro}%"))
+
+    if cliente_filtro:
+        query = query.filter(Cliente.nome.ilike(f"%{cliente_filtro}%"))
+
+    if funcionario_filtro:
+        query = query.filter(Movimentacao.funcionario.ilike(f"%{funcionario_filtro}%"))
+
+    if status_filtro:
+        query = query.filter(Movimentacao.status == status_filtro)
+
     if data_inicio:
-        query = query.filter(Movimentacao.data_retirada >= data_inicio)
+        try:
+            dt_inicio = datetime.strptime(data_inicio, "%Y-%m-%d")
+            query = query.filter(Movimentacao.data_retirada >= dt_inicio)
+        except ValueError:
+            flash("Formato de data início inválido.", "error")
+
     if data_fim:
-        query = query.filter(Movimentacao.data_retirada <= data_fim)
+        try:
+            dt_fim = datetime.strptime(data_fim, "%Y-%m-%d")
+            query = query.filter(Movimentacao.data_retirada <= dt_fim)
+        except ValueError:
+            flash("Formato de data fim inválido.", "error")
 
     movimentacoes = query.distinct().all()
 
     data = []
+
     for mov in movimentacoes:
-        for mm in mov.materiais:
-            material = mm.material
+        if mov.materiais:
+            for mm in mov.materiais:
+                material = mm.material
+                data.append({
+                    "Material": material.nome,
+                    "Qtd": mm.quantidade,
+                    "Funcionário": mov.funcionario,
+                    "Cliente": mov.cliente.nome if mov.cliente else "-",
+                    "OS": mov.ordem_servico,
+                    "Retirada": mov.data_retirada.strftime("%d/%m/%Y %H:%M"),
+                    "Prazo": mov.prazo_devolucao.strftime("%d/%m/%Y") if mov.prazo_devolucao else "-",
+                    "Status": mov.status,
+                    "Observação": mov.observacao or "-",
+                    "Funcionando": "Sim" if mov.funcionando else ("Não" if mov.funcionando is not None else "-"),
+                })
+        else:
             data.append({
-                "Material": material.nome,
-                "Qtd": mm.quantidade,
+                "Material": "-",
+                "Qtd": "",
                 "Funcionário": mov.funcionario,
                 "Cliente": mov.cliente.nome if mov.cliente else "-",
                 "OS": mov.ordem_servico,
@@ -794,37 +845,54 @@ def export_excel():
 
     df = pd.DataFrame(data)
     output = io.BytesIO()
+
     with pd.ExcelWriter(output, engine="openpyxl") as writer:
         df.to_excel(writer, index=False, sheet_name="Movimentações")
 
     output.seek(0)
-    return send_file(output, as_attachment=True,
-                     download_name="movimentacoes.xlsx",
-                     mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+    if not data:
+        flash("Não há movimentações para exportar com os filtros aplicados.", "info")
+
+    return send_file(
+        output,
+        as_attachment=True,
+        download_name="movimentacoes.xlsx",
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
 
 @movimentacoes_bp.route("/movimentacoes/export/pdf")
 def export_pdf():
     query = db.query(Movimentacao).outerjoin(Movimentacao.materiais).outerjoin(Material).outerjoin(Cliente)
 
-    material = request.args.get("material")
-    cliente = request.args.get("cliente")
-    funcionario = request.args.get("funcionario")
-    status = request.args.get("status")
-    data_inicio = request.args.get("data_inicio")
-    data_fim = request.args.get("data_fim")
+    material_filtro = request.args.get("material", "").strip()
+    cliente_filtro = request.args.get("cliente", "").strip()
+    funcionario_filtro = request.args.get("funcionario", "").strip()
+    status_filtro = request.args.get("status", "").strip()
+    data_inicio = request.args.get("data_inicio", "").strip()
+    data_fim = request.args.get("data_fim", "").strip()
 
-    if material:
-        query = query.filter(Material.nome.ilike(f"%{material}%"))
-    if cliente:
-        query = query.filter(Cliente.nome.ilike(f"%{cliente}%"))
-    if funcionario:
-        query = query.filter(Movimentacao.funcionario.ilike(f"%{funcionario}%"))
-    if status:
-        query = query.filter(Movimentacao.status == status)
+    if material_filtro:
+        query = query.filter(Material.nome.ilike(f"%{material_filtro}%"))
+    if cliente_filtro:
+        query = query.filter(Cliente.nome.ilike(f"%{cliente_filtro}%"))
+    if funcionario_filtro:
+        query = query.filter(Movimentacao.funcionario.ilike(f"%{funcionario_filtro}%"))
+    if status_filtro:
+        query = query.filter(Movimentacao.status == status_filtro)
+
     if data_inicio:
-        query = query.filter(Movimentacao.data_retirada >= data_inicio)
+        try:
+            dt_inicio = datetime.strptime(data_inicio, "%Y-%m-%d")
+            query = query.filter(Movimentacao.data_retirada >= dt_inicio)
+        except ValueError:
+            flash("Formato de data início inválido.", "error")
     if data_fim:
-        query = query.filter(Movimentacao.data_retirada <= data_fim)
+        try:
+            dt_fim = datetime.strptime(data_fim, "%Y-%m-%d")
+            query = query.filter(Movimentacao.data_retirada <= dt_fim)
+        except ValueError:
+            flash("Formato de data fim inválido.", "error")
 
     movimentacoes = query.distinct().all()
 
@@ -838,11 +906,23 @@ def export_pdf():
     data = [["Material", "Qtd", "Funcionário", "Cliente", "OS", "Retirada", "Prazo", "Status"]]
 
     for mov in movimentacoes:
-        for mm in mov.materiais:
-            material = mm.material
+        if mov.materiais:
+            for mm in mov.materiais:
+                material = mm.material
+                data.append([
+                    material.nome,
+                    str(mm.quantidade),
+                    mov.funcionario,
+                    mov.cliente.nome if mov.cliente else "-",
+                    mov.ordem_servico,
+                    mov.data_retirada.strftime("%d/%m/%Y %H:%M"),
+                    mov.prazo_devolucao.strftime("%d/%m/%Y") if mov.prazo_devolucao else "-",
+                    mov.status
+                ])
+        else:
             data.append([
-                material.nome,
-                str(mm.quantidade),
+                "-",
+                "",
                 mov.funcionario,
                 mov.cliente.nome if mov.cliente else "-",
                 mov.ordem_servico,
@@ -853,19 +933,22 @@ def export_pdf():
 
     table = Table(data, repeatRows=1)
     table.setStyle(TableStyle([
-        ("BACKGROUND", (0,0), (-1,0), colors.HexColor("#ff7b00")),
-        ("TEXTCOLOR", (0,0), (-1,0), colors.white),
-        ("ALIGN", (0,0), (-1,-1), "CENTER"),
-        ("FONTNAME", (0,0), (-1,0), "Helvetica-Bold"),
-        ("FONTSIZE", (0,0), (-1,-1), 8),
-        ("BOTTOMPADDING", (0,0), (-1,0), 6),
-        ("GRID", (0,0), (-1,-1), 0.5, colors.grey),
+        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#ff7b00")),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+        ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("FONTSIZE", (0, 0), (-1, -1), 8),
+        ("BOTTOMPADDING", (0, 0), (-1, 0), 6),
+        ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
     ]))
 
     elements.append(table)
     doc.build(elements)
 
     buffer.seek(0)
+    if not movimentacoes:
+        flash("Não há movimentações para exportar com os filtros aplicados.", "info")
+
     return send_file(buffer, as_attachment=True,
                      download_name="movimentacoes.pdf",
                      mimetype="application/pdf")

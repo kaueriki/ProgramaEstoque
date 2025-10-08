@@ -69,16 +69,16 @@
 
         <div class="filtro-acoes-esquerda">
           <label>
-            <input type="checkbox" name="mostrar_somente_nao_ok" value="1" {% if request.args.get('mostrar_somente_nao_ok')=='1' %}checked{% endif %}>
-            Somente NÃO OK
+            <input type="checkbox" name="mostrar_somente_ok" value="1" {% if request.args.get('mostrar_somente_ok')=='1' %}checked{% endif %}>
+            RETORNO OK
           </label>
           <label>
-            <input type="checkbox" name="mostrar_somente_ok" value="1" {% if request.args.get('mostrar_somente_ok')=='1' %}checked{% endif %}>
-            Somente Retorno OK
+            <input type="checkbox" name="mostrar_somente_nao_ok" value="1" {% if request.args.get('mostrar_somente_nao_ok')=='1' %}checked{% endif %}>
+            RETORNO NÃO OK
           </label>
           <label>
             <input type="checkbox" name="mostrar_ficou_cliente" value="1" {% if request.args.get('mostrar_ficou_cliente')=='1' %}checked{% endif %}>
-            Somente Ficou no cliente
+            SEM RETORNO
           </label>
         </div>
 
@@ -200,10 +200,10 @@
                   <p><strong>{{ mov_mat.material.nome }}</strong></p>
 
                   <label for="quantidade_ok_{{ mov_mat.id }}">Quantidade com retorno ao estoque (OK)</label>
-                  <input type="number" name="quantidade_ok_{{ mov_mat.id }}" id="quantidade_ok_{{ mov_mat.id }}" min="0" max="{{ mov_mat.quantidade }}" required>
+                  <input type="number" name="quantidade_ok_{{ mov_mat.id }}" id="quantidade_ok_{{ mov_mat.id }}" min="0" max="{{ mov_mat.quantidade }}">
 
                   <label for="quantidade_sem_retorno_{{ mov_mat.id }}">Quantidade sem retorno (ficou com cliente)</label>
-                  <input type="number" name="quantidade_sem_retorno_{{ mov_mat.id }}" id="quantidade_sem_retorno_{{ mov_mat.id }}" min="0" max="{{ mov_mat.quantidade }}" required>
+                  <input type="number" name="quantidade_sem_retorno_{{ mov_mat.id }}" id="quantidade_sem_retorno_{{ mov_mat.id }}" min="0" max="{{ mov_mat.quantidade }}" >
 
                   <p>Total retirado: {{ mov_mat.quantidade }}</p>
                   <hr>
