@@ -262,24 +262,5 @@
     }
   });
 
-  function validarCampos(movimentacaoId) {
-    const form = document.querySelector(`#finalizar-${movimentacaoId} form`);
-    const inputsOk = form.querySelectorAll('input[name^="quantidade_ok_"]');
-    const inputsSemRetorno = form.querySelectorAll('input[name^="quantidade_sem_retorno_"]');
-
-    for (let i = 0; i < inputsOk.length; i++) {
-      const ok = parseInt(inputsOk[i].value) || 0;
-      const semRetorno = parseInt(inputsSemRetorno[i].value) || 0;
-      const total = ok + semRetorno;
-      const max = parseInt(inputsOk[i].max);
-
-      if (total > max) {
-        alert(`A soma das quantidades não pode ser maior que ${max}.`);
-        return false;
-      }
-    }
-
-    return true;
-  }
 </script>
 {% endblock %}

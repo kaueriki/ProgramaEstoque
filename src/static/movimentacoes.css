@@ -134,6 +134,15 @@
 .btn-exportar:hover {
   background-color: #d96a00;
 }
+.movimentacoes-table td ul li {
+  padding-bottom: 4px;
+  border-bottom: 2px solid #ff9500;
+}
+
+.movimentacoes-table td ul li:last-child {
+  border-bottom: none;
+}
+
 
 .table-wrapper {
   max-height: calc(100vh - 350px);
@@ -372,25 +381,21 @@ td {
   transform: translateY(-1px);
 }
 
-/* Botão confirmar */
 .dropdown-acoes .btn-finalizar {
   background: linear-gradient(135deg, #28a745, #218838);
   color: #fff;
 }
 
-/* Botão remover */
 .dropdown-acoes .btn-remover {
   background: #f44336;
   color: #fff;
 }
 
-/* Botão adicionar */
 .dropdown-acoes .btn-adicionar {
   background: #ff7b00;
   color: #fff;
 }
 
-/* Botão fechar */
 .btn-fechar {
   position: absolute;
   top: 10px;

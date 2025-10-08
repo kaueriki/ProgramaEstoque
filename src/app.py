@@ -682,7 +682,7 @@ def finalizar_movimentacao(id):
 
             movimentacao.funcionando = funcionando
 
-            todos_devolvidos = True 
+            todos_materiais_processados = True
 
             for mm in movimentacao.materiais:
                 input_ok = f"quantidade_ok_{mm.id}"
@@ -691,39 +691,44 @@ def finalizar_movimentacao(id):
                 qtd_ok_str = request.form.get(input_ok)
                 qtd_sem_retorno_str = request.form.get(input_sem_retorno)
 
+                # Se algum dos campos não for preenchido, esse material continua pendente
                 if not qtd_ok_str or not qtd_sem_retorno_str:
-                    todos_devolvidos = False
-                    break
+                    todos_materiais_processados = False
+                    continue  # Pula esse material, não gera erro
 
                 try:
                     qtd_ok = int(qtd_ok_str)
                     qtd_sem_retorno = int(qtd_sem_retorno_str)
+                    total_informado = qtd_ok + qtd_sem_retorno
 
-                    if (qtd_ok < 0 or qtd_sem_retorno < 0 or (qtd_ok + qtd_sem_retorno) > mm.quantidade):
-                        flash(f"Quantidades inválidas para o material {mm.material.nome}", "error")
+                    if qtd_ok < 0 or qtd_sem_retorno < 0 or total_informado > mm.quantidade:
+                        flash(f"A soma das quantidades do material {mm.material.nome} não pode ultrapassar a retirada ({mm.quantidade}).", "error")
                         return redirect(url_for("movimentacoes.listar_movimentacoes"))
 
                     mm.quantidade_ok = qtd_ok
                     mm.quantidade_sem_retorno = qtd_sem_retorno
 
+                    # Atualiza estoque apenas com os que retornaram OK
                     material = db.query(Material).get(mm.material_id)
                     if qtd_ok:
                         material.quantidade += qtd_ok
-
-                    if (qtd_ok + qtd_sem_retorno) < mm.quantidade:
-                        todos_devolvidos = False
 
                 except (ValueError, TypeError):
                     flash(f"Quantidade inválida para o material {mm.material.nome}", "error")
                     return redirect(url_for("movimentacoes.listar_movimentacoes"))
 
-
             observacao = request.form.get("observacao_finalizacao", "").strip()
             if observacao:
                 movimentacao.observacao = observacao
 
+            # Verifica se TODOS os materiais foram preenchidos corretamente
+            total_materiais = len(movimentacao.materiais)
+            total_processados = sum(
+                1 for mm in movimentacao.materiais
+                if mm.quantidade_ok is not None and mm.quantidade_sem_retorno is not None
+            )
 
-            if todos_devolvidos:
+            if total_processados == total_materiais:
                 movimentacao.status = "verde"
                 movimentacao.devolvido = True
             else:
@@ -731,7 +736,7 @@ def finalizar_movimentacao(id):
                 movimentacao.devolvido = False
 
             db.commit()
-            flash("Movimentação finalizada com sucesso!", "success")
+            flash("Finalização processada com sucesso!", "success")
             return redirect(url_for("movimentacoes.listar_movimentacoes"))
 
         except Exception as e:
