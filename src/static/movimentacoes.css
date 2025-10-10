@@ -134,15 +134,6 @@
 .btn-exportar:hover {
   background-color: #d96a00;
 }
-.movimentacoes-table td ul li {
-  padding-bottom: 4px;
-  border-bottom: 2px solid #ff9500;
-}
-
-.movimentacoes-table td ul li:last-child {
-  border-bottom: none;
-}
-
 
 .table-wrapper {
   max-height: calc(100vh - 350px);

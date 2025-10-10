@@ -40,8 +40,6 @@
             <option value="pendente" {% if request.args.get('status')=='pendente' %}selected{% endif %}>Pendente</option>
             <option value="atrasado" {% if request.args.get('status')=='atrasado' %}selected{% endif %}>Atrasado</option>
             <option value="verde" {% if request.args.get('status')=='verde' %}selected{% endif %}>Finalizado</option>
-            <option value="devolvido" {% if request.args.get('status')=='devolvido' %}selected{% endif %}>Devolvido</option>
-            <option value="cliente" {% if request.args.get('status')=='cliente' %}selected{% endif %}>Ficou no cliente</option>
           </select>
         </div>
         <div class="filtro-item">

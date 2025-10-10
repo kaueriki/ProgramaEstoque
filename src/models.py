@@ -94,7 +94,7 @@ class Colaborador(Base):
     __tablename__ = "colaboradores"
 
     id = Column(Integer, primary_key=True)
-    nome = Column(String(100), unique=True, nullable=False)  # <- Correção aqui
+    nome = Column(String(100), unique=True, nullable=False) 
 
     def __repr__(self):
         return f"<Colaborador(nome={self.nome})>"

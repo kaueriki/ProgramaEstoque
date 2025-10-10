@@ -7,11 +7,13 @@ from models import engine, Usuario, Material, Cliente, Movimentacao, Movimentaca
 from collections import defaultdict
 import io
 import pandas as pd
-from reportlab.lib.pagesizes import A4
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph
+from reportlab.lib.pagesizes import landscape, A4
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Image
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib.units import mm
 from sqlalchemy import or_, and_
+import os
 
 app = Flask(__name__)
 app.secret_key = "supersecret"
@@ -292,20 +294,18 @@ def listar_movimentacoes():
     per_page = request.args.get("per_page", 50, type=int)
     page = request.args.get("page", 1, type=int)
 
-    # IMPORTANTE: Importe os modelos MovimentacaoMaterial, Cliente, Material antes disso
-    # from seu_pacote.models import Movimentacao, MovimentacaoMaterial, Cliente, Material
-
     query = db.query(Movimentacao).options(
         joinedload(Movimentacao.materiais).joinedload(MovimentacaoMaterial.material),
         joinedload(Movimentacao.cliente)
     )
 
-    # Filtros básicos
     if cliente_nome:
         query = query.join(Movimentacao.cliente).filter(Cliente.nome.ilike(f"%{cliente_nome}%"))
 
     if material_nome:
-        query = query.join(Movimentacao.materiais).join(MovimentacaoMaterial.material).filter(Material.nome.ilike(f"%{material_nome}%"))
+        query = query.join(Movimentacao.materiais).join(MovimentacaoMaterial.material).filter(
+            Material.nome.ilike(f"%{material_nome}%")
+        )
 
     if funcionario_nome:
         query = query.filter(Movimentacao.funcionario.ilike(f"%{funcionario_nome}%"))
@@ -313,35 +313,34 @@ def listar_movimentacoes():
     if os_numero:
         query = query.filter(Movimentacao.ordem_servico.ilike(f"%{os_numero}%"))
 
-    # Filtro de status
     if status_raw:
-        if status_raw in ("verde", "finalizado", "concluido", "concluído"):
-            query = query.filter(Movimentacao.status == "verde")
-        elif status_raw in ("amarelo", "pendente", "pendentes"):
+        if status_raw == "devolvido":
+            query = query.filter(Movimentacao.devolvido.is_(True))
+        elif status_raw == "cliente":
+            query = query.filter(Movimentacao.utilizado_cliente.is_(True))
+        elif status_raw == "atrasado":
             query = query.filter(
-                or_(
-                    Movimentacao.status == "amarelo",
-                    and_(
-                        Movimentacao.prazo_devolucao != None,
-                        Movimentacao.prazo_devolucao < date.today()
+                and_(
+                    Movimentacao.devolvido.is_(False),
+                    Movimentacao.utilizado_cliente.is_(False),
+                    Movimentacao.prazo_devolucao != None,
+                    Movimentacao.prazo_devolucao < date.today()
+                )
+            )
+        elif status_raw == "pendente":
+            query = query.filter(
+                and_(
+                    Movimentacao.devolvido.is_(False),
+                    Movimentacao.utilizado_cliente.is_(False),
+                    or_(
+                        Movimentacao.prazo_devolucao == None,
+                        Movimentacao.prazo_devolucao >= date.today()
                     )
                 )
             )
-        elif status_raw in ("atrasado", "vencido", "overdue"):
-            query = query.filter(
-                Movimentacao.prazo_devolucao != None,
-                Movimentacao.prazo_devolucao < date.today(),
-                Movimentacao.devolvido == False,
-                Movimentacao.utilizado_cliente == False
-            )
-        elif status_raw in ("devolvido", "retorno"):
-            query = query.filter(Movimentacao.devolvido == True)
-        elif status_raw in ("cliente", "ficou no cliente", "utilizado_cliente"):
-            query = query.filter(Movimentacao.utilizado_cliente == True)
-        elif status_raw in ("amarelo", "vermelho"):
+        elif status_raw in ("verde", "amarelo", "vermelho"):
             query = query.filter(Movimentacao.status == status_raw)
 
-    # Filtros de datas
     if data_inicio_str:
         try:
             data_inicio = datetime.strptime(data_inicio_str, "%Y-%m-%d")
@@ -360,8 +359,6 @@ def listar_movimentacoes():
     query = query.order_by(Movimentacao.data_retirada.desc())
 
     movimentacoes_all = query.all()
-
-    # Aplicar filtros adicionais no Python
     if mostrar_somente_nao_ok:
         movimentacoes_filtradas = [
             m for m in movimentacoes_all
@@ -691,10 +688,9 @@ def finalizar_movimentacao(id):
                 qtd_ok_str = request.form.get(input_ok)
                 qtd_sem_retorno_str = request.form.get(input_sem_retorno)
 
-                # Se algum dos campos não for preenchido, esse material continua pendente
                 if not qtd_ok_str or not qtd_sem_retorno_str:
                     todos_materiais_processados = False
-                    continue  # Pula esse material, não gera erro
+                    continue
 
                 try:
                     qtd_ok = int(qtd_ok_str)
@@ -708,7 +704,6 @@ def finalizar_movimentacao(id):
                     mm.quantidade_ok = qtd_ok
                     mm.quantidade_sem_retorno = qtd_sem_retorno
 
-                    # Atualiza estoque apenas com os que retornaram OK
                     material = db.query(Material).get(mm.material_id)
                     if qtd_ok:
                         material.quantidade += qtd_ok
@@ -721,7 +716,6 @@ def finalizar_movimentacao(id):
             if observacao:
                 movimentacao.observacao = observacao
 
-            # Verifica se TODOS os materiais foram preenchidos corretamente
             total_materiais = len(movimentacao.materiais)
             total_processados = sum(
                 1 for mm in movimentacao.materiais
@@ -784,21 +778,44 @@ def export_excel():
     material_filtro = request.args.get("material", "").strip()
     cliente_filtro = request.args.get("cliente", "").strip()
     funcionario_filtro = request.args.get("funcionario", "").strip()
-    status_filtro = request.args.get("status", "").strip()
+    status_filtro = request.args.get("status", "").strip().lower()
     data_inicio = request.args.get("data_inicio", "").strip()
     data_fim = request.args.get("data_fim", "").strip()
 
     if material_filtro:
         query = query.filter(Material.nome.ilike(f"%{material_filtro}%"))
-
     if cliente_filtro:
         query = query.filter(Cliente.nome.ilike(f"%{cliente_filtro}%"))
-
     if funcionario_filtro:
         query = query.filter(Movimentacao.funcionario.ilike(f"%{funcionario_filtro}%"))
 
     if status_filtro:
-        query = query.filter(Movimentacao.status == status_filtro)
+        if status_filtro == "devolvido":
+            query = query.filter(Movimentacao.devolvido.is_(True))
+        elif status_filtro == "cliente":
+            query = query.filter(Movimentacao.utilizado_cliente.is_(True))
+        elif status_filtro == "atrasado":
+            query = query.filter(
+                and_(
+                    Movimentacao.devolvido.is_(False),
+                    Movimentacao.utilizado_cliente.is_(False),
+                    Movimentacao.prazo_devolucao != None,
+                    Movimentacao.prazo_devolucao < date.today()
+                )
+            )
+        elif status_filtro == "pendente":
+            query = query.filter(
+                and_(
+                    Movimentacao.devolvido.is_(False),
+                    Movimentacao.utilizado_cliente.is_(False),
+                    or_(
+                        Movimentacao.prazo_devolucao == None,
+                        Movimentacao.prazo_devolucao >= date.today()
+                    )
+                )
+            )
+        elif status_filtro in ("verde", "amarelo", "vermelho"):
+            query = query.filter(Movimentacao.status == status_filtro)
 
     if data_inicio:
         try:
@@ -819,31 +836,39 @@ def export_excel():
     data = []
 
     for mov in movimentacoes:
+        status_atual = mov.status_atual 
+
         if mov.materiais:
             for mm in mov.materiais:
                 material = mm.material
                 data.append({
-                    "Material": material.nome,
+                    "Material": material.nome if material else "-",
                     "Qtd": mm.quantidade,
+                    "Qtd OK": mm.quantidade_ok if mm.quantidade_ok is not None else "-",
+                    "Qtd NÃO OK": (mm.quantidade - (mm.quantidade_ok or 0) - (mm.quantidade_sem_retorno or 0)) if mm.quantidade is not None else "-",
+                    "Ficou Cliente": mm.quantidade_sem_retorno if mm.quantidade_sem_retorno is not None else "-",
                     "Funcionário": mov.funcionario,
                     "Cliente": mov.cliente.nome if mov.cliente else "-",
-                    "OS": mov.ordem_servico,
-                    "Retirada": mov.data_retirada.strftime("%d/%m/%Y %H:%M"),
+                    "OS": mov.ordem_servico or "-",
+                    "Retirada": mov.data_retirada.strftime("%d/%m/%Y %H:%M") if mov.data_retirada else "-",
                     "Prazo": mov.prazo_devolucao.strftime("%d/%m/%Y") if mov.prazo_devolucao else "-",
-                    "Status": mov.status,
+                    "Status": status_atual,
                     "Observação": mov.observacao or "-",
                     "Funcionando": "Sim" if mov.funcionando else ("Não" if mov.funcionando is not None else "-"),
                 })
         else:
             data.append({
                 "Material": "-",
-                "Qtd": "",
+                "Qtd": "-",
+                "Qtd OK": "-",
+                "Qtd NÃO OK": "-",
+                "Ficou Cliente": "-",
                 "Funcionário": mov.funcionario,
                 "Cliente": mov.cliente.nome if mov.cliente else "-",
-                "OS": mov.ordem_servico,
-                "Retirada": mov.data_retirada.strftime("%d/%m/%Y %H:%M"),
+                "OS": mov.ordem_servico or "-",
+                "Retirada": mov.data_retirada.strftime("%d/%m/%Y %H:%M") if mov.data_retirada else "-",
                 "Prazo": mov.prazo_devolucao.strftime("%d/%m/%Y") if mov.prazo_devolucao else "-",
-                "Status": mov.status,
+                "Status": status_atual,
                 "Observação": mov.observacao or "-",
                 "Funcionando": "Sim" if mov.funcionando else ("Não" if mov.funcionando is not None else "-"),
             })
@@ -866,6 +891,7 @@ def export_excel():
         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
 
+
 @movimentacoes_bp.route("/movimentacoes/export/pdf")
 def export_pdf():
     query = db.query(Movimentacao).outerjoin(Movimentacao.materiais).outerjoin(Material).outerjoin(Cliente)
@@ -873,7 +899,7 @@ def export_pdf():
     material_filtro = request.args.get("material", "").strip()
     cliente_filtro = request.args.get("cliente", "").strip()
     funcionario_filtro = request.args.get("funcionario", "").strip()
-    status_filtro = request.args.get("status", "").strip()
+    status_filtro = request.args.get("status", "").strip().lower()
     data_inicio = request.args.get("data_inicio", "").strip()
     data_fim = request.args.get("data_fim", "").strip()
 
@@ -883,8 +909,39 @@ def export_pdf():
         query = query.filter(Cliente.nome.ilike(f"%{cliente_filtro}%"))
     if funcionario_filtro:
         query = query.filter(Movimentacao.funcionario.ilike(f"%{funcionario_filtro}%"))
+
     if status_filtro:
-        query = query.filter(Movimentacao.status == status_filtro)
+        if status_filtro == "devolvido":
+            query = query.filter(Movimentacao.devolvido.is_(True))
+        elif status_filtro == "cliente":
+            query = query.filter(Movimentacao.utilizado_cliente.is_(True))
+        elif status_filtro == "atrasado":
+            query = query.filter(
+                and_(
+                    Movimentacao.devolvido.is_(False),
+                    Movimentacao.utilizado_cliente.is_(False),
+                    Movimentacao.prazo_devolucao != None,
+                    Movimentacao.prazo_devolucao < date.today()
+                )
+            )
+        elif status_filtro == "pendente":
+            query = query.filter(
+                and_(
+                    Movimentacao.devolvido.is_(False),
+                    Movimentacao.utilizado_cliente.is_(False),
+                    or_(
+                        Movimentacao.prazo_devolucao == None,
+                        Movimentacao.prazo_devolucao >= date.today()
+                    )
+                )
+            )
+        elif status_filtro in ("finalizado",): 
+            query = query.filter(
+                or_(
+                    Movimentacao.devolvido.is_(True),
+                    Movimentacao.utilizado_cliente.is_(True)
+                )
+            )
 
     if data_inicio:
         try:
@@ -895,6 +952,7 @@ def export_pdf():
     if data_fim:
         try:
             dt_fim = datetime.strptime(data_fim, "%Y-%m-%d")
+            dt_fim = dt_fim.replace(hour=23, minute=59, second=59)
             query = query.filter(Movimentacao.data_retirada <= dt_fim)
         except ValueError:
             flash("Formato de data fim inválido.", "error")
@@ -902,49 +960,98 @@ def export_pdf():
     movimentacoes = query.distinct().all()
 
     buffer = io.BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=A4)
+    doc = SimpleDocTemplate(buffer, pagesize=landscape(A4),
+                            rightMargin=20, leftMargin=20, topMargin=20, bottomMargin=20)
     elements = []
     styles = getSampleStyleSheet()
 
-    elements.append(Paragraph("Relatório de Movimentações", styles["Title"]))
+    logo_path = os.path.join(os.path.dirname(__file__), 'static/assets/logo-valltech.png')
+    logo = Image(logo_path, width=50*mm, height=30*mm)
+    titulo = Paragraph("Relatório de Movimentações", styles["Title"])
+    header_table = Table([[logo, titulo]], colWidths=[60*mm, 400*mm])
+    header_table.setStyle(TableStyle([
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ('LEFTPADDING', (0,0), (-1,-1), 0),
+        ('RIGHTPADDING', (0,0), (-1,-1), 0),
+        ('TOPPADDING', (0,0), (-1,-1), 0),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 12),
+    ]))
+    elements.append(header_table)
 
-    data = [["Material", "Qtd", "Funcionário", "Cliente", "OS", "Retirada", "Prazo", "Status"]]
+    data = [
+        ["Material", "Qtd", "Qtd OK", "Qtd NÃO OK", "Ficou Cliente",
+         "Funcionário", "Cliente", "OS", "Retirada", "Prazo", "Status"]
+    ]
 
     for mov in movimentacoes:
         if mov.materiais:
-            for mm in mov.materiais:
-                material = mm.material
+            for mov_mat in mov.materiais:
+                material = mov_mat.material
+                qtd_total = mov_mat.quantidade or 0
+                qtd_ok = mov_mat.quantidade_ok or 0
+                qtd_ficou = mov_mat.quantidade_sem_retorno or 0
+                qtd_nok = qtd_total - qtd_ok - qtd_ficou
+
+                if mov.devolvido:
+                    status_formatado = "Devolvido"
+                elif mov.utilizado_cliente:
+                    status_formatado = "Ficou no Cliente"
+                elif mov.prazo_devolucao and mov.prazo_devolucao < date.today():
+                    status_formatado = "Atrasado"
+                else:
+                    status_formatado = "Pendente"
+
                 data.append([
-                    material.nome,
-                    str(mm.quantidade),
-                    mov.funcionario,
+                    material.nome if material else "-",
+                    str(qtd_total),
+                    str(qtd_ok),
+                    str(qtd_nok),
+                    str(qtd_ficou),
+                    mov.funcionario or "-",
                     mov.cliente.nome if mov.cliente else "-",
-                    mov.ordem_servico,
-                    mov.data_retirada.strftime("%d/%m/%Y %H:%M"),
+                    mov.ordem_servico or "-",
+                    mov.data_retirada.strftime("%d/%m/%Y %H:%M") if mov.data_retirada else "-",
                     mov.prazo_devolucao.strftime("%d/%m/%Y") if mov.prazo_devolucao else "-",
-                    mov.status
+                    status_formatado
                 ])
         else:
+            if mov.devolvido:
+                status_formatado = "Devolvido"
+            elif mov.utilizado_cliente:
+                status_formatado = "Ficou no Cliente"
+            elif mov.prazo_devolucao and mov.prazo_devolucao < date.today():
+                status_formatado = "Atrasado"
+            else:
+                status_formatado = "Pendente"
+
             data.append([
-                "-",
-                "",
-                mov.funcionario,
+                "-", "", "", "", "",
+                mov.funcionario or "-",
                 mov.cliente.nome if mov.cliente else "-",
-                mov.ordem_servico,
-                mov.data_retirada.strftime("%d/%m/%Y %H:%M"),
+                mov.ordem_servico or "-",
+                mov.data_retirada.strftime("%d/%m/%Y %H:%M") if mov.data_retirada else "-",
                 mov.prazo_devolucao.strftime("%d/%m/%Y") if mov.prazo_devolucao else "-",
-                mov.status
+                status_formatado
             ])
 
-    table = Table(data, repeatRows=1)
+    col_widths = [
+        45*mm, 12*mm, 15*mm, 18*mm, 20*mm,
+        30*mm, 35*mm, 20*mm, 28*mm, 25*mm, 20*mm
+    ]
+
+    table = Table(data, repeatRows=1, colWidths=col_widths)
     table.setStyle(TableStyle([
         ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#ff7b00")),
         ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
         ("ALIGN", (0, 0), (-1, -1), "CENTER"),
         ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-        ("FONTSIZE", (0, 0), (-1, -1), 8),
+        ("FONTNAME", (0, 1), (-1, -1), "Helvetica"),
+        ("FONTSIZE", (0, 0), (-1, 0), 8),
+        ("FONTSIZE", (0, 1), (-1, -1), 7),
         ("BOTTOMPADDING", (0, 0), (-1, 0), 6),
         ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ("WORDWRAP", (0, 0), (-1, -1), True),
     ]))
 
     elements.append(table)
@@ -954,9 +1061,12 @@ def export_pdf():
     if not movimentacoes:
         flash("Não há movimentações para exportar com os filtros aplicados.", "info")
 
-    return send_file(buffer, as_attachment=True,
-                     download_name="movimentacoes.pdf",
-                     mimetype="application/pdf")
+    return send_file(
+        buffer,
+        as_attachment=True,
+        download_name="movimentacoes.pdf",
+        mimetype="application/pdf"
+    )
 
 app.register_blueprint(movimentacoes_bp)
 
