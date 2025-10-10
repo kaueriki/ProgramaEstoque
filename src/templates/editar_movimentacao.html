@@ -141,7 +141,6 @@
   </div>
 </div>
 
-<!-- Modal Novo Cliente -->
 <div class="modal" id="modal-cliente">
   <div class="modal-content">
     <span class="close" onclick="fecharModal('modal-cliente')">&times;</span>
@@ -153,7 +152,6 @@
   </div>
 </div>
 
-<!-- Modal Novo Colaborador -->
 <div class="modal" id="modal-colaborador">
   <div class="modal-content">
     <span class="close" onclick="fecharModal('modal-colaborador')">&times;</span>
@@ -296,12 +294,13 @@
     });
 
     if (response.ok) {
-      const data = await response.json();
+      const nome = formData.get('nome');
+      const idTemp = 'temp_' + Date.now(); 
 
       document.querySelectorAll('.material-select').forEach(select => {
         const option = document.createElement('option');
-        option.text = data.nome;
-        option.value = data.id;
+        option.text = nome;
+        option.value = idTemp;
         select.appendChild(option);
       });
 
