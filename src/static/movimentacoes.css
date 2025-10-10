@@ -583,3 +583,40 @@ button:hover {
 .table-wrapper::-webkit-scrollbar-track {
   background-color: transparent;
 }
+
+@media print {
+  .movimentacoes-table td,
+  .movimentacoes-table th {
+    word-wrap: break-word !important;
+    word-break: break-word !important;
+    white-space: normal !important;
+    max-width: 200px !important;
+    overflow-wrap: break-word !important;
+  }
+
+  .movimentacoes-table td:nth-child(1),
+  .movimentacoes-table th:nth-child(1) {
+    max-width: 200px !important;
+    text-align: left !important;
+  }
+
+  .movimentacoes-table,
+  .movimentacoes-container {
+    box-shadow: none !important;
+    border-radius: 0 !important;
+  }
+
+  .table-wrapper {
+    overflow: visible !important;
+    max-height: none !important;
+  }
+
+  .movimentacoes-header,
+  .filtro-form,
+  .pagination,
+  .btn-nova-movimentacao,
+  .btn-group,
+  .dropdown-acoes {
+    display: none !important;
+  }
+}
