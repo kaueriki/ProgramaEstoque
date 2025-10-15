@@ -15,7 +15,7 @@
 body {
   flex: 1;
   margin-left: 240px;
-  padding: 40px 50px;
+  padding: 10px 30px;
   overflow-y: auto;
   background: linear-gradient(135deg, #000000 0%, #ff8800 100%);
   position: relative;

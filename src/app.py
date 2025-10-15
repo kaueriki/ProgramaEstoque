@@ -21,6 +21,15 @@ app.secret_key = "supersecret"
 Session = sessionmaker(bind=engine)
 db = Session()
 
+@app.errorhandler(500)
+def internal_error(error):
+    db.rollback() 
+    return render_template("500.html"), 500
+
+@app.errorhandler(404)
+def not_found_error(error):
+    return render_template("404.html"), 404
+
 @app.route("/")
 def index():
     return render_template("login.html")
@@ -30,14 +39,22 @@ def login():
     operador = request.form["operador"]
     senha = request.form["senha"]
 
-    user = db.query(Usuario).filter_by(nome=operador, senha=senha).first()
+    try:
+        user = db.query(Usuario).filter_by(nome=operador, senha=senha).first()
 
-    if user:
-        session["usuario_id"] = user.id
-        return redirect(url_for("movimentacoes.listar_movimentacoes"))
-    else:
-        flash("Usuário ou senha inválidos!", "error")
+        if user:
+            session["usuario_id"] = user.id
+            return redirect(url_for("movimentacoes.listar_movimentacoes"))
+        else:
+            flash("Usuário ou senha inválidos!", "error")
+            return redirect(url_for("index"))
+
+    except Exception as e:
+        db.rollback() 
+        print(f"[ERRO LOGIN] {e}")
+        flash("Erro interno ao tentar logar. Tente novamente mais tarde.", "error")
         return redirect(url_for("index"))
+
 
 @app.route("/logout")
 def logout():
@@ -844,9 +861,12 @@ def export_excel():
                 data.append({
                     "Material": material.nome if material else "-",
                     "Qtd": mm.quantidade,
-                    "Qtd OK": mm.quantidade_ok if mm.quantidade_ok is not None else "-",
-                    "Qtd NÃO OK": (mm.quantidade - (mm.quantidade_ok or 0) - (mm.quantidade_sem_retorno or 0)) if mm.quantidade is not None else "-",
-                    "Ficou Cliente": mm.quantidade_sem_retorno if mm.quantidade_sem_retorno is not None else "-",
+                    "Qtd OK": mm.quantidade_ok if (mov.devolvido or mov.utilizado_cliente) else "-",
+                    "Qtd NÃO OK": (
+                        (mm.quantidade - (mm.quantidade_ok or 0) - (mm.quantidade_sem_retorno or 0))
+                        if (mov.devolvido or mov.utilizado_cliente) else "-"
+                    ),
+                    "Ficou Cliente": mm.quantidade_sem_retorno if (mov.devolvido or mov.utilizado_cliente) else "-",
                     "Funcionário": mov.funcionario,
                     "Cliente": mov.cliente.nome if mov.cliente else "-",
                     "OS": mov.ordem_servico or "-",
@@ -988,9 +1008,19 @@ def export_pdf():
             for mov_mat in mov.materiais:
                 material = mov_mat.material
                 qtd_total = mov_mat.quantidade or 0
-                qtd_ok = mov_mat.quantidade_ok or 0
-                qtd_ficou = mov_mat.quantidade_sem_retorno or 0
-                qtd_nok = qtd_total - qtd_ok - qtd_ficou
+
+                if mov.devolvido or mov.utilizado_cliente:
+                    qtd_ok = mov_mat.quantidade_ok if mov_mat.quantidade_ok is not None else 0
+                    qtd_ficou = mov_mat.quantidade_sem_retorno if mov_mat.quantidade_sem_retorno is not None else 0
+                    qtd_nok = qtd_total - qtd_ok - qtd_ficou
+
+                    qtd_ok_str = str(qtd_ok)
+                    qtd_nok_str = str(qtd_nok)
+                    qtd_ficou_str = str(qtd_ficou)
+                else:
+                    qtd_ok_str = "-"
+                    qtd_nok_str = "-"
+                    qtd_ficou_str = "-"
 
                 if mov.devolvido:
                     status_formatado = "Devolvido"
@@ -1004,9 +1034,9 @@ def export_pdf():
                 data.append([
                     material.nome if material else "-",
                     str(qtd_total),
-                    str(qtd_ok),
-                    str(qtd_nok),
-                    str(qtd_ficou),
+                    qtd_ok_str,
+                    qtd_nok_str,
+                    qtd_ficou_str,
                     mov.funcionario or "-",
                     mov.cliente.nome if mov.cliente else "-",
                     mov.ordem_servico or "-",
@@ -1124,4 +1154,4 @@ def novo_colaborador():
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(host="0.0.0.0", port=5000, debug=False)

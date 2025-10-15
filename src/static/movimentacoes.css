@@ -1,9 +1,8 @@
 .movimentacoes-container {
   display: flex;
   flex-direction: column;
-  max-width: 1400px;
-  width: 100%;
-  padding: 10px 16px;
+  max-width: 1500px;
+  padding: 10px 10px;
   margin: 10px auto;
   height: 94vh;
   background-color: #fdfdfd;
@@ -355,7 +354,6 @@ td {
   box-shadow: 0 0 0 2px rgba(255, 123, 0, 0.2);
 }
 
-/* Botões dentro do modal */
 .dropdown-acoes button,
 .dropdown-acoes .btn-finalizar {
   padding: 8px 14px;
@@ -527,7 +525,7 @@ button:hover {
   color: #333;
   padding: 6px 4px;
   border-color: black;
-  font-size: 0.74rem;
+  font-size: 0.64rem;
 }
 
 .movimentacoes-table td ul {
@@ -538,14 +536,14 @@ button:hover {
 
 .movimentacoes-table td ul li {
   padding: 1px 0;
-  font-size: 0.72rem;
+  font-size: 0.62rem;
 }
 
 .btn-acao,
 .btn-editar,
 .btn-excluir {
   padding: 6px 10px;
-  font-size: 0.75rem;
+  font-size: 0.65rem;
   border-radius: 6px;
   display: inline-block;
   text-align: center;
