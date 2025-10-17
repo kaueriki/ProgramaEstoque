@@ -533,6 +533,12 @@ def nova_movimentacao():
                            clientes=clientes,
                            colaboradores=colaboradores)
 
+import logging
+
+# Configure um logger, ou use print
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.DEBUG)
+
 @movimentacoes_bp.route("/movimentacoes/<int:id>/editar", methods=["GET", "POST"])
 def editar_movimentacao(id):
     if "usuario_id" not in session:
@@ -546,14 +552,11 @@ def editar_movimentacao(id):
 
     materiais = db.query(Material).all()
     clientes = db.query(Cliente).all()
-    colaboradores = [c.nome for c in db.query(Colaborador).all()] 
+    colaboradores = [c.nome for c in db.query(Colaborador).all()]
 
     materiais_json = [
-        {
-            "id": m.id,
-            "nome": m.nome,
-            "quantidade": m.quantidade
-        } for m in materiais
+        {"id": m.id, "nome": m.nome, "quantidade": m.quantidade}
+        for m in materiais
     ]
 
     if request.method == "POST":
@@ -585,6 +588,12 @@ def editar_movimentacao(id):
             quantidades_ok = request.form.getlist("quantidade_ok[]")
             quantidades_sem_retorno = request.form.getlist("quantidade_sem_retorno[]")
 
+            logger.debug("==> Iniciando edição da movimentacao id=%s", id)
+            logger.debug("materiais_ids: %s", materiais_ids)
+            logger.debug("quantidades: %s", quantidades)
+            logger.debug("quantidades_ok: %s", quantidades_ok)
+            logger.debug("quantidades_sem_retorno: %s", quantidades_sem_retorno)
+
             if not materiais_ids or not quantidades or len(materiais_ids) != len(quantidades):
                 flash("Informe pelo menos um material com quantidade!", "error")
                 return render_template("editar_movimentacao.html",
@@ -596,9 +605,12 @@ def editar_movimentacao(id):
 
             for mm in movimentacao.materiais:
                 material = db.query(Material).get(mm.material_id)
+                logger.debug("Repondo material antigo id=%s qtd=%s ao estoque", mm.material_id, mm.quantidade)
                 material.quantidade += mm.quantidade
 
-            db.query(MovimentacaoMaterial).filter(MovimentacaoMaterial.movimentacao_id == movimentacao.id).delete()
+            db.query(MovimentacaoMaterial).filter(
+                MovimentacaoMaterial.movimentacao_id == movimentacao.id
+            ).delete()
 
             for i, (mat_id_str, qtd_str) in enumerate(zip(materiais_ids, quantidades)):
                 mat_id = int(mat_id_str)
@@ -613,6 +625,9 @@ def editar_movimentacao(id):
                     qtd_sem_retorno = int(quantidades_sem_retorno[i]) if quantidades_sem_retorno[i].strip() else None
                 except (ValueError, IndexError):
                     qtd_sem_retorno = None
+
+                logger.debug("Novo mov_mat: mat_id=%s qtd=%s ok=%s sem_retorno=%s",
+                             mat_id, qtd, qtd_ok, qtd_sem_retorno)
 
                 total_ok_sem = (qtd_ok or 0) + (qtd_sem_retorno or 0)
                 if total_ok_sem > qtd:
@@ -635,7 +650,6 @@ def editar_movimentacao(id):
                                            materiais_json=materiais_json)
 
                 material.quantidade -= qtd
-
                 mov_mat = MovimentacaoMaterial(
                     movimentacao_id=movimentacao.id,
                     material_id=mat_id,
@@ -652,6 +666,34 @@ def editar_movimentacao(id):
             movimentacao.prazo_devolucao = prazo_devolucao
             movimentacao.motivo = motivo or None
             movimentacao.observacao = observacao
+
+            db.flush()
+            logger.debug("Após flush, relacionamentos ainda podem estar desatualizados")
+            movimentacao.materiais = db.query(MovimentacaoMaterial).filter_by(
+                movimentacao_id=movimentacao.id
+            ).all()
+            logger.debug("Materiais após reload: %s", [
+                {"id": mm.material_id, "qtd": mm.quantidade,
+                 "ok": mm.quantidade_ok, "sem_retorno": mm.quantidade_sem_retorno}
+                for mm in movimentacao.materiais
+            ])
+
+            total_materiais = len(movimentacao.materiais)
+            total_processados = sum(
+                1 for mm in movimentacao.materiais
+                if mm.quantidade_ok is not None and mm.quantidade_sem_retorno is not None
+            )
+
+            logger.debug("total_materiais = %s, total_processados = %s", total_materiais, total_processados)
+
+            if total_processados == total_materiais and total_materiais > 0:
+                movimentacao.status = "verde"
+                movimentacao.devolvido = True
+            else:
+                movimentacao.status = "amarelo"
+                movimentacao.devolvido = False
+
+            logger.debug("Novo status = %s, devolvido = %s", movimentacao.status, movimentacao.devolvido)
 
             db.commit()
             flash("Movimentação atualizada com sucesso!", "success")
