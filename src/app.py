@@ -718,7 +718,7 @@ def editar_movimentacao(id):
                            colaboradores=colaboradores,
                            materiais_json=materiais_json)
 
-@movimentacoes_bp.route("/movimentacoes/<int:id>/finalizar", methods=["GET", "POST"])
+@movimentacoes_bp.route("/movimentacoes/<int:id>/finalizar", methods=["POST"])
 def finalizar_movimentacao(id):
     if "usuario_id" not in session:
         flash("Você precisa estar logado!", "error")
@@ -729,77 +729,74 @@ def finalizar_movimentacao(id):
         flash("Movimentação não encontrada.", "error")
         return redirect(url_for("movimentacoes.listar_movimentacoes"))
 
-    if request.method == "POST":
-        try:
-            funcionando_str = request.form.get("funcionando")
-            funcionando = None
-            if funcionando_str is not None:
-                funcionando = funcionando_str.lower() in ("sim", "true", "1")
+    try:
+        funcionando_str = request.form.get("funcionando")
+        funcionando = None
+        if funcionando_str is not None:
+            funcionando = funcionando_str.lower() in ("sim", "true", "1")
+        movimentacao.funcionando = funcionando
 
-            movimentacao.funcionando = funcionando
+        total_materiais = len(movimentacao.materiais)
+        total_processados = 0
 
-            todos_materiais_processados = True
+        for mm in movimentacao.materiais:
+            input_ok = f"quantidade_ok_{mm.id}"
+            input_sem_retorno = f"quantidade_sem_retorno_{mm.id}"
 
-            for mm in movimentacao.materiais:
-                input_ok = f"quantidade_ok_{mm.id}"
-                input_sem_retorno = f"quantidade_sem_retorno_{mm.id}"
+            qtd_ok_str = request.form.get(input_ok)
+            qtd_sem_retorno_str = request.form.get(input_sem_retorno)
 
-                qtd_ok_str = request.form.get(input_ok)
-                qtd_sem_retorno_str = request.form.get(input_sem_retorno)
+            if (qtd_ok_str is None or qtd_ok_str.strip() == "") and (qtd_sem_retorno_str is None or qtd_sem_retorno_str.strip() == ""):
+                mm.quantidade_ok = None
+                mm.quantidade_sem_retorno = None
+                continue
 
-                if not qtd_ok_str or not qtd_sem_retorno_str:
-                    todos_materiais_processados = False
-                    continue
+            qtd_ok = int(qtd_ok_str) if qtd_ok_str and qtd_ok_str.strip() != "" else 0
+            qtd_sem_retorno = int(qtd_sem_retorno_str) if qtd_sem_retorno_str and qtd_sem_retorno_str.strip() != "" else 0
 
-                try:
-                    qtd_ok = int(qtd_ok_str)
-                    qtd_sem_retorno = int(qtd_sem_retorno_str)
-                    total_informado = qtd_ok + qtd_sem_retorno
+            if qtd_ok < 0 or qtd_sem_retorno < 0:
+                flash(f"Quantidades não podem ser negativas para o material {mm.material.nome}.", "error")
+                return redirect(url_for("movimentacoes.listar_movimentacoes"))
 
-                    if qtd_ok < 0 or qtd_sem_retorno < 0 or total_informado > mm.quantidade:
-                        flash(f"A soma das quantidades do material {mm.material.nome} não pode ultrapassar a retirada ({mm.quantidade}).", "error")
-                        return redirect(url_for("movimentacoes.listar_movimentacoes"))
+            total_informado = qtd_ok + qtd_sem_retorno
+            if total_informado > mm.quantidade:
+                flash(f"A soma das quantidades do material {mm.material.nome} não pode ultrapassar a retirada ({mm.quantidade}).", "error")
+                return redirect(url_for("movimentacoes.listar_movimentacoes"))
 
-                    mm.quantidade_ok = qtd_ok
-                    mm.quantidade_sem_retorno = qtd_sem_retorno
+            mm.quantidade_ok = qtd_ok
+            mm.quantidade_sem_retorno = qtd_sem_retorno
 
-                    material = db.query(Material).get(mm.material_id)
-                    if qtd_ok:
-                        material.quantidade += qtd_ok
+            if qtd_ok > 0:
+                material = db.query(Material).get(mm.material_id)
+                material.quantidade += qtd_ok
 
-                except (ValueError, TypeError):
-                    flash(f"Quantidade inválida para o material {mm.material.nome}", "error")
-                    return redirect(url_for("movimentacoes.listar_movimentacoes"))
+            total_processados += 1
 
-            observacao = request.form.get("observacao_finalizacao", "").strip()
-            if observacao:
-                movimentacao.observacao = observacao
+        observacao = request.form.get("observacao_finalizacao", "").strip()
+        if observacao:
+            movimentacao.observacao = observacao
 
-            total_materiais = len(movimentacao.materiais)
-            total_processados = sum(
-                1 for mm in movimentacao.materiais
-                if mm.quantidade_ok is not None and mm.quantidade_sem_retorno is not None
-            )
+        if total_processados == 0:
+            movimentacao.status = "pendente"
+            movimentacao.devolvido = False
+        elif total_processados == total_materiais:
+            movimentacao.status = "verde"
+            movimentacao.devolvido = True
+        else:
+            movimentacao.status = "amarelo" 
+            movimentacao.devolvido = False
 
-            if total_processados == total_materiais:
-                movimentacao.status = "verde"
-                movimentacao.devolvido = True
-            else:
-                movimentacao.status = "amarelo"
-                movimentacao.devolvido = False
+        db.commit()
+        flash("Finalização processada com sucesso!", "success")
+        return redirect(url_for("movimentacoes.listar_movimentacoes"))
 
-            db.commit()
-            flash("Finalização processada com sucesso!", "success")
-            return redirect(url_for("movimentacoes.listar_movimentacoes"))
+    except Exception as e:
+        db.rollback()
+        import traceback
+        traceback.print_exc()
+        flash(f"Erro ao finalizar movimentação: {str(e)}", "error")
+        return redirect(url_for("movimentacoes.listar_movimentacoes"))
 
-        except Exception as e:
-            db.rollback()
-            import traceback
-            traceback.print_exc()
-            flash(f"Erro ao finalizar movimentação: {str(e)}", "error")
-            return redirect(url_for("movimentacoes.listar_movimentacoes"))
-
-    return render_template("finalizar_movimentacao.html", movimentacao=movimentacao)
 
 @movimentacoes_bp.route("/movimentacoes/<int:id>/excluir", methods=["POST"])
 def excluir_movimentacao(id):
@@ -807,25 +804,17 @@ def excluir_movimentacao(id):
         flash("Você precisa estar logado!", "error")
         return redirect(url_for("index"))
 
-    movimentacao = db.get(Movimentacao, id)
-
+    movimentacao = db.query(Movimentacao).get(id)
     if not movimentacao:
-        flash("Movimentação não encontrada!", "error")
+        flash("Movimentação não encontrada.", "error")
         return redirect(url_for("movimentacoes.listar_movimentacoes"))
 
     try:
-        for mov_mat in movimentacao.materiais:
-            material = db.get(Material, mov_mat.material_id)
-            if material:
-                material.quantidade += mov_mat.quantidade
-
         db.delete(movimentacao)
         db.commit()
         flash("Movimentação excluída com sucesso!", "success")
     except Exception as e:
         db.rollback()
-        import traceback
-        traceback.print_exc()
         flash(f"Erro ao excluir movimentação: {str(e)}", "error")
 
     return redirect(url_for("movimentacoes.listar_movimentacoes"))

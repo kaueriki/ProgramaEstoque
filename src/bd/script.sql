@@ -52,3 +52,26 @@ CREATE TABLE movimentacoes_materiais (
     CONSTRAINT fk_mm_movimentacao FOREIGN KEY (movimentacao_id) REFERENCES movimentacoes(id) ON DELETE CASCADE,
     CONSTRAINT fk_mm_material FOREIGN KEY (material_id) REFERENCES materiais(id) ON DELETE CASCADE
 );
+
+ALTER TABLE movimentacoes_materiais ADD COLUMN quantidade_sem_retorno INT;
+
+use estoque_db;
+
+
+select * from movimentacoes;
+UPDATE movimentacoes SET motivo = 'emprestimo' WHERE motivo = 'preventiva';
+
+SET SQL_SAFE_UPDATES = 0;
+ALTER TABLE movimentacoes MODIFY motivo ENUM('manutenção','emprestimo','teste','instalação','preventiva');
+UPDATE movimentacoes SET motivo = 'emprestimo' WHERE motivo = 'preventiva';
+ALTER TABLE movimentacoes 
+MODIFY COLUMN motivo ENUM('manutenção','emprestimo','teste','instalação');
+
+CREATE TABLE colaboradores (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nome VARCHAR(100) NOT NULL UNIQUE
+
+);
+
+ALTER TABLE movimentacoes_materiais
+ADD COLUMN quantidade_ok INT DEFAULT 0;
