@@ -198,11 +198,24 @@
                   <p><strong>{{ mov_mat.material.nome }}</strong></p>
 
                   <label for="quantidade_ok_{{ mov_mat.id }}">Quantidade com retorno ao estoque (OK)</label>
-                  <input type="number" name="quantidade_ok_{{ mov_mat.id }}" id="quantidade_ok_{{ mov_mat.id }}" min="0" max="{{ mov_mat.quantidade }}">
+                  <input
+                    type="number"
+                    name="quantidade_ok_{{ mov_mat.id }}"
+                    id="quantidade_ok_{{ mov_mat.id }}"
+                    min="0"
+                    max="{{ mov_mat.quantidade }}"
+                    value="{{ mov_mat.quantidade_ok if mov_mat.quantidade_ok is not none else '' }}"
+                  >
 
                   <label for="quantidade_sem_retorno_{{ mov_mat.id }}">Quantidade sem retorno (ficou com cliente)</label>
-                  <input type="number" name="quantidade_sem_retorno_{{ mov_mat.id }}" id="quantidade_sem_retorno_{{ mov_mat.id }}" min="0" max="{{ mov_mat.quantidade }}" >
-
+                  <input
+                    type="number"
+                    name="quantidade_sem_retorno_{{ mov_mat.id }}"
+                    id="quantidade_sem_retorno_{{ mov_mat.id }}"
+                    min="0"
+                    max="{{ mov_mat.quantidade }}"
+                    value="{{ mov_mat.quantidade_sem_retorno if mov_mat.quantidade_sem_retorno is not none else '' }}"
+                  >
                   <p>Total retirado: {{ mov_mat.quantidade }}</p>
                   <hr>
                   {% endfor %}
