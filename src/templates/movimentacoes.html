@@ -37,9 +37,11 @@
           <label for="status">Status</label>
           <select name="status" id="status">
             <option value="">Todos</option>
-            <option value="pendente" {% if request.args.get('status')=='pendente' %}selected{% endif %}>Pendente</option>
-            <option value="atrasado" {% if request.args.get('status')=='atrasado' %}selected{% endif %}>Atrasado</option>
-            <option value="verde" {% if request.args.get('status')=='verde' %}selected{% endif %}>Finalizado</option>
+            <option value="pendente" {% if request.args.get('status') == 'pendente' %}selected{% endif %}>Pendente</option>
+            <option value="atrasado" {% if request.args.get('status') == 'atrasado' %}selected{% endif %}>Atrasado</option>
+            <option value="devolvido" {% if request.args.get('status') == 'devolvido' %}selected{% endif %}>Devolvido</option>
+            <option value="ficou_cliente" {% if request.args.get('status') == 'ficou_cliente' %}selected{% endif %}>Ficou no Cliente</option>
+            <option value="verde" {% if request.args.get('status') == 'verde' %}selected{% endif %}>Finalizado</option>
           </select>
         </div>
         <div class="filtro-item">

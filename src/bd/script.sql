@@ -62,10 +62,10 @@ select * from movimentacoes;
 UPDATE movimentacoes SET motivo = 'emprestimo' WHERE motivo = 'preventiva';
 
 SET SQL_SAFE_UPDATES = 0;
-ALTER TABLE movimentacoes MODIFY motivo ENUM('manutenção','emprestimo','teste','instalação','preventiva');
+ALTER TABLE movimentacoes MODIFY motivo ENUM('manutenção','emprestimo','teste','instalação','preventiva', 'montagem');
 UPDATE movimentacoes SET motivo = 'emprestimo' WHERE motivo = 'preventiva';
 ALTER TABLE movimentacoes 
-MODIFY COLUMN motivo ENUM('manutenção','emprestimo','teste','instalação');
+MODIFY COLUMN motivo ENUM('manutenção','emprestimo','teste','instalação', 'montagem');
 
 CREATE TABLE colaboradores (
     id INT AUTO_INCREMENT PRIMARY KEY,

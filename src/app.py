@@ -330,10 +330,11 @@ def listar_movimentacoes():
     if os_numero:
         query = query.filter(Movimentacao.ordem_servico.ilike(f"%{os_numero}%"))
 
+    # --- Filtro por status ---
     if status_raw:
         if status_raw == "devolvido":
             query = query.filter(Movimentacao.devolvido.is_(True))
-        elif status_raw == "cliente":
+        elif status_raw in ("ficou_cliente", "cliente"):
             query = query.filter(Movimentacao.utilizado_cliente.is_(True))
         elif status_raw == "atrasado":
             query = query.filter(
@@ -376,12 +377,13 @@ def listar_movimentacoes():
     query = query.order_by(Movimentacao.data_retirada.desc())
 
     movimentacoes_all = query.all()
+
     if mostrar_somente_nao_ok:
         movimentacoes_filtradas = [
             m for m in movimentacoes_all
             if any(
-                ((mov_mat.quantidade_ok or 0) < mov_mat.quantidade) or
-                ((mov_mat.quantidade_sem_retorno or 0) > 0)
+                ((mov_mat.quantidade_ok or 0) < mov_mat.quantidade)
+                or ((mov_mat.quantidade_sem_retorno or 0) > 0)
                 for mov_mat in m.materiais
             )
         ]
@@ -389,8 +391,8 @@ def listar_movimentacoes():
         movimentacoes_filtradas = [
             m for m in movimentacoes_all
             if all(
-                mov_mat.quantidade_ok == mov_mat.quantidade and
-                (mov_mat.quantidade_sem_retorno or 0) == 0
+                mov_mat.quantidade_ok == mov_mat.quantidade
+                and (mov_mat.quantidade_sem_retorno or 0) == 0
                 for mov_mat in m.materiais
             )
         ]
@@ -407,7 +409,6 @@ def listar_movimentacoes():
 
     total = len(movimentacoes_filtradas)
     total_pages = (total + per_page - 1) // per_page
-
     start = (page - 1) * per_page
     end = start + per_page
     movimentacoes_paginated = movimentacoes_filtradas[start:end]
@@ -422,7 +423,6 @@ def listar_movimentacoes():
         per_page=per_page,
         materiais_disponiveis=materiais_disponiveis
     )
-
 
 @movimentacoes_bp.route("/movimentacoes/nova", methods=["GET", "POST"])
 def nova_movimentacao():
@@ -746,7 +746,8 @@ def finalizar_movimentacao(id):
             qtd_ok_str = request.form.get(input_ok)
             qtd_sem_retorno_str = request.form.get(input_sem_retorno)
 
-            if (qtd_ok_str is None or qtd_ok_str.strip() == "") and (qtd_sem_retorno_str is None or qtd_sem_retorno_str.strip() == ""):
+            if (qtd_ok_str is None or qtd_ok_str.strip() == "") and \
+               (qtd_sem_retorno_str is None or qtd_sem_retorno_str.strip() == ""):
                 mm.quantidade_ok = None
                 mm.quantidade_sem_retorno = None
                 continue
@@ -776,15 +777,29 @@ def finalizar_movimentacao(id):
         if observacao:
             movimentacao.observacao = observacao
 
+        ficou_no_cliente = any(
+            (mm.quantidade_sem_retorno or 0) > 0 for mm in movimentacao.materiais
+        )
+
         if total_processados == 0:
             movimentacao.status = "pendente"
             movimentacao.devolvido = False
+            movimentacao.utilizado_cliente = False
+
         elif total_processados == total_materiais:
-            movimentacao.status = "verde"
-            movimentacao.devolvido = True
+            if ficou_no_cliente:
+                movimentacao.status = "amarelo"  # parcial / ficou cliente
+                movimentacao.devolvido = False
+                movimentacao.utilizado_cliente = True
+            else:
+                movimentacao.status = "verde" 
+                movimentacao.devolvido = True
+                movimentacao.utilizado_cliente = False
+
         else:
             movimentacao.status = "amarelo" 
             movimentacao.devolvido = False
+            movimentacao.utilizado_cliente = ficou_no_cliente
 
         db.commit()
         flash("Finalização processada com sucesso!", "success")
