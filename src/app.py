@@ -330,13 +330,8 @@ def listar_movimentacoes():
     if os_numero:
         query = query.filter(Movimentacao.ordem_servico.ilike(f"%{os_numero}%"))
 
-    # --- Filtro por status ---
     if status_raw:
-        if status_raw == "devolvido":
-            query = query.filter(Movimentacao.devolvido.is_(True))
-        elif status_raw in ("ficou_cliente", "cliente"):
-            query = query.filter(Movimentacao.utilizado_cliente.is_(True))
-        elif status_raw == "atrasado":
+        if status_raw == "atrasado":
             query = query.filter(
                 and_(
                     Movimentacao.devolvido.is_(False),
@@ -356,8 +351,14 @@ def listar_movimentacoes():
                     )
                 )
             )
-        elif status_raw in ("verde", "amarelo", "vermelho"):
-            query = query.filter(Movimentacao.status == status_raw)
+        elif status_raw == "verde" or status_raw == "finalizado":
+            query = query.filter(
+                or_(
+                    Movimentacao.devolvido.is_(True),
+                    Movimentacao.utilizado_cliente.is_(True)
+                )
+            )
+
 
     if data_inicio_str:
         try:

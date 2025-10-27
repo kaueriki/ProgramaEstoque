@@ -1,114 +1,114 @@
 {% extends "base.html" %}
 
-  {% block extra_css %}
-  <link rel="stylesheet" href="{{ url_for('static', filename='movimentacoes.css') }}">
-  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-  {% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='movimentacoes.css') }}">
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+{% endblock %}
 
-  {% block content %}
-  <div class="movimentacoes-container">
-    <div class="movimentacoes-header">
-      <h2>Histórico de Retiradas</h2>
-      <a href="{{ url_for('movimentacoes.nova_movimentacao') }}" class="btn-nova-movimentacao">Nova Retirada</a>
+{% block content %}
+<div class="movimentacoes-container">
+  <div class="movimentacoes-header">
+    <h2>Histórico de Retiradas</h2>
+    <a href="{{ url_for('movimentacoes.nova_movimentacao') }}" class="btn-nova-movimentacao">Nova Retirada</a>
+  </div>
+
+  <form class="filtro-form-horizontal" method="get" action="{{ url_for('movimentacoes.listar_movimentacoes') }}">
+    <div class="filtro-grid-horizontal">
+      <div class="filtro-item">
+        <label for="material">Material</label>
+        <input type="text" id="material" name="material" value="{{ request.args.get('material', '') }}">
+      </div>
+      <div class="filtro-item">
+        <label for="cliente">Cliente</label>
+        <input type="text" id="cliente" name="cliente" value="{{ request.args.get('cliente', '') }}">
+      </div>
+      <div class="filtro-item">
+        <label for="funcionario">Funcionário</label>
+        <input type="text" id="funcionario" name="funcionario" value="{{ request.args.get('funcionario', '') }}">
+      </div>
+      <div class="filtro-item">
+        <label for="os">OS</label>
+        <input type="text" id="os" name="os" value="{{ request.args.get('os', '') }}">
+      </div>
     </div>
 
-    <form class="filtro-form-horizontal" method="get" action="{{ url_for('movimentacoes.listar_movimentacoes') }}">
-      <div class="filtro-grid-horizontal">
-        <div class="filtro-item">
-          <label for="material">Material</label>
-          <input type="text" id="material" name="material" value="{{ request.args.get('material', '') }}">
-        </div>
-        <div class="filtro-item">
-          <label for="cliente">Cliente</label>
-          <input type="text" id="cliente" name="cliente" value="{{ request.args.get('cliente', '') }}">
-        </div>
-        <div class="filtro-item">
-          <label for="funcionario">Funcionário</label>
-          <input type="text" id="funcionario" name="funcionario" value="{{ request.args.get('funcionario', '') }}">
-        </div>
-        <div class="filtro-item">
-          <label for="os">OS</label>
-          <input type="text" id="os" name="os" value="{{ request.args.get('os', '') }}">
-        </div>
+    <div class="filtro-grid-horizontal">
+      <div class="filtro-item">
+        <label for="status">Status</label>
+        <select name="status" id="status">
+          <option value="">Todos</option>
+          <option value="pendente" {% if request.args.get('status') == 'pendente' %}selected{% endif %}>Pendente</option>
+          <option value="atrasado" {% if request.args.get('status') == 'atrasado' %}selected{% endif %}>Atrasado</option>
+          <option value="finalizado" {% if request.args.get('status') == 'finalizado' %}selected{% endif %}>Finalizado</option>
+        </select>
+      </div>
+      <div class="filtro-item">
+        <label for="data_inicio">Data Início</label>
+        <input type="date" id="data_inicio" name="data_inicio" value="{{ request.args.get('data_inicio', '') }}">
+      </div>
+      <div class="filtro-item">
+        <label for="data_fim">Data Fim</label>
+        <input type="date" id="data_fim" name="data_fim" value="{{ request.args.get('data_fim', '') }}">
+      </div>
+    </div>
+
+    <div class="filtro-acoes-container compact">
+      <div class="filtro-acoes-esquerda">
+        <button type="submit" class="btn-filtrar">Filtrar</button>
+        <button type="button" class="btn-limpar" onclick="window.location.href='{{ url_for('movimentacoes.listar_movimentacoes') }}'">Limpar</button>
+        <label for="per_page">Itens por página</label>
+        <select id="per_page" name="per_page" onchange="this.form.submit()">
+          <option value="10" {% if request.args.get('per_page', '10')=='10' %}selected{% endif %}>10</option>
+          <option value="25" {% if request.args.get('per_page')=='25' %}selected{% endif %}>25</option>
+          <option value="50" {% if request.args.get('per_page')=='50' %}selected{% endif %}>50</option>
+          <option value="100" {% if request.args.get('per_page')=='100' %}selected{% endif %}>100</option>
+        </select>
       </div>
 
-      <div class="filtro-grid-horizontal">
-        <div class="filtro-item">
-          <label for="status">Status</label>
-          <select name="status" id="status">
-            <option value="">Todos</option>
-            <option value="pendente" {% if request.args.get('status') == 'pendente' %}selected{% endif %}>Pendente</option>
-            <option value="atrasado" {% if request.args.get('status') == 'atrasado' %}selected{% endif %}>Atrasado</option>
-            <option value="verde" {% if request.args.get('status') == 'verde' %}selected{% endif %}>Finalizado</option>
-          </select>
-        </div>
-        <div class="filtro-item">
-          <label for="data_inicio">Data Início</label>
-          <input type="date" id="data_inicio" name="data_inicio" value="{{ request.args.get('data_inicio', '') }}">
-        </div>
-        <div class="filtro-item">
-          <label for="data_fim">Data Fim</label>
-          <input type="date" id="data_fim" name="data_fim" value="{{ request.args.get('data_fim', '') }}">
-        </div>
+      <div class="filtro-acoes-esquerda">
+        <label>
+          <input type="checkbox" name="mostrar_somente_ok" value="1" {% if request.args.get('mostrar_somente_ok')=='1' %}checked{% endif %}>
+          RETORNO OK
+        </label>
+        <label>
+          <input type="checkbox" name="mostrar_somente_nao_ok" value="1" {% if request.args.get('mostrar_somente_nao_ok')=='1' %}checked{% endif %}>
+          RETORNO NÃO OK
+        </label>
+        <label>
+          <input type="checkbox" name="mostrar_ficou_cliente" value="1" {% if request.args.get('mostrar_ficou_cliente')=='1' %}checked{% endif %}>
+          SEM RETORNO
+        </label>
       </div>
 
-      <div class="filtro-acoes-container compact">
-        <div class="filtro-acoes-esquerda">
-          <button type="submit" class="btn-filtrar">Filtrar</button>
-          <button type="button" class="btn-limpar" onclick="window.location.href='{{ url_for('movimentacoes.listar_movimentacoes') }}'">Limpar</button>
-          <label for="per_page">Itens por página</label>
-          <select id="per_page" name="per_page" onchange="this.form.submit()">
-            <option value="10" {% if request.args.get('per_page', '10')=='10' %}selected{% endif %}>10</option>
-            <option value="25" {% if request.args.get('per_page')=='25' %}selected{% endif %}>25</option>
-            <option value="50" {% if request.args.get('per_page')=='50' %}selected{% endif %}>50</option>
-            <option value="100" {% if request.args.get('per_page')=='100' %}selected{% endif %}>100</option>
-          </select>
-        </div>
+      <div class="filtro-acoes-direita">
+        <a href="{{ url_for('movimentacoes.export_pdf',
+          material=request.args.get('material', ''),
+          cliente=request.args.get('cliente', ''),
+          funcionario=request.args.get('funcionario', ''),
+          status=request.args.get('status', ''),
+          data_inicio=request.args.get('data_inicio', ''),
+          data_fim=request.args.get('data_fim', ''),
+          os=request.args.get('os', ''),
+          mostrar_somente_nao_ok=request.args.get('mostrar_somente_nao_ok', ''),
+          mostrar_somente_ok=request.args.get('mostrar_somente_ok', ''),
+          mostrar_ficou_cliente=request.args.get('mostrar_ficou_cliente', '')
+        ) }}" class="btn-exportar">Exportar PDF</a>
 
-        <div class="filtro-acoes-esquerda">
-          <label>
-            <input type="checkbox" name="mostrar_somente_ok" value="1" {% if request.args.get('mostrar_somente_ok')=='1' %}checked{% endif %}>
-            RETORNO OK
-          </label>
-          <label>
-            <input type="checkbox" name="mostrar_somente_nao_ok" value="1" {% if request.args.get('mostrar_somente_nao_ok')=='1' %}checked{% endif %}>
-            RETORNO NÃO OK
-          </label>
-          <label>
-            <input type="checkbox" name="mostrar_ficou_cliente" value="1" {% if request.args.get('mostrar_ficou_cliente')=='1' %}checked{% endif %}>
-            SEM RETORNO
-          </label>
-        </div>
-
-        <div class="filtro-acoes-direita">
-          <a href="{{ url_for('movimentacoes.export_pdf',
-            material=request.args.get('material', ''),
-            cliente=request.args.get('cliente', ''),
-            funcionario=request.args.get('funcionario', ''),
-            status=request.args.get('status', ''),
-            data_inicio=request.args.get('data_inicio', ''),
-            data_fim=request.args.get('data_fim', ''),
-            os=request.args.get('os', ''),
-            mostrar_somente_nao_ok=request.args.get('mostrar_somente_nao_ok', ''),
-            mostrar_somente_ok=request.args.get('mostrar_somente_ok', ''),
-            mostrar_ficou_cliente=request.args.get('mostrar_ficou_cliente', '')
-          ) }}" class="btn-exportar">Exportar PDF</a>
-
-          <a href="{{ url_for('movimentacoes.export_excel',
-            material=request.args.get('material', ''),
-            cliente=request.args.get('cliente', ''),
-            funcionario=request.args.get('funcionario', ''),
-            status=request.args.get('status', ''),
-            data_inicio=request.args.get('data_inicio', ''),
-            data_fim=request.args.get('data_fim', ''),
-            os=request.args.get('os', ''),
-            mostrar_somente_nao_ok=request.args.get('mostrar_somente_nao_ok', ''),
-            mostrar_somente_ok=request.args.get('mostrar_somente_ok', ''),
-            mostrar_ficou_cliente=request.args.get('mostrar_ficou_cliente', '')
-          ) }}" class="btn-exportar">Exportar Excel</a>
-        </div>
+        <a href="{{ url_for('movimentacoes.export_excel',
+          material=request.args.get('material', ''),
+          cliente=request.args.get('cliente', ''),
+          funcionario=request.args.get('funcionario', ''),
+          status=request.args.get('status', ''),
+          data_inicio=request.args.get('data_inicio', ''),
+          data_fim=request.args.get('data_fim', ''),
+          os=request.args.get('os', ''),
+          mostrar_somente_nao_ok=request.args.get('mostrar_somente_nao_ok', ''),
+          mostrar_somente_ok=request.args.get('mostrar_somente_ok', ''),
+          mostrar_ficou_cliente=request.args.get('mostrar_ficou_cliente', '')
+        ) }}" class="btn-exportar">Exportar Excel</a>
       </div>
-    </form>
+    </div>
+  </form>
 
   <div class="table-wrapper">
     <table class="movimentacoes-table">
@@ -255,7 +255,6 @@
   </div>
 </div>
 
-
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
@@ -272,6 +271,5 @@
       document.querySelectorAll('.dropdown-acoes').forEach(el => el.style.display = 'none');
     }
   });
-
 </script>
 {% endblock %}
