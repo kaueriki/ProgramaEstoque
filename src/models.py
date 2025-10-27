@@ -52,7 +52,7 @@ class Movimentacao(Base):
     responsavel_id = Column(Integer, ForeignKey("usuarios.id"), nullable=False)
     data_retirada = Column(DateTime, default=datetime.utcnow)
     prazo_devolucao = Column(Date)
-    motivo = Column(Enum("manutenção", "emprestimo", "teste", "instalação", "preventiva", "montagem"), nullable=True)
+    motivo = Column(Enum("manutenção", "emprestimo", "feira","teste", "instalação", "preventiva", "montagem"), nullable=True)
     status = Column(Enum("verde", "amarelo", "vermelho"), default="amarelo")
     devolvido = Column(Boolean, default=False)
     utilizado_cliente = Column(Boolean, default=False)

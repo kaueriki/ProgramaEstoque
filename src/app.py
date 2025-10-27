@@ -788,7 +788,7 @@ def finalizar_movimentacao(id):
 
         elif total_processados == total_materiais:
             if ficou_no_cliente:
-                movimentacao.status = "amarelo"  # parcial / ficou cliente
+                movimentacao.status = "amarelo"
                 movimentacao.devolvido = False
                 movimentacao.utilizado_cliente = True
             else:
