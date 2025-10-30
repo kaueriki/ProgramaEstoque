@@ -37,6 +37,7 @@ class Material(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     nome = Column(String(150), nullable=False)
     quantidade = Column(Integer, nullable=False, default=0)
+    unidade_medida = Column(String(20), nullable=False, default="unidade")
     lote = Column(String(50))
     estoque_minimo_chuva = Column(Integer, default=0)
     estoque_minimo_seco = Column(Integer, default=0)

@@ -75,3 +75,4 @@ CREATE TABLE colaboradores (
 
 ALTER TABLE movimentacoes_materiais
 ADD COLUMN quantidade_ok INT DEFAULT 0;
+ALTER TABLE materiais ADD COLUMN unidade_medida VARCHAR(20) DEFAULT 'unidade' NOT NULL;

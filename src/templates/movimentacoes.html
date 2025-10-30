@@ -9,7 +9,7 @@
 <div class="movimentacoes-container">
   <div class="movimentacoes-header">
     <h2>Histórico de Retiradas</h2>
-    <a href="{{ url_for('movimentacoes.nova_movimentacao') }}" class="btn-nova-movimentacao">Nova Retirada</a>
+    <a href="{{ url_for('movimentacoes.nova_movimentacao', per_page=100) }}" class="btn-nova-movimentacao">Nova Retirada</a>
   </div>
 
   <form class="filtro-form-horizontal" method="get" action="{{ url_for('movimentacoes.listar_movimentacoes') }}">
@@ -55,13 +55,13 @@
     <div class="filtro-acoes-container compact">
       <div class="filtro-acoes-esquerda">
         <button type="submit" class="btn-filtrar">Filtrar</button>
-        <button type="button" class="btn-limpar" onclick="window.location.href='{{ url_for('movimentacoes.listar_movimentacoes') }}'">Limpar</button>
+        <button type="button" class="btn-limpar" onclick="window.location.href='{{ url_for('movimentacoes.listar_movimentacoes', per_page=100) }}'">Limpar</button>
         <label for="per_page">Itens por página</label>
         <select id="per_page" name="per_page" onchange="this.form.submit()">
-          <option value="10" {% if request.args.get('per_page', '10')=='10' %}selected{% endif %}>10</option>
-          <option value="25" {% if request.args.get('per_page')=='25' %}selected{% endif %}>25</option>
-          <option value="50" {% if request.args.get('per_page')=='50' %}selected{% endif %}>50</option>
-          <option value="100" {% if request.args.get('per_page')=='100' %}selected{% endif %}>100</option>
+          <option value="10" {% if request.args.get('per_page', '100')=='10' %}selected{% endif %}>10</option>
+          <option value="25" {% if request.args.get('per_page', '100')=='25' %}selected{% endif %}>25</option>
+          <option value="50" {% if request.args.get('per_page', '100')=='50' %}selected{% endif %}>50</option>
+          <option value="100" {% if request.args.get('per_page', '100')=='100' %}selected{% endif %}>100</option>
         </select>
       </div>
 
@@ -91,7 +91,8 @@
           os=request.args.get('os', ''),
           mostrar_somente_nao_ok=request.args.get('mostrar_somente_nao_ok', ''),
           mostrar_somente_ok=request.args.get('mostrar_somente_ok', ''),
-          mostrar_ficou_cliente=request.args.get('mostrar_ficou_cliente', '')
+          mostrar_ficou_cliente=request.args.get('mostrar_ficou_cliente', ''),
+          per_page=request.args.get('per_page', '100')
         ) }}" class="btn-exportar">Exportar PDF</a>
 
         <a href="{{ url_for('movimentacoes.export_excel',
@@ -104,7 +105,8 @@
           os=request.args.get('os', ''),
           mostrar_somente_nao_ok=request.args.get('mostrar_somente_nao_ok', ''),
           mostrar_somente_ok=request.args.get('mostrar_somente_ok', ''),
-          mostrar_ficou_cliente=request.args.get('mostrar_ficou_cliente', '')
+          mostrar_ficou_cliente=request.args.get('mostrar_ficou_cliente', ''),
+          per_page=request.args.get('per_page', '100')
         ) }}" class="btn-exportar">Exportar Excel</a>
       </div>
     </div>
@@ -116,6 +118,7 @@
         <tr>
           <th style="width: 200px;">Material</th>
           <th>Qtd Retirada</th>
+          <th>Unidade</th>
           <th>Colaborador</th>
           <th style="width: 200px;">Local Utilização</th>
           <th>OS</th>
@@ -151,6 +154,15 @@
               {% endfor %}
             </ul>
           </td>
+          <td>
+            <ul>
+              {% for mov_mat in m.materiais %}
+              <li>{{ mov_mat.material.unidade_medida or '-' }}</li>
+              {% else %}
+              <li>-</li>
+              {% endfor %}
+            </ul>
+          </td>
           <td>{{ m.funcionario }}</td>
           <td>{{ m.cliente.nome if m.cliente else '-' }}</td>
           <td>{{ m.ordem_servico }}</td>
@@ -165,7 +177,6 @@
               {% endfor %}
             </ul>
           </td>
-
           <td>
             <ul>
               {% for mov_mat in m.materiais %}
@@ -177,7 +188,6 @@
               {% endfor %}
             </ul>
           </td>
-
           <td>
             <ul>
               {% for mov_mat in m.materiais %}
@@ -185,7 +195,6 @@
               {% endfor %}
             </ul>
           </td>
-
           <td style="white-space: pre-wrap;">{{ m.observacao or '-' }}</td>
           <td>
             <div class="btn-group">
@@ -193,30 +202,16 @@
               <button class="btn-acao" onclick="toggleDropdown('finalizar-{{ m.id }}')">Finalizar</button>
               <div id="finalizar-{{ m.id }}" class="dropdown-acoes" style="display: none;">
                 <h3>Finalizar Movimentação</h3>
-                <form method="POST" action="{{ url_for('movimentacoes.finalizar_movimentacao', id=m.id) }}" onsubmit="return validarCampos({{ m.id }})">
+                <form method="POST" action="{{ url_for('movimentacoes.finalizar_movimentacao', id=m.id) }}">
                   {% for mov_mat in m.materiais %}
-                  <p><strong>{{ mov_mat.material.nome }}</strong></p>
+                  <p><strong>{{ mov_mat.material.nome }} ({{ mov_mat.material.unidade_medida or '-' }})</strong></p>
 
                   <label for="quantidade_ok_{{ mov_mat.id }}">Quantidade com retorno ao estoque (OK)</label>
-                  <input
-                    type="number"
-                    name="quantidade_ok_{{ mov_mat.id }}"
-                    id="quantidade_ok_{{ mov_mat.id }}"
-                    min="0"
-                    max="{{ mov_mat.quantidade }}"
-                    value="{{ mov_mat.quantidade_ok if mov_mat.quantidade_ok is not none else '' }}"
-                  >
+                  <input type="number" name="quantidade_ok_{{ mov_mat.id }}" id="quantidade_ok_{{ mov_mat.id }}" min="0" max="{{ mov_mat.quantidade }}" value="{{ mov_mat.quantidade_ok if mov_mat.quantidade_ok is not none else '' }}">
 
                   <label for="quantidade_sem_retorno_{{ mov_mat.id }}">Quantidade sem retorno (ficou com cliente)</label>
-                  <input
-                    type="number"
-                    name="quantidade_sem_retorno_{{ mov_mat.id }}"
-                    id="quantidade_sem_retorno_{{ mov_mat.id }}"
-                    min="0"
-                    max="{{ mov_mat.quantidade }}"
-                    value="{{ mov_mat.quantidade_sem_retorno if mov_mat.quantidade_sem_retorno is not none else '' }}"
-                  >
-                  <p>Total retirado: {{ mov_mat.quantidade }}</p>
+                  <input type="number" name="quantidade_sem_retorno_{{ mov_mat.id }}" id="quantidade_sem_retorno_{{ mov_mat.id }}" min="0" max="{{ mov_mat.quantidade }}" value="{{ mov_mat.quantidade_sem_retorno if mov_mat.quantidade_sem_retorno is not none else '' }}">
+                  <p>Total retirado: {{ mov_mat.quantidade }} {{ mov_mat.material.unidade_medida or '' }}</p>
                   <hr>
                   {% endfor %}
 
@@ -246,11 +241,11 @@
 
   <div class="pagination">
     {% if page > 1 %}
-    <a href="{{ url_for('movimentacoes.listar_movimentacoes', page=page-1, status=request.args.get('status', ''), cliente=request.args.get('cliente', ''), funcionario=request.args.get('funcionario', ''), material=request.args.get('material', ''), data_inicio=request.args.get('data_inicio', ''), data_fim=request.args.get('data_fim', ''), per_page=request.args.get('per_page', '10')) }}" class="page-link">Anterior</a>
+    <a href="{{ url_for('movimentacoes.listar_movimentacoes', page=page-1, per_page=request.args.get('per_page', '100')) }}" class="page-link">Anterior</a>
     {% endif %}
     <span>Página {{ page }} de {{ total_pages }}</span>
     {% if page < total_pages %}
-    <a href="{{ url_for('movimentacoes.listar_movimentacoes', page=page+1, status=request.args.get('status', ''), cliente=request.args.get('cliente', ''), funcionario=request.args.get('funcionario', ''), material=request.args.get('material', ''), data_inicio=request.args.get('data_inicio', ''), data_fim=request.args.get('data_fim', ''), per_page=request.args.get('per_page', '10')) }}" class="page-link">Próxima</a>
+    <a href="{{ url_for('movimentacoes.listar_movimentacoes', page=page+1, per_page=request.args.get('per_page', '100')) }}" class="page-link">Próxima</a>
     {% endif %}
   </div>
 </div>

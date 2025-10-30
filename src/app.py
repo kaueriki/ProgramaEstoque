@@ -71,6 +71,7 @@ def novo_material():
     if request.method == "POST":
         nome = request.form["nome"]
         quantidade = int(request.form["quantidade"])
+        unidade_medida = request.form["unidade_medida"]
         lote = request.form.get("lote", "")  
         estoque_minimo_chuva = int(request.form["estoque_minimo_chuva"])
         estoque_minimo_seco = int(request.form["estoque_minimo_seco"])
@@ -78,6 +79,7 @@ def novo_material():
         novo = Material(
             nome=nome,
             quantidade=quantidade,
+            unidade_medida=unidade_medida,
             lote=lote,
             estoque_minimo_chuva=estoque_minimo_chuva,
             estoque_minimo_seco=estoque_minimo_seco,
@@ -120,6 +122,7 @@ def editar_material(material_id):
     if request.method == "POST":
         material.nome = request.form["nome"]
         material.quantidade = int(request.form["quantidade"])
+        material.unidade_medida = request.form["unidade_medida"]
         material.lote = request.form.get("lote", "")
         material.estoque_minimo_chuva = int(request.form["estoque_minimo_chuva"])
         material.estoque_minimo_seco = int(request.form["estoque_minimo_seco"])
@@ -308,7 +311,7 @@ def listar_movimentacoes():
     mostrar_somente_ok = request.args.get("mostrar_somente_ok") == "1"
     mostrar_ficou_cliente = request.args.get("mostrar_ficou_cliente") == "1"
 
-    per_page = request.args.get("per_page", 50, type=int)
+    per_page = request.args.get("per_page", 100, type=int)
     page = request.args.get("page", 1, type=int)
 
     query = db.query(Movimentacao).options(
