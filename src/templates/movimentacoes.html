@@ -118,7 +118,6 @@
         <tr>
           <th style="width: 200px;">Material</th>
           <th>Qtd Retirada</th>
-          <th>Unidade</th>
           <th>Colaborador</th>
           <th style="width: 200px;">Local Utilização</th>
           <th>OS</th>
@@ -148,16 +147,7 @@
           <td>
             <ul>
               {% for mov_mat in m.materiais %}
-              <li>{{ mov_mat.quantidade }}</li>
-              {% else %}
-              <li>-</li>
-              {% endfor %}
-            </ul>
-          </td>
-          <td>
-            <ul>
-              {% for mov_mat in m.materiais %}
-              <li>{{ mov_mat.material.unidade_medida or '-' }}</li>
+              <li>{{ mov_mat.quantidade }} {{ mov_mat.material.unidade_medida or '' }}</li>
               {% else %}
               <li>-</li>
               {% endfor %}
