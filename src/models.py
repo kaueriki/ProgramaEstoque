@@ -85,8 +85,9 @@ class MovimentacaoMaterial(Base):
     movimentacao_id = Column(Integer, ForeignKey("movimentacoes.id"), nullable=False)
     material_id = Column(Integer, ForeignKey("materiais.id"), nullable=False)
     quantidade = Column(DECIMAL(10, 2), nullable=False)
-    quantidade_ok = Column(DECIMAL(10, 2), default=0.00)
-    quantidade_sem_retorno = Column(DECIMAL(10, 2), default=0.00)
+    quantidade_ok = Column(DECIMAL(10, 2), nullable=True, default=None)
+    quantidade_sem_retorno = Column(DECIMAL(10, 2), nullable=True, default=None)
+
 
     movimentacao = relationship("Movimentacao", back_populates="materiais")
     material = relationship("Material")

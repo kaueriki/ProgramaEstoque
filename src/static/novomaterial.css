@@ -7,15 +7,13 @@
   padding: 30px;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-
-  height: 660px;
-  overflow-y: auto;            /* 🔹 permite rolagem vertical */
-  overflow-x: hidden;          /* 🔹 evita rolagem horizontal */
-  scrollbar-width: thin;       /* 🔹 scrollbar mais elegante no Firefox */
-  scrollbar-color: #ff6600 #f0f0f0; /* 🔹 cor personalizada */
+  height: 600px;
+  overflow-y: auto;           
+  overflow-x: hidden;        
+  scrollbar-width: thin;    
+  scrollbar-color: #ff6600 #f0f0f0; 
 }
 
-/* 🔸 Customização para navegadores baseados em WebKit (Chrome, Edge, Safari) */
 .content-container::-webkit-scrollbar {
   width: 8px;
 }

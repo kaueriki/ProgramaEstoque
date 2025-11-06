@@ -85,3 +85,7 @@ ALTER TABLE movimentacoes_materiais
 MODIFY COLUMN quantidade DECIMAL(10,2) NOT NULL,
 MODIFY COLUMN quantidade_sem_retorno DECIMAL(10,2) DEFAULT 0.00,
 MODIFY COLUMN quantidade_ok DECIMAL(10,2) DEFAULT 0.00;
+
+ALTER TABLE movimentacoes_materiais 
+    MODIFY COLUMN quantidade_ok DECIMAL(10,2) NULL DEFAULT NULL,
+    MODIFY COLUMN quantidade_sem_retorno DECIMAL(10,2) NULL DEFAULT NULL;

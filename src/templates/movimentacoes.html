@@ -163,28 +163,40 @@
           <td>
             <ul>
               {% for mov_mat in m.materiais %}
-                <li>{{ mov_mat.quantidade_ok if mov_mat.quantidade_ok is not none else '-' }}</li>
-              {% endfor %}
-            </ul>
-          </td>
-          <td>
-            <ul>
-              {% for mov_mat in m.materiais %}
-                {% if mov_mat.quantidade_ok is not none or mov_mat.quantidade_sem_retorno is not none %}
-                  <li>{{ mov_mat.quantidade - (mov_mat.quantidade_ok or 0) - (mov_mat.quantidade_sem_retorno or 0) }}</li>
+                {% if mov_mat.quantidade_ok is not none %}
+                  <li>{{ mov_mat.quantidade_ok }}</li>
                 {% else %}
                   <li>-</li>
                 {% endif %}
               {% endfor %}
             </ul>
           </td>
+
           <td>
             <ul>
               {% for mov_mat in m.materiais %}
-                <li>{{ mov_mat.quantidade_sem_retorno if mov_mat.quantidade_sem_retorno is not none else '-' }}</li>
+                {% if mov_mat.quantidade_ok is not none and mov_mat.quantidade_sem_retorno is not none %}
+                  <li>{{ mov_mat.quantidade - mov_mat.quantidade_ok - mov_mat.quantidade_sem_retorno }}</li>
+                {% else %}
+                  <li>-</li>
+                {% endif %}
               {% endfor %}
             </ul>
           </td>
+
+          <!-- Sem retorno (utilizado) -->
+          <td>
+            <ul>
+              {% for mov_mat in m.materiais %}
+                {% if mov_mat.quantidade_sem_retorno is not none %}
+                  <li>{{ mov_mat.quantidade_sem_retorno }}</li>
+                {% else %}
+                  <li>-</li>
+                {% endif %}
+              {% endfor %}
+            </ul>
+          </td>
+
           <td style="white-space: pre-wrap;">{{ m.observacao or '-' }}</td>
           <td>
             <div class="btn-group">

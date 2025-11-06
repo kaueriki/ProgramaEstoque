@@ -387,8 +387,8 @@ def listar_movimentacoes():
         movimentacoes_filtradas = [
             m for m in movimentacoes_all
             if any(
-                ((mov_mat.quantidade_ok or 0) < mov_mat.quantidade)
-                or ((mov_mat.quantidade_sem_retorno or 0) > 0)
+                (mov_mat.quantidade_ok is not None and mov_mat.quantidade_ok < mov_mat.quantidade)
+                or (mov_mat.quantidade_sem_retorno is not None and mov_mat.quantidade_sem_retorno > 0)
                 for mov_mat in m.materiais
             )
         ]
@@ -529,6 +529,7 @@ def nova_movimentacao():
                     quantidade_ok=None,
                     quantidade_sem_retorno=None
                 )
+
                 db.add(mov_mat)
 
             db.commit()
@@ -773,7 +774,7 @@ def finalizar_movimentacao(id):
 
         elif total_processados == total_materiais:
             if ficou_no_cliente:
-                movimentacao.status = "amarelo"  # parcial / ficou cliente
+                movimentacao.status = "amarelo"  
                 movimentacao.devolvido = False
                 movimentacao.utilizado_cliente = True
             else:
