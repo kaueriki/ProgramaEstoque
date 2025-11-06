@@ -539,7 +539,6 @@ def nova_movimentacao():
 
 import logging
 
-# Configure um logger, ou use print
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
 
@@ -573,15 +572,13 @@ def editar_movimentacao(id):
             data_retirada_str = request.form.get("data_retirada", "").strip()
             data_retirada = (
                 datetime.strptime(data_retirada_str, "%Y-%m-%dT%H:%M")
-                if data_retirada_str
-                else None
+                if data_retirada_str else None
             )
 
             prazo_str = request.form.get("prazo_devolucao", "").strip()
             prazo_devolucao = (
                 datetime.strptime(prazo_str, "%Y-%m-%dT%H:%M")
-                if prazo_str
-                else None
+                if prazo_str else None
             )
 
             motivo = request.form.get("motivo", "").strip()
@@ -592,68 +589,43 @@ def editar_movimentacao(id):
             quantidades_ok = request.form.getlist("quantidade_ok[]")
             quantidades_sem_retorno = request.form.getlist("quantidade_sem_retorno[]")
 
-            logger.debug("==> Iniciando edição da movimentacao id=%s", id)
-            logger.debug("materiais_ids: %s", materiais_ids)
-            logger.debug("quantidades: %s", quantidades)
-            logger.debug("quantidades_ok: %s", quantidades_ok)
-            logger.debug("quantidades_sem_retorno: %s", quantidades_sem_retorno)
-
             if not materiais_ids or not quantidades or len(materiais_ids) != len(quantidades):
                 flash("Informe pelo menos um material com quantidade!", "error")
-                return render_template("editar_movimentacao.html",
-                                       movimentacao=movimentacao,
-                                       materiais=materiais,
-                                       clientes=clientes,
-                                       colaboradores=colaboradores,
-                                       materiais_json=materiais_json)
+                return render_template(
+                    "editar_movimentacao.html",
+                    movimentacao=movimentacao,
+                    materiais=materiais,
+                    clientes=clientes,
+                    colaboradores=colaboradores,
+                    materiais_json=materiais_json
+                )
 
             for mm in movimentacao.materiais:
                 material = db.query(Material).get(mm.material_id)
-                logger.debug("Repondo material antigo id=%s qtd=%s ao estoque", mm.material_id, mm.quantidade)
-                material.quantidade += mm.quantidade
+                if material:
+                    material.quantidade += mm.quantidade
 
-            db.query(MovimentacaoMaterial).filter(
-                MovimentacaoMaterial.movimentacao_id == movimentacao.id
+            db.query(MovimentacaoMaterial).filter_by(
+                movimentacao_id=movimentacao.id
             ).delete()
+            db.flush()
 
             for i, (mat_id_str, qtd_str) in enumerate(zip(materiais_ids, quantidades)):
                 mat_id = int(mat_id_str)
                 qtd = int(qtd_str)
 
-                try:
-                    qtd_ok = int(quantidades_ok[i]) if quantidades_ok[i].strip() else None
-                except (ValueError, IndexError):
-                    qtd_ok = None
-
-                try:
-                    qtd_sem_retorno = int(quantidades_sem_retorno[i]) if quantidades_sem_retorno[i].strip() else None
-                except (ValueError, IndexError):
-                    qtd_sem_retorno = None
-
-                logger.debug("Novo mov_mat: mat_id=%s qtd=%s ok=%s sem_retorno=%s",
-                             mat_id, qtd, qtd_ok, qtd_sem_retorno)
-
-                total_ok_sem = (qtd_ok or 0) + (qtd_sem_retorno or 0)
-                if total_ok_sem > qtd:
-                    flash(f"A soma de Quantidade OK e Sem Retorno não pode ser maior que a quantidade total para o material {mat_id}", "error")
-                    return render_template("editar_movimentacao.html",
-                                           movimentacao=movimentacao,
-                                           materiais=materiais,
-                                           clientes=clientes,
-                                           colaboradores=colaboradores,
-                                           materiais_json=materiais_json)
+                qtd_ok = int(quantidades_ok[i]) if i < len(quantidades_ok) and quantidades_ok[i].strip() else None
+                qtd_sem_retorno = int(quantidades_sem_retorno[i]) if i < len(quantidades_sem_retorno) and quantidades_sem_retorno[i].strip() else None
 
                 material = db.query(Material).get(mat_id)
+                if not material:
+                    raise Exception(f"Material ID {mat_id} não encontrado.")
+
                 if material.quantidade < qtd:
-                    flash(f"Estoque insuficiente do material {material.nome}. Estoque atual: {material.quantidade}", "error")
-                    return render_template("editar_movimentacao.html",
-                                           movimentacao=movimentacao,
-                                           materiais=materiais,
-                                           clientes=clientes,
-                                           colaboradores=colaboradores,
-                                           materiais_json=materiais_json)
+                    raise Exception(f"Estoque insuficiente para {material.nome}. Disponível: {material.quantidade}")
 
                 material.quantidade -= qtd
+
                 mov_mat = MovimentacaoMaterial(
                     movimentacao_id=movimentacao.id,
                     material_id=mat_id,
@@ -672,23 +644,16 @@ def editar_movimentacao(id):
             movimentacao.observacao = observacao
 
             db.flush()
-            logger.debug("Após flush, relacionamentos ainda podem estar desatualizados")
+
             movimentacao.materiais = db.query(MovimentacaoMaterial).filter_by(
                 movimentacao_id=movimentacao.id
             ).all()
-            logger.debug("Materiais após reload: %s", [
-                {"id": mm.material_id, "qtd": mm.quantidade,
-                 "ok": mm.quantidade_ok, "sem_retorno": mm.quantidade_sem_retorno}
-                for mm in movimentacao.materiais
-            ])
 
             total_materiais = len(movimentacao.materiais)
             total_processados = sum(
                 1 for mm in movimentacao.materiais
                 if mm.quantidade_ok is not None and mm.quantidade_sem_retorno is not None
             )
-
-            logger.debug("total_materiais = %s, total_processados = %s", total_materiais, total_processados)
 
             if total_processados == total_materiais and total_materiais > 0:
                 movimentacao.status = "verde"
@@ -697,10 +662,8 @@ def editar_movimentacao(id):
                 movimentacao.status = "amarelo"
                 movimentacao.devolvido = False
 
-            logger.debug("Novo status = %s, devolvido = %s", movimentacao.status, movimentacao.devolvido)
-
             db.commit()
-            flash("Movimentação atualizada com sucesso!", "success")
+            flash("Movimentação atualizada com sucesso! Estoque sincronizado.", "success")
             return redirect(url_for("movimentacoes.listar_movimentacoes"))
 
         except Exception as e:
@@ -708,19 +671,23 @@ def editar_movimentacao(id):
             import traceback
             traceback.print_exc()
             flash(f"Erro ao atualizar movimentação: {str(e)}", "error")
-            return render_template("editar_movimentacao.html",
-                                   movimentacao=movimentacao,
-                                   materiais=materiais,
-                                   clientes=clientes,
-                                   colaboradores=colaboradores,
-                                   materiais_json=materiais_json)
+            return render_template(
+                "editar_movimentacao.html",
+                movimentacao=movimentacao,
+                materiais=materiais,
+                clientes=clientes,
+                colaboradores=colaboradores,
+                materiais_json=materiais_json
+            )
 
-    return render_template("editar_movimentacao.html",
-                           movimentacao=movimentacao,
-                           materiais=materiais,
-                           clientes=clientes,
-                           colaboradores=colaboradores,
-                           materiais_json=materiais_json)
+    return render_template(
+        "editar_movimentacao.html",
+        movimentacao=movimentacao,
+        materiais=materiais,
+        clientes=clientes,
+        colaboradores=colaboradores,
+        materiais_json=materiais_json
+    )
 
 @movimentacoes_bp.route("/movimentacoes/<int:id>/finalizar", methods=["POST"])
 def finalizar_movimentacao(id):
@@ -816,7 +783,6 @@ def finalizar_movimentacao(id):
         flash(f"Erro ao finalizar movimentação: {str(e)}", "error")
         return redirect(url_for("movimentacoes.listar_movimentacoes"))
 
-
 @movimentacoes_bp.route("/movimentacoes/<int:id>/excluir", methods=["POST"])
 def excluir_movimentacao(id):
     if "usuario_id" not in session:
@@ -829,9 +795,16 @@ def excluir_movimentacao(id):
         return redirect(url_for("movimentacoes.listar_movimentacoes"))
 
     try:
+        for mm in movimentacao.materiais:
+            material = db.query(Material).get(mm.material_id)
+            if material:
+                material.quantidade += mm.quantidade
+
         db.delete(movimentacao)
         db.commit()
-        flash("Movimentação excluída com sucesso!", "success")
+
+        flash("Movimentação excluída e estoque restaurado!", "success")
+
     except Exception as e:
         db.rollback()
         flash(f"Erro ao excluir movimentação: {str(e)}", "error")
@@ -1183,6 +1156,110 @@ def alterar(id):
     db.commit()
     flash("Estoque atualizado com sucesso!", "success")
     return redirect(url_for("estoque.controle"))
+
+
+@estoque_bp.route("/estoque/export/excel")
+def exportar_excel():
+    filtro = request.args.get("filtro", "").strip()
+
+    query = db.query(Material)
+
+    if filtro:
+        query = query.filter(Material.nome.ilike(f"%{filtro}%"))
+
+    materiais = query.all()
+
+    data = []
+    for mat in materiais:
+        data.append({
+            "Material": mat.nome,
+            "Lote": mat.lote or "Sem lote",
+            "Quantidade": mat.quantidade,
+            "Estoque Mínimo Seco": mat.estoque_minimo_seco,
+            "Diferença Seco": mat.quantidade - mat.estoque_minimo_seco,
+            "Estoque Mínimo Chuva": mat.estoque_minimo_chuva,
+            "Diferença Chuva": mat.quantidade - mat.estoque_minimo_chuva,
+        })
+
+    if not data:
+        flash("Não há materiais para exportar com o filtro aplicado.", "info")
+
+    df = pd.DataFrame(data)
+    output = io.BytesIO()
+
+    with pd.ExcelWriter(output, engine="openpyxl") as writer:
+        df.to_excel(writer, index=False, sheet_name="Estoque")
+
+    output.seek(0)
+    return send_file(
+        output,
+        as_attachment=True,
+        download_name="estoque.xlsx",
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+
+@estoque_bp.route("/estoque/export/pdf")
+def exportar_pdf():
+    from reportlab.lib import colors
+    from reportlab.lib.pagesizes import landscape, A4
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph
+    from reportlab.lib.styles import getSampleStyleSheet
+
+    filtro = request.args.get("filtro", "").strip()
+
+    query = db.query(Material)
+    if filtro:
+        query = query.filter(Material.nome.ilike(f"%{filtro}%"))
+
+    materiais = query.all()
+
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=landscape(A4), leftMargin=20, rightMargin=20, topMargin=20, bottomMargin=20)
+    elements = []
+    styles = getSampleStyleSheet()
+
+    elements.append(Paragraph("Relatório de Estoque", styles["Title"]))
+    elements.append(Paragraph(" ", styles["Normal"]))
+
+    data = [
+        ["Material", "Lote", "Qtd", "Mínimo Seco", "Dif. Seco", "Mínimo Chuva", "Dif. Chuva"]
+    ]
+
+    for mat in materiais:
+        data.append([
+            mat.nome,
+            mat.lote or "Sem lote",
+            str(mat.quantidade),
+            str(mat.estoque_minimo_seco),
+            str(mat.quantidade - mat.estoque_minimo_seco),
+            str(mat.estoque_minimo_chuva),
+            str(mat.quantidade - mat.estoque_minimo_chuva),
+        ])
+
+    table = Table(data, repeatRows=1)
+    table.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#ff7b00")),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+        ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("FONTNAME", (0, 1), (-1, -1), "Helvetica"),
+        ("FONTSIZE", (0, 0), (-1, -1), 8),
+        ("BOTTOMPADDING", (0, 0), (-1, 0), 6),
+        ("GRID", (0, 0), (-1, -1), 0.25, colors.grey),
+    ]))
+    elements.append(table)
+    doc.build(elements)
+
+    buffer.seek(0)
+    if not materiais:
+        flash("Não há materiais para exportar com o filtro aplicado.", "info")
+
+    return send_file(
+        buffer,
+        as_attachment=True,
+        download_name="estoque.pdf",
+        mimetype="application/pdf"
+    )
 
 app.register_blueprint(estoque_bp)
 

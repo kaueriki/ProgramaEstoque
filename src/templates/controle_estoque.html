@@ -15,6 +15,10 @@
         <input type="text" name="filtro" placeholder="Buscar material..." value="{{ filtro }}">
         <button type="submit">Filtrar</button>
       </form>
+       <div class="export-buttons">
+        <a href="{{ url_for('estoque.exportar_pdf', filtro=filtro) }}" class="btn-export pdf">Exportar PDF</a>
+        <a href="{{ url_for('estoque.exportar_excel', filtro=filtro) }}" class="btn-export excel">Exportar Excel</a>
+      </div>
     </div>
 
     {% for lote, materiais in lotes.items() %}
