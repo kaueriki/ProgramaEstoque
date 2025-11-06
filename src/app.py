@@ -14,6 +14,7 @@ from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.units import mm
 from sqlalchemy import or_, and_
 import os
+from decimal import Decimal
 
 app = Flask(__name__)
 app.secret_key = "supersecret"
@@ -418,6 +419,18 @@ def listar_movimentacoes():
     movimentacoes_paginated = movimentacoes_filtradas[start:end]
 
     materiais_disponiveis = db.query(Material).order_by(Material.nome).all()
+    materiais_serializados = [
+        {
+            "id": m.id,
+            "nome": m.nome,
+            "quantidade": Decimal(m.quantidade or 0),
+            "unidade_medida": m.unidade_medida,
+            "lote": m.lote,
+            "estoque_minimo_chuva": Decimal(m.estoque_minimo_chuva or 0),
+            "estoque_minimo_seco": Decimal(m.estoque_minimo_seco or 0)
+        }
+        for m in materiais_disponiveis
+    ]
 
     return render_template(
         "movimentacoes.html",
@@ -425,7 +438,8 @@ def listar_movimentacoes():
         page=page,
         total_pages=total_pages,
         per_page=per_page,
-        materiais_disponiveis=materiais_disponiveis
+        materiais_disponiveis=materiais_serializados,
+        materiais=materiais_serializados
     )
 
 @movimentacoes_bp.route("/movimentacoes/nova", methods=["GET", "POST"])
@@ -500,7 +514,7 @@ def nova_movimentacao():
                     continue
 
                 mat_id = int(mat_id_str)
-                qtd = int(qtd_str)
+                qtd = Decimal(qtd_str)
 
                 material = db.get(Material, mat_id)
                 if material.quantidade < qtd:
@@ -612,10 +626,10 @@ def editar_movimentacao(id):
 
             for i, (mat_id_str, qtd_str) in enumerate(zip(materiais_ids, quantidades)):
                 mat_id = int(mat_id_str)
-                qtd = int(qtd_str)
+                qtd = Decimal(qtd_str)
 
-                qtd_ok = int(quantidades_ok[i]) if i < len(quantidades_ok) and quantidades_ok[i].strip() else None
-                qtd_sem_retorno = int(quantidades_sem_retorno[i]) if i < len(quantidades_sem_retorno) and quantidades_sem_retorno[i].strip() else None
+                qtd_ok = Decimal(quantidades_ok[i]) if i < len(quantidades_ok) and quantidades_ok[i].strip() else None
+                qtd_sem_retorno = Decimal(quantidades_sem_retorno[i]) if i < len(quantidades_sem_retorno) and quantidades_sem_retorno[i].strip() else None
 
                 material = db.query(Material).get(mat_id)
                 if not material:
@@ -723,8 +737,8 @@ def finalizar_movimentacao(id):
                 mm.quantidade_sem_retorno = None
                 continue
 
-            qtd_ok = int(qtd_ok_str) if qtd_ok_str and qtd_ok_str.strip() != "" else 0
-            qtd_sem_retorno = int(qtd_sem_retorno_str) if qtd_sem_retorno_str and qtd_sem_retorno_str.strip() != "" else 0
+            qtd_ok = Decimal(qtd_ok_str) if qtd_ok_str and qtd_ok_str.strip() != "" else 0
+            qtd_sem_retorno = Decimal(qtd_sem_retorno_str) if qtd_sem_retorno_str and qtd_sem_retorno_str.strip() != "" else 0
 
             if qtd_ok < 0 or qtd_sem_retorno < 0:
                 flash(f"Quantidades não podem ser negativas para o material {mm.material.nome}.", "error")
@@ -1145,7 +1159,7 @@ def alterar(id):
         flash("Material não encontrado!", "error")
         return redirect(url_for("estoque.controle"))
 
-    valor = int(request.form["valor"])
+    valor =Decimal(request.form["valor"])
     acao = request.form["acao"]
 
     if acao == "adicionar":

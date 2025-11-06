@@ -49,7 +49,7 @@
         {% endfor %}
       </select>
 
-      <input type="number" name="quantidade[]" min="1" placeholder="1" value="1" required>
+      <input type="number" name="quantidade[]" min="0.01" step="any" placeholder="1" value="1" required>
 
       <button type="button" class="remove-button" onclick="removerLinha(this)">X</button>
     </div>
@@ -73,16 +73,15 @@
   <input type="text" name="ordem_servico"><br>
 
   <label>Colaborador:</label>
-    <div class="input-with-button">
-      <select name="funcionario" id="colaborador-select" required>
-        <option value="">-- Selecione --</option>
-        {% for nome in colaboradores %}
-          <option value="{{ nome }}">{{ nome }}</option>
-        {% endfor %}
-      </select>
-      <button type="button" class="add-button" onclick="abrirModal('modal-colaborador')">+</button>
-    </div>
-
+  <div class="input-with-button">
+    <select name="funcionario" id="colaborador-select" required>
+      <option value="">-- Selecione --</option>
+      {% for nome in colaboradores %}
+        <option value="{{ nome }}">{{ nome }}</option>
+      {% endfor %}
+    </select>
+    <button type="button" class="add-button" onclick="abrirModal('modal-colaborador')">+</button>
+  </div>
 
   <label>Data de Retirada:</label>
   <input type="datetime-local" name="data_retirada" id="data-retirada" required><br>
@@ -113,11 +112,11 @@
     <h3>Novo Material</h3>
     <form id="form-material" class="form-modal">
       <input type="text" name="nome" placeholder="Nome" required>
-      <input type="number" name="quantidade" placeholder="Quantidade" required>
+      <input type="number" name="quantidade" placeholder="Quantidade" step="any" required>
       <input type="text" name="unidade_medida" placeholder="Unidade de Medida">
       <input type="number" name="lote" placeholder="Lote">
-      <input type="number" name="estoque_minimo_chuva" placeholder="Estoque Mínimo (Chuva)" required>
-      <input type="number" name="estoque_minimo_seco" placeholder="Estoque Mínimo (Seco)" required>
+      <input type="number" name="estoque_minimo_chuva" placeholder="Estoque Mínimo (Chuva)" step="any" required>
+      <input type="number" name="estoque_minimo_seco" placeholder="Estoque Mínimo (Seco)" step="any" required>
       <button type="submit" class="btn-salvar">Salvar</button>
     </form>
   </div>
@@ -132,19 +131,18 @@
       <button type="submit" class="btn-salvar">Salvar</button>
     </form>
   </div>
+</div>
 
+<div class="modal" id="modal-colaborador">
+  <div class="modal-content">
+    <span class="close" onclick="fecharModal('modal-colaborador')">&times;</span>
+    <h3>Novo Colaborador</h3>
+    <form id="form-colaborador" class="form-modal">
+      <input type="text" name="nome" placeholder="Nome do colaborador" required>
+      <button type="submit" class="btn-salvar">Salvar</button>
+    </form>
   </div>
-  <div class="modal" id="modal-colaborador">
-    <div class="modal-content">
-      <span class="close" onclick="fecharModal('modal-colaborador')">&times;</span>
-      <h3>Novo Colaborador</h3>
-      <form id="form-colaborador" class="form-modal">
-        <input type="text" name="nome" placeholder="Nome do colaborador" required>
-        <button type="submit" class="btn-salvar">Salvar</button>
-      </form>
-    </div>
-  </div>
-
+</div>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
@@ -166,7 +164,9 @@
       dataRetiradaInput.value = formatDateToLocal(new Date());
     }
   });
+
   const materiaisData = {{ materiais|tojson }};
+
   function abrirModal(id) {
     document.getElementById(id).style.display = 'block';
   }
@@ -200,7 +200,8 @@
     const input = document.createElement("input");
     input.type = "number";
     input.name = "quantidade[]";
-    input.min = "1";
+    input.min = "0.01";
+    input.step = "any"; // permite decimais
     input.placeholder = "Qtd";
     input.required = true;
 
@@ -298,7 +299,7 @@
     }
   });
 
-    document.getElementById('form-colaborador').addEventListener('submit', async function (e) {
+  document.getElementById('form-colaborador').addEventListener('submit', async function (e) {
     e.preventDefault();
     const formData = new FormData(this);
 
@@ -323,6 +324,5 @@
       alert('Erro ao cadastrar colaborador.');
     }
   });
-
 </script>
 {% endblock %}

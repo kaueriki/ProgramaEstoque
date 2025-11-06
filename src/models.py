@@ -1,5 +1,5 @@
 from sqlalchemy import (
-    create_engine, Column, Integer, String, Boolean, Text, Date, DateTime, ForeignKey, Enum
+    create_engine, Column, Integer, String, Boolean, Text, Date, DateTime, ForeignKey, Enum, DECIMAL
 )
 from sqlalchemy.orm import declarative_base, relationship, sessionmaker
 from datetime import datetime, date
@@ -36,11 +36,11 @@ class Material(Base):
     __tablename__ = "materiais"
     id = Column(Integer, primary_key=True, autoincrement=True)
     nome = Column(String(150), nullable=False)
-    quantidade = Column(Integer, nullable=False, default=0)
+    quantidade = Column(DECIMAL(10, 2), nullable=False, default=0.00)
     unidade_medida = Column(String(20), nullable=False, default="unidade")
     lote = Column(String(50))
-    estoque_minimo_chuva = Column(Integer, default=0)
-    estoque_minimo_seco = Column(Integer, default=0)
+    estoque_minimo_chuva = Column(DECIMAL(10, 2), default=0.00)
+    estoque_minimo_seco = Column(DECIMAL(10, 2), default=0.00)
     criado_em = Column(DateTime, default=datetime.utcnow)
 
 
@@ -53,7 +53,7 @@ class Movimentacao(Base):
     responsavel_id = Column(Integer, ForeignKey("usuarios.id"), nullable=False)
     data_retirada = Column(DateTime, default=datetime.utcnow)
     prazo_devolucao = Column(Date)
-    motivo = Column(Enum("manutenção", "emprestimo", "feira","teste", "instalação", "preventiva", "montagem"), nullable=True)
+    motivo = Column(Enum("manutenção", "emprestimo", "feira", "teste", "instalação", "preventiva", "montagem"), nullable=True)
     status = Column(Enum("verde", "amarelo", "vermelho"), default="amarelo")
     devolvido = Column(Boolean, default=False)
     utilizado_cliente = Column(Boolean, default=False)
@@ -84,29 +84,27 @@ class MovimentacaoMaterial(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     movimentacao_id = Column(Integer, ForeignKey("movimentacoes.id"), nullable=False)
     material_id = Column(Integer, ForeignKey("materiais.id"), nullable=False)
-    quantidade = Column(Integer, nullable=False)
-    quantidade_ok = Column(Integer)
-    quantidade_sem_retorno = Column(Integer)
+    quantidade = Column(DECIMAL(10, 2), nullable=False)
+    quantidade_ok = Column(DECIMAL(10, 2), default=0.00)
+    quantidade_sem_retorno = Column(DECIMAL(10, 2), default=0.00)
 
     movimentacao = relationship("Movimentacao", back_populates="materiais")
     material = relationship("Material")
-    
+
+
 class Colaborador(Base):
     __tablename__ = "colaboradores"
 
     id = Column(Integer, primary_key=True)
-    nome = Column(String(100), unique=True, nullable=False) 
+    nome = Column(String(100), unique=True, nullable=False)
 
     def __repr__(self):
         return f"<Colaborador(nome={self.nome})>"
-
 
 Base.metadata.create_all(engine)
 
 Session = sessionmaker(bind=engine)
 session = Session()
-
-print("Banco de dados pronto")
 
 
 # novo_usuario = Usuario(

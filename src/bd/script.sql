@@ -76,3 +76,12 @@ CREATE TABLE colaboradores (
 ALTER TABLE movimentacoes_materiais
 ADD COLUMN quantidade_ok INT DEFAULT 0;
 ALTER TABLE materiais ADD COLUMN unidade_medida VARCHAR(20) DEFAULT 'unidade' NOT NULL;
+ALTER TABLE materiais 
+MODIFY COLUMN quantidade DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+MODIFY COLUMN estoque_minimo_chuva DECIMAL(10,2) DEFAULT 0.00,
+MODIFY COLUMN estoque_minimo_seco DECIMAL(10,2) DEFAULT 0.00;
+
+ALTER TABLE movimentacoes_materiais 
+MODIFY COLUMN quantidade DECIMAL(10,2) NOT NULL,
+MODIFY COLUMN quantidade_sem_retorno DECIMAL(10,2) DEFAULT 0.00,
+MODIFY COLUMN quantidade_ok DECIMAL(10,2) DEFAULT 0.00;
