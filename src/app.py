@@ -617,8 +617,12 @@ def editar_movimentacao(id):
 
             for mm in movimentacao.materiais:
                 material = db.query(Material).get(mm.material_id)
-                if material:
-                    material.quantidade += mm.quantidade
+                if not material:
+                    continue
+                    
+                quantidade_a_repor = mm.quantidade - (mm.quantidade_ok or 0)
+                material.quantidade += quantidade_a_repor
+
 
             db.query(MovimentacaoMaterial).filter_by(
                 movimentacao_id=movimentacao.id
@@ -627,28 +631,34 @@ def editar_movimentacao(id):
 
             for i, (mat_id_str, qtd_str) in enumerate(zip(materiais_ids, quantidades)):
                 mat_id = int(mat_id_str)
-                qtd = Decimal(qtd_str)
-
-                qtd_ok = Decimal(quantidades_ok[i]) if i < len(quantidades_ok) and quantidades_ok[i].strip() else None
-                qtd_sem_retorno = Decimal(quantidades_sem_retorno[i]) if i < len(quantidades_sem_retorno) and quantidades_sem_retorno[i].strip() else None
+                qtd = Decimal(qtd_str or 0)
+                qtd_ok = Decimal(quantidades_ok[i]) if i < len(quantidades_ok) and quantidades_ok[i].strip() else Decimal(0)
+                qtd_sem_retorno = Decimal(quantidades_sem_retorno[i]) if i < len(quantidades_sem_retorno) and quantidades_sem_retorno[i].strip() else Decimal(0)
 
                 material = db.query(Material).get(mat_id)
                 if not material:
                     raise Exception(f"Material ID {mat_id} não encontrado.")
 
+                if qtd_ok + qtd_sem_retorno > qtd:
+                    raise Exception(f"A soma de OK e Sem Retorno do material {material.nome} ultrapassa a quantidade retirada.")
+
                 if material.quantidade < qtd:
                     raise Exception(f"Estoque insuficiente para {material.nome}. Disponível: {material.quantidade}")
-
                 material.quantidade -= qtd
+
+                if qtd_ok > 0:
+                    material.quantidade += qtd_ok
 
                 mov_mat = MovimentacaoMaterial(
                     movimentacao_id=movimentacao.id,
                     material_id=mat_id,
                     quantidade=qtd,
-                    quantidade_ok=qtd_ok,
-                    quantidade_sem_retorno=qtd_sem_retorno
+                    quantidade_ok=qtd_ok if qtd_ok > 0 else None,
+                    quantidade_sem_retorno=qtd_sem_retorno if qtd_sem_retorno > 0 else None
                 )
                 db.add(mov_mat)
+
+                print(f"[DEBUG] {material.nome}: qtd={qtd}, ok={qtd_ok}, sem_retorno={qtd_sem_retorno}, estoque_final={material.quantidade}")
 
             movimentacao.cliente_id = cliente_id
             movimentacao.ordem_servico = ordem_servico
@@ -659,7 +669,6 @@ def editar_movimentacao(id):
             movimentacao.observacao = observacao
 
             db.flush()
-
             movimentacao.materiais = db.query(MovimentacaoMaterial).filter_by(
                 movimentacao_id=movimentacao.id
             ).all()
@@ -667,15 +676,22 @@ def editar_movimentacao(id):
             total_materiais = len(movimentacao.materiais)
             total_processados = sum(
                 1 for mm in movimentacao.materiais
-                if mm.quantidade_ok is not None and mm.quantidade_sem_retorno is not None
+                if mm.quantidade_ok is not None or mm.quantidade_sem_retorno is not None
             )
 
             if total_processados == total_materiais and total_materiais > 0:
-                movimentacao.status = "verde"
-                movimentacao.devolvido = True
+                if any((mm.quantidade_sem_retorno or 0) > 0 for mm in movimentacao.materiais):
+                    movimentacao.status = "amarelo"
+                    movimentacao.devolvido = False
+                    movimentacao.utilizado_cliente = True
+                else:
+                    movimentacao.status = "verde"
+                    movimentacao.devolvido = True
+                    movimentacao.utilizado_cliente = False
             else:
                 movimentacao.status = "amarelo"
                 movimentacao.devolvido = False
+                movimentacao.utilizado_cliente = any((mm.quantidade_sem_retorno or 0) > 0 for mm in movimentacao.materiais)
 
             db.commit()
             flash("Movimentação atualizada com sucesso! Estoque sincronizado.", "success")
@@ -810,15 +826,16 @@ def excluir_movimentacao(id):
         return redirect(url_for("movimentacoes.listar_movimentacoes"))
 
     try:
-        for mm in movimentacao.materiais:
-            material = db.query(Material).get(mm.material_id)
-            if material:
-                material.quantidade += mm.quantidade
+        if not movimentacao.devolvido and not movimentacao.utilizado_cliente:
+            for mm in movimentacao.materiais:
+                material = db.query(Material).get(mm.material_id)
+                if material:
+                    material.quantidade += mm.quantidade
 
         db.delete(movimentacao)
         db.commit()
 
-        flash("Movimentação excluída e estoque restaurado!", "success")
+        flash("Movimentação excluída com sucesso!", "success")
 
     except Exception as e:
         db.rollback()

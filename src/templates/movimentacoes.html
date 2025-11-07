@@ -147,7 +147,13 @@
           <td>
             <ul>
               {% for mov_mat in m.materiais %}
-              <li>{{ mov_mat.quantidade }} {{ mov_mat.material.unidade_medida or '' }}</li>
+              <li>
+                {% if mov_mat.quantidade is number and mov_mat.quantidade % 1 == 0 %}
+                  {{ mov_mat.quantidade | int }} {{ mov_mat.material.unidade_medida or '' }}
+                {% else %}
+                  {{ mov_mat.quantidade }} {{ mov_mat.material.unidade_medida or '' }}
+                {% endif %}
+              </li>
               {% else %}
               <li>-</li>
               {% endfor %}
@@ -160,11 +166,16 @@
           <td>{{ m.prazo_devolucao.strftime('%d/%m/%Y') if m.prazo_devolucao else '-' }}</td>
           <td>{{ m.motivo }}</td>
           <td>{{ m.status_atual }}</td>
+
           <td>
             <ul>
               {% for mov_mat in m.materiais %}
                 {% if mov_mat.quantidade_ok is not none %}
-                  <li>{{ mov_mat.quantidade_ok }}</li>
+                  {% if mov_mat.quantidade_ok % 1 == 0 %}
+                    <li>{{ mov_mat.quantidade_ok | int }}</li>
+                  {% else %}
+                    <li>{{ mov_mat.quantidade_ok }}</li>
+                  {% endif %}
                 {% else %}
                   <li>-</li>
                 {% endif %}
@@ -176,7 +187,12 @@
             <ul>
               {% for mov_mat in m.materiais %}
                 {% if mov_mat.quantidade_ok is not none and mov_mat.quantidade_sem_retorno is not none %}
-                  <li>{{ mov_mat.quantidade - mov_mat.quantidade_ok - mov_mat.quantidade_sem_retorno }}</li>
+                  {% set nao_ok = mov_mat.quantidade - mov_mat.quantidade_ok - mov_mat.quantidade_sem_retorno %}
+                  {% if nao_ok % 1 == 0 %}
+                    <li>{{ nao_ok | int }}</li>
+                  {% else %}
+                    <li>{{ nao_ok }}</li>
+                  {% endif %}
                 {% else %}
                   <li>-</li>
                 {% endif %}
@@ -184,12 +200,15 @@
             </ul>
           </td>
 
-          <!-- Sem retorno (utilizado) -->
           <td>
             <ul>
               {% for mov_mat in m.materiais %}
                 {% if mov_mat.quantidade_sem_retorno is not none %}
-                  <li>{{ mov_mat.quantidade_sem_retorno }}</li>
+                  {% if mov_mat.quantidade_sem_retorno % 1 == 0 %}
+                    <li>{{ mov_mat.quantidade_sem_retorno | int }}</li>
+                  {% else %}
+                    <li>{{ mov_mat.quantidade_sem_retorno }}</li>
+                  {% endif %}
                 {% else %}
                   <li>-</li>
                 {% endif %}
@@ -213,7 +232,14 @@
 
                   <label for="quantidade_sem_retorno_{{ mov_mat.id }}">Quantidade sem retorno (ficou com cliente)</label>
                   <input type="number" name="quantidade_sem_retorno_{{ mov_mat.id }}" id="quantidade_sem_retorno_{{ mov_mat.id }}" min="0" max="{{ mov_mat.quantidade }}" value="{{ mov_mat.quantidade_sem_retorno if mov_mat.quantidade_sem_retorno is not none else '' }}">
-                  <p>Total retirado: {{ mov_mat.quantidade }} {{ mov_mat.material.unidade_medida or '' }}</p>
+                  <p>Total retirado: 
+                    {% if mov_mat.quantidade % 1 == 0 %}
+                      {{ mov_mat.quantidade | int }}
+                    {% else %}
+                      {{ mov_mat.quantidade }}
+                    {% endif %}
+                    {{ mov_mat.material.unidade_medida or '' }}
+                  </p>
                   <hr>
                   {% endfor %}
 
