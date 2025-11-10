@@ -826,15 +826,15 @@ def excluir_movimentacao(id):
         return redirect(url_for("movimentacoes.listar_movimentacoes"))
 
     try:
-        if not movimentacao.devolvido and not movimentacao.utilizado_cliente:
-            for mm in movimentacao.materiais:
-                material = db.query(Material).get(mm.material_id)
-                if material:
-                    material.quantidade += mm.quantidade
+        for mm in movimentacao.materiais:
+            material = db.query(Material).get(mm.material_id)
+            if material:
+                qtd_retirada = mm.quantidade or 0
+                qtd_devolvida = mm.quantidade_ok or 0
+                material.quantidade += qtd_retirada - qtd_devolvida
 
         db.delete(movimentacao)
         db.commit()
-
         flash("Movimentação excluída com sucesso!", "success")
 
     except Exception as e:
