@@ -32,7 +32,13 @@
       {% for m in materiais %}
         <tr>
           <td>{{ m.nome }}</td>
-          <td>{{ m.quantidade }}</td>
+          <td>
+            {% if m.quantidade == m.quantidade|int %}
+              {{ m.quantidade|int }}
+            {% else %}
+              {{ "%.2f"|format(m.quantidade) }}
+            {% endif %}
+          </td>
           <td>{{ m.unidade_medida }}</td>
           <td>{{ m.lote }}</td>
           <td>{{ m.estoque_minimo_chuva }}</td>

@@ -11,13 +11,15 @@
     <input type="text" name="nome" id="nome" value="{{ material.nome }}" required>
 
     <label for="quantidade">Quantidade:</label>
-    <input type="number" name="quantidade" id="quantidade" value="{{ material.quantidade }}" required>
+    <input type="number" name="quantidade" id="quantidade"
+       value="{% if material.quantidade == material.quantidade|int %}{{ material.quantidade|int }}{% else %}{{ material.quantidade }}{% endif %}"
+       step="any" required>
 
     <label for="unidade_medida">Unidade De Medida:</label>
     <input type="text" name="unidade_medida" id="unidade_medida" value="{{ material.unidade_medida }}">
 
     <label for="lote">Lote:</label>
-    <input type="text" name="lote" id="lote" value="{{ material.lote }}" required>
+    <input type="text" name="lote" id="lote" value="{{ material.lote }}">
 
     <label for="estoque_minimo_chuva">Estoque Mínimo (Chuva):</label>
     <input type="number" name="estoque_minimo_chuva" id="estoque_minimo_chuva" value="{{ material.estoque_minimo_chuva }}" required>

@@ -122,11 +122,11 @@ def editar_material(material_id):
 
     if request.method == "POST":
         material.nome = request.form["nome"]
-        material.quantidade = int(request.form["quantidade"])
+        material.quantidade = Decimal(request.form["quantidade"])
         material.unidade_medida = request.form["unidade_medida"]
         material.lote = request.form.get("lote", "")
-        material.estoque_minimo_chuva = int(request.form["estoque_minimo_chuva"])
-        material.estoque_minimo_seco = int(request.form["estoque_minimo_seco"])
+        material.estoque_minimo_chuva = Decimal(request.form["estoque_minimo_chuva"])
+        material.estoque_minimo_seco = Decimal(request.form["estoque_minimo_seco"])
         db.commit()
         flash("Material atualizado com sucesso!", "success")
         return redirect(url_for("listar_materiais"))
