@@ -766,6 +766,7 @@ def finalizar_movimentacao(id):
                 flash(f"A soma das quantidades do material {mm.material.nome} não pode ultrapassar a retirada ({mm.quantidade}).", "error")
                 return redirect(url_for("movimentacoes.listar_movimentacoes"))
 
+            mm.retorno_nao_ok = mm.quantidade - total_informado if total_informado < mm.quantidade else 0
             mm.quantidade_ok = qtd_ok
             mm.quantidade_sem_retorno = qtd_sem_retorno
 
@@ -779,29 +780,29 @@ def finalizar_movimentacao(id):
         if observacao:
             movimentacao.observacao = observacao
 
-        ficou_no_cliente = any(
-            (mm.quantidade_sem_retorno or 0) > 0 for mm in movimentacao.materiais
+        pendente = any(
+            mm.quantidade_ok is None and mm.quantidade_sem_retorno is None for mm in movimentacao.materiais
         )
+        processados_todos = total_processados == total_materiais
 
-        if total_processados == 0:
-            movimentacao.status = "pendente"
+        if total_processados == 0 or pendente:
+            movimentacao.status = "amarelo"
             movimentacao.devolvido = False
             movimentacao.utilizado_cliente = False
-
-        elif total_processados == total_materiais:
-            if ficou_no_cliente:
-                movimentacao.status = "amarelo"  
-                movimentacao.devolvido = False
-                movimentacao.utilizado_cliente = True
-            else:
-                movimentacao.status = "verde" 
-                movimentacao.devolvido = True
-                movimentacao.utilizado_cliente = False
-
+        elif processados_todos:
+            movimentacao.status = "verde"
+            movimentacao.devolvido = all(
+                mm.quantidade_ok == mm.quantidade and mm.retorno_nao_ok == 0 and mm.quantidade_sem_retorno == 0
+                for mm in movimentacao.materiais
+            )
+            movimentacao.utilizado_cliente = all(
+                mm.quantidade_sem_retorno == mm.quantidade and mm.quantidade_ok == 0 and mm.retorno_nao_ok == 0
+                for mm in movimentacao.materiais
+            )
         else:
-            movimentacao.status = "amarelo" 
+            movimentacao.status = "amarelo"
             movimentacao.devolvido = False
-            movimentacao.utilizado_cliente = ficou_no_cliente
+            movimentacao.utilizado_cliente = False
 
         db.commit()
         flash("Finalização processada com sucesso!", "success")

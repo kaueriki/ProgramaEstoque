@@ -89,3 +89,6 @@ MODIFY COLUMN quantidade_ok DECIMAL(10,2) DEFAULT 0.00;
 ALTER TABLE movimentacoes_materiais 
     MODIFY COLUMN quantidade_ok DECIMAL(10,2) NULL DEFAULT NULL,
     MODIFY COLUMN quantidade_sem_retorno DECIMAL(10,2) NULL DEFAULT NULL;
+
+
+ALTER TABLE movimentacoes MODIFY COLUMN status ENUM('verde','amarelo','vermelho','pendente','parcial','ficou-no-cliente');

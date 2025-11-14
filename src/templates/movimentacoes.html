@@ -9,7 +9,8 @@
 <div class="movimentacoes-container">
   <div class="movimentacoes-header">
     <h2>Histórico de Retiradas</h2>
-    <a href="{{ url_for('movimentacoes.nova_movimentacao', per_page=100) }}" class="btn-nova-movimentacao">Nova Retirada</a>
+    <a href="{{ url_for('movimentacoes.nova_movimentacao', per_page=100) }}" class="btn-nova-movimentacao">Nova
+      Retirada</a>
   </div>
 
   <form class="filtro-form-horizontal" method="get" action="{{ url_for('movimentacoes.listar_movimentacoes') }}">
@@ -37,9 +38,10 @@
         <label for="status">Status</label>
         <select name="status" id="status">
           <option value="">Todos</option>
-          <option value="pendente" {% if request.args.get('status') == 'pendente' %}selected{% endif %}>Pendente</option>
-          <option value="atrasado" {% if request.args.get('status') == 'atrasado' %}selected{% endif %}>Atrasado</option>
-          <option value="finalizado" {% if request.args.get('status') == 'finalizado' %}selected{% endif %}>Finalizado</option>
+          <option value="pendente" {% if request.args.get('status')=='pendente' %}selected{% endif %}>Pendente</option>
+          <option value="atrasado" {% if request.args.get('status')=='atrasado' %}selected{% endif %}>Atrasado</option>
+          <option value="finalizado" {% if request.args.get('status')=='finalizado' %}selected{% endif %}>Finalizado
+          </option>
         </select>
       </div>
       <div class="filtro-item">
@@ -55,27 +57,31 @@
     <div class="filtro-acoes-container compact">
       <div class="filtro-acoes-esquerda">
         <button type="submit" class="btn-filtrar">Filtrar</button>
-        <button type="button" class="btn-limpar" onclick="window.location.href='{{ url_for('movimentacoes.listar_movimentacoes', per_page=100) }}'">Limpar</button>
+        <button type="button" class="btn-limpar"
+          onclick="window.location.href='{{ url_for('movimentacoes.listar_movimentacoes', per_page=100) }}'">Limpar</button>
         <label for="per_page">Itens por página</label>
         <select id="per_page" name="per_page" onchange="this.form.submit()">
-          <option value="10" {% if request.args.get('per_page', '100')=='10' %}selected{% endif %}>10</option>
-          <option value="25" {% if request.args.get('per_page', '100')=='25' %}selected{% endif %}>25</option>
-          <option value="50" {% if request.args.get('per_page', '100')=='50' %}selected{% endif %}>50</option>
-          <option value="100" {% if request.args.get('per_page', '100')=='100' %}selected{% endif %}>100</option>
+          <option value="10" {% if request.args.get('per_page', '100' )=='10' %}selected{% endif %}>10</option>
+          <option value="25" {% if request.args.get('per_page', '100' )=='25' %}selected{% endif %}>25</option>
+          <option value="50" {% if request.args.get('per_page', '100' )=='50' %}selected{% endif %}>50</option>
+          <option value="100" {% if request.args.get('per_page', '100' )=='100' %}selected{% endif %}>100</option>
         </select>
       </div>
 
       <div class="filtro-acoes-esquerda">
         <label>
-          <input type="checkbox" name="mostrar_somente_ok" value="1" {% if request.args.get('mostrar_somente_ok')=='1' %}checked{% endif %}>
+          <input type="checkbox" name="mostrar_somente_ok" value="1" {% if request.args.get('mostrar_somente_ok')=='1'
+            %}checked{% endif %}>
           RETORNO OK
         </label>
         <label>
-          <input type="checkbox" name="mostrar_somente_nao_ok" value="1" {% if request.args.get('mostrar_somente_nao_ok')=='1' %}checked{% endif %}>
+          <input type="checkbox" name="mostrar_somente_nao_ok" value="1" {% if
+            request.args.get('mostrar_somente_nao_ok')=='1' %}checked{% endif %}>
           RETORNO NÃO OK
         </label>
         <label>
-          <input type="checkbox" name="mostrar_ficou_cliente" value="1" {% if request.args.get('mostrar_ficou_cliente')=='1' %}checked{% endif %}>
+          <input type="checkbox" name="mostrar_ficou_cliente" value="1" {% if
+            request.args.get('mostrar_ficou_cliente')=='1' %}checked{% endif %}>
           SEM RETORNO
         </label>
       </div>
@@ -149,9 +155,9 @@
               {% for mov_mat in m.materiais %}
               <li>
                 {% if mov_mat.quantidade is number and mov_mat.quantidade % 1 == 0 %}
-                  {{ mov_mat.quantidade | int }} {{ mov_mat.material.unidade_medida or '' }}
+                {{ mov_mat.quantidade | int }} {{ mov_mat.material.unidade_medida or '' }}
                 {% else %}
-                  {{ mov_mat.quantidade }} {{ mov_mat.material.unidade_medida or '' }}
+                {{ mov_mat.quantidade }} {{ mov_mat.material.unidade_medida or '' }}
                 {% endif %}
               </li>
               {% else %}
@@ -170,15 +176,15 @@
           <td>
             <ul>
               {% for mov_mat in m.materiais %}
-                {% if mov_mat.quantidade_ok is not none %}
-                  {% if mov_mat.quantidade_ok % 1 == 0 %}
-                    <li>{{ mov_mat.quantidade_ok | int }}</li>
-                  {% else %}
-                    <li>{{ mov_mat.quantidade_ok }}</li>
-                  {% endif %}
-                {% else %}
-                  <li>-</li>
-                {% endif %}
+              {% if mov_mat.quantidade_ok is not none %}
+              {% if mov_mat.quantidade_ok % 1 == 0 %}
+              <li>{{ mov_mat.quantidade_ok | int }}</li>
+              {% else %}
+              <li>{{ mov_mat.quantidade_ok }}</li>
+              {% endif %}
+              {% else %}
+              <li>-</li>
+              {% endif %}
               {% endfor %}
             </ul>
           </td>
@@ -186,16 +192,16 @@
           <td>
             <ul>
               {% for mov_mat in m.materiais %}
-                {% if mov_mat.quantidade_ok is not none and mov_mat.quantidade_sem_retorno is not none %}
-                  {% set nao_ok = mov_mat.quantidade - mov_mat.quantidade_ok - mov_mat.quantidade_sem_retorno %}
-                  {% if nao_ok % 1 == 0 %}
-                    <li>{{ nao_ok | int }}</li>
-                  {% else %}
-                    <li>{{ nao_ok }}</li>
-                  {% endif %}
-                {% else %}
-                  <li>-</li>
-                {% endif %}
+              {% if mov_mat.quantidade_ok is not none and mov_mat.quantidade_sem_retorno is not none %}
+              {% set nao_ok = mov_mat.quantidade - mov_mat.quantidade_ok - mov_mat.quantidade_sem_retorno %}
+              {% if nao_ok % 1 == 0 %}
+              <li>{{ nao_ok | int }}</li>
+              {% else %}
+              <li>{{ nao_ok }}</li>
+              {% endif %}
+              {% else %}
+              <li>-</li>
+              {% endif %}
               {% endfor %}
             </ul>
           </td>
@@ -203,15 +209,15 @@
           <td>
             <ul>
               {% for mov_mat in m.materiais %}
-                {% if mov_mat.quantidade_sem_retorno is not none %}
-                  {% if mov_mat.quantidade_sem_retorno % 1 == 0 %}
-                    <li>{{ mov_mat.quantidade_sem_retorno | int }}</li>
-                  {% else %}
-                    <li>{{ mov_mat.quantidade_sem_retorno }}</li>
-                  {% endif %}
-                {% else %}
-                  <li>-</li>
-                {% endif %}
+              {% if mov_mat.quantidade_sem_retorno is not none %}
+              {% if mov_mat.quantidade_sem_retorno % 1 == 0 %}
+              <li>{{ mov_mat.quantidade_sem_retorno | int }}</li>
+              {% else %}
+              <li>{{ mov_mat.quantidade_sem_retorno }}</li>
+              {% endif %}
+              {% else %}
+              <li>-</li>
+              {% endif %}
               {% endfor %}
             </ul>
           </td>
@@ -228,15 +234,20 @@
                   <p><strong>{{ mov_mat.material.nome }} ({{ mov_mat.material.unidade_medida or '-' }})</strong></p>
 
                   <label for="quantidade_ok_{{ mov_mat.id }}">Quantidade com retorno ao estoque (OK)</label>
-                  <input type="number" name="quantidade_ok_{{ mov_mat.id }}" id="quantidade_ok_{{ mov_mat.id }}" min="0" max="{{ mov_mat.quantidade }}" value="{{ mov_mat.quantidade_ok if mov_mat.quantidade_ok is not none else '' }}">
+                  <input type="number" name="quantidade_ok_{{ mov_mat.id }}" id="quantidade_ok_{{ mov_mat.id }}" min="0"
+                    max="{{ mov_mat.quantidade }}"
+                    value="{{ mov_mat.quantidade_ok if mov_mat.quantidade_ok is not none else '' }}">
 
-                  <label for="quantidade_sem_retorno_{{ mov_mat.id }}">Quantidade sem retorno (ficou com cliente)</label>
-                  <input type="number" name="quantidade_sem_retorno_{{ mov_mat.id }}" id="quantidade_sem_retorno_{{ mov_mat.id }}" min="0" max="{{ mov_mat.quantidade }}" value="{{ mov_mat.quantidade_sem_retorno if mov_mat.quantidade_sem_retorno is not none else '' }}">
-                  <p>Total retirado: 
+                  <label for="quantidade_sem_retorno_{{ mov_mat.id }}">Quantidade sem retorno (ficou com
+                    cliente)</label>
+                  <input type="number" name="quantidade_sem_retorno_{{ mov_mat.id }}"
+                    id="quantidade_sem_retorno_{{ mov_mat.id }}" min="0" max="{{ mov_mat.quantidade }}"
+                    value="{{ mov_mat.quantidade_sem_retorno if mov_mat.quantidade_sem_retorno is not none else '' }}">
+                  <p>Total retirado:
                     {% if mov_mat.quantidade % 1 == 0 %}
-                      {{ mov_mat.quantidade | int }}
+                    {{ mov_mat.quantidade | int }}
                     {% else %}
-                      {{ mov_mat.quantidade }}
+                    {{ mov_mat.quantidade }}
                     {% endif %}
                     {{ mov_mat.material.unidade_medida or '' }}
                   </p>
@@ -256,7 +267,8 @@
               <span class="status-ok">Finalizado</span>
               {% endif %}
               <a href="{{ url_for('movimentacoes.editar_movimentacao', id=m.id) }}" class="btn-editar">Editar</a>
-              <form method="POST" action="{{ url_for('movimentacoes.excluir_movimentacao', id=m.id) }}" onsubmit="return confirm('Tem certeza que deseja excluir esta movimentação? Esta ação não pode ser desfeita.');">
+              <form method="POST" action="{{ url_for('movimentacoes.excluir_movimentacao', id=m.id) }}"
+                onsubmit="return confirm('Tem certeza que deseja excluir esta movimentação? Esta ação não pode ser desfeita.');">
                 <button type="submit" class="btn-excluir">Excluir</button>
               </form>
             </div>
@@ -269,12 +281,14 @@
 
   <div class="pagination">
     {% if page > 1 %}
-    <a href="{{ url_for('movimentacoes.listar_movimentacoes', page=page-1, per_page=request.args.get('per_page', '100')) }}" class="page-link">Anterior</a>
+    <a href="{{ url_for('movimentacoes.listar_movimentacoes', page=page-1, per_page=request.args.get('per_page', '100')) }}"
+      class="page-link">Anterior</a>
     {% endif %}
     <span>Página {{ page }} de {{ total_pages }}</span>
-    {% if page < total_pages %}
-    <a href="{{ url_for('movimentacoes.listar_movimentacoes', page=page+1, per_page=request.args.get('per_page', '100')) }}" class="page-link">Próxima</a>
-    {% endif %}
+    {% if page < total_pages %} <a
+      href="{{ url_for('movimentacoes.listar_movimentacoes', page=page+1, per_page=request.args.get('per_page', '100')) }}"
+      class="page-link">Próxima</a>
+      {% endif %}
   </div>
 </div>
 

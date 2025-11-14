@@ -70,13 +70,20 @@ class Movimentacao(Base):
 
     @property
     def status_atual(self):
-        if self.devolvido:
+        # Existem pendências em algum material?
+        materiais_pendentes = not all(
+            (m.quantidade_ok is not None or m.quantidade_sem_retorno is not None)
+            for m in self.materiais
+        )
+        if materiais_pendentes:
+            return "Pendente"
+        if self.status == "verde":
             return "Devolvido"
-        if self.utilizado_cliente:
+        if self.utilizado_cliente and not materiais_pendentes:
             return "Ficou no Cliente"
         if self.prazo_devolucao and self.prazo_devolucao < date.today():
             return "Atrasado"
-        return "Pendente"
+        return "Parcial"
 
 
 class MovimentacaoMaterial(Base):

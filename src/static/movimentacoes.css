@@ -203,13 +203,16 @@
   border-color: #ccc;
 }
 
-.status-pendente td {
+.status-pendente td,
+.status-parcial td {
   background-color: #faf7e6;
 }
 .status-atrasado td {
   background-color: #ffe0e0;
 }
-.status-devolvido td,
+.status-devolvido td {
+  background-color: #e3fde3;
+}
 .status-ficou-no-cliente td {
   background-color: #e3fde3;
 }
