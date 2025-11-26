@@ -321,49 +321,28 @@ def listar_movimentacoes():
     )
 
     if cliente_nome:
-        query = query.join(Movimentacao.cliente).filter(Cliente.nome.ilike(f"%{cliente_nome}%"))
+        query = query.join(Movimentacao.cliente).filter(
+            Cliente.nome.ilike(f"%{cliente_nome}%")
+        )
 
     if material_nome:
-        query = query.join(Movimentacao.materiais).join(MovimentacaoMaterial.material).filter(
+        query = query.join(Movimentacao.materiais).join(
+            MovimentacaoMaterial.material
+        ).filter(
             Material.nome.ilike(f"%{material_nome}%")
         )
 
     if funcionario_nome:
-        query = query.filter(Movimentacao.funcionario.ilike(f"%{funcionario_nome}%"))
+        query = query.filter(
+            Movimentacao.funcionario.ilike(f"%{funcionario_nome}%")
+        )
 
     if os_numero:
-        query = query.filter(Movimentacao.ordem_servico.ilike(f"%{os_numero}%"))
+        query = query.filter(
+            Movimentacao.ordem_servico.ilike(f"%{os_numero}%")
+        )
 
-    if status_raw:
-        if status_raw == "atrasado":
-            query = query.filter(
-                and_(
-                    Movimentacao.devolvido.is_(False),
-                    Movimentacao.utilizado_cliente.is_(False),
-                    Movimentacao.prazo_devolucao != None,
-                    Movimentacao.prazo_devolucao < date.today()
-                )
-            )
-        elif status_raw == "pendente":
-            query = query.filter(
-                and_(
-                    Movimentacao.devolvido.is_(False),
-                    Movimentacao.utilizado_cliente.is_(False),
-                    or_(
-                        Movimentacao.prazo_devolucao == None,
-                        Movimentacao.prazo_devolucao >= date.today()
-                    )
-                )
-            )
-        elif status_raw == "verde" or status_raw == "finalizado":
-            query = query.filter(
-                or_(
-                    Movimentacao.devolvido.is_(True),
-                    Movimentacao.utilizado_cliente.is_(True)
-                )
-            )
-
-
+    # Filtro por datas (data de retirada)
     if data_inicio_str:
         try:
             data_inicio = datetime.strptime(data_inicio_str, "%Y-%m-%d")
@@ -383,10 +362,40 @@ def listar_movimentacoes():
 
     movimentacoes_all = query.all()
 
+    # ---- Cálculo de status em memória ----
+    def materiais_finalizados(mov):
+        # material é considerado finalizado se tem quantidade_ok ou quantidade_sem_retorno preenchido
+        return all(
+            (mov_mat.quantidade_ok is not None or mov_mat.quantidade_sem_retorno is not None)
+            for mov_mat in mov.materiais
+        )
+
+    def status_calculado(mov):
+        # 1) se todos os materiais estão tratados -> FINALIZADO
+        if materiais_finalizados(mov):
+            return "finalizado"
+        # 2) se ainda tem pendência e prazo já venceu -> ATRASADO
+        if mov.prazo_devolucao and mov.prazo_devolucao < date.today():
+            return "atrasado"
+        # 3) caso contrário -> PENDENTE
+        return "pendente"
+
+    # aplica status em memória
+    movimentacoes_status = [(m, status_calculado(m)) for m in movimentacoes_all]
+
+    if status_raw:
+        movimentacoes_all = [
+            m for (m, st) in movimentacoes_status if st == status_raw
+        ]
+    else:
+        movimentacoes_all = [m for (m, st) in movimentacoes_status]
+
+    # ---- filtros extras: RETORNO OK / NÃO OK / SEM RETORNO ----
     if mostrar_somente_nao_ok:
         movimentacoes_filtradas = [
             m for m in movimentacoes_all
             if any(
+                # retorno NÃO OK = diferença entre retirado e (OK + sem retorno) > 0
                 (mov_mat.quantidade_ok is not None and mov_mat.quantidade_ok < mov_mat.quantidade)
                 or (mov_mat.quantidade_sem_retorno is not None and mov_mat.quantidade_sem_retorno > 0)
                 for mov_mat in m.materiais
@@ -412,12 +421,14 @@ def listar_movimentacoes():
     else:
         movimentacoes_filtradas = movimentacoes_all
 
+    # ---- paginação ----
     total = len(movimentacoes_filtradas)
     total_pages = (total + per_page - 1) // per_page
     start = (page - 1) * per_page
     end = start + per_page
     movimentacoes_paginated = movimentacoes_filtradas[start:end]
 
+    # materiais disponíveis para selects, etc.
     materiais_disponiveis = db.query(Material).order_by(Material.nome).all()
     materiais_serializados = [
         {
@@ -427,7 +438,7 @@ def listar_movimentacoes():
             "unidade_medida": m.unidade_medida,
             "lote": m.lote,
             "estoque_minimo_chuva": Decimal(m.estoque_minimo_chuva or 0),
-            "estoque_minimo_seco": Decimal(m.estoque_minimo_seco or 0)
+            "estoque_minimo_seco": Decimal(m.estoque_minimo_seco or 0),
         }
         for m in materiais_disponiveis
     ]
@@ -439,7 +450,7 @@ def listar_movimentacoes():
         total_pages=total_pages,
         per_page=per_page,
         materiais_disponiveis=materiais_serializados,
-        materiais=materiais_serializados
+        materiais=materiais_serializados,
     )
 
 @movimentacoes_bp.route("/movimentacoes/nova", methods=["GET", "POST"])

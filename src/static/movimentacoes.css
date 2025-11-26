@@ -205,16 +205,20 @@
 
 .status-pendente td,
 .status-parcial td {
-  background-color: #faf7e6;
+  background-color: #fae04c;
 }
 .status-atrasado td {
-  background-color: #ffe0e0;
+  background-color: #fe4a4a;
 }
 .status-devolvido td {
-  background-color: #e3fde3;
+  background-color: #61fe61;
 }
 .status-ficou-no-cliente td {
-  background-color: #e3fde3;
+  background-color: #6aff6a;
+}
+
+.status-atrasado td {
+  background-color: #ff3b3b !important;
 }
 
 .pagination {
