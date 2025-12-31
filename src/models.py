@@ -78,7 +78,7 @@ class Movimentacao(Base):
 
         # Regra 1: tudo tratado -> Finalizado (Devolvido), mesmo com NÃO OK
         if materiais_finalizados:
-            return "Devolvido"
+            return "Finalizado"
 
         # Regra 2: ainda não finalizado -> olhar prazo e pendência
         if self.prazo_devolucao and self.prazo_devolucao < date.today():

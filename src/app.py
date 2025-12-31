@@ -129,7 +129,7 @@ def editar_material(material_id):
         material.estoque_minimo_seco = Decimal(request.form["estoque_minimo_seco"])
         db.commit()
         flash("Material atualizado com sucesso!", "success")
-        return redirect(url_for("listar_materiais"))
+        return redirect(url_for("editar_material", material_id=material.id))
 
     return render_template("editar_material.html", material=material)
 
@@ -1244,29 +1244,48 @@ def exportar_excel():
 
 @estoque_bp.route("/estoque/export/pdf")
 def exportar_pdf():
+    import io
     from reportlab.lib import colors
     from reportlab.lib.pagesizes import landscape, A4
     from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph
-    from reportlab.lib.styles import getSampleStyleSheet
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.units import mm
+    from sqlalchemy import func
 
     filtro = request.args.get("filtro", "").strip()
 
-    query = db.query(Material)
+    query = db.query(Material).order_by(func.lower(Material.nome))
+
     if filtro:
         query = query.filter(Material.nome.ilike(f"%{filtro}%"))
 
     materiais = query.all()
 
     buffer = io.BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=landscape(A4), leftMargin=20, rightMargin=20, topMargin=20, bottomMargin=20)
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=landscape(A4),
+        leftMargin=20,
+        rightMargin=20,
+        topMargin=20,
+        bottomMargin=20
+    )
+
     elements = []
     styles = getSampleStyleSheet()
 
-    elements.append(Paragraph("Relatório de Estoque", styles["Title"]))
-    elements.append(Paragraph(" ", styles["Normal"]))
+    titulo_style = ParagraphStyle(
+        "Titulo",
+        parent=styles["Title"],
+        fontSize=18,
+        alignment=1,
+        spaceAfter=20
+    )
+
+    elements.append(Paragraph("Relatório de Estoque", titulo_style))
 
     data = [
-        ["Material", "Lote", "Qtd", "Mínimo Seco", "Dif. Seco", "Mínimo Chuva", "Dif. Chuva"]
+        ["Material", "Lote", "Qtd", "Mín. Seco", "Dif. Seco", "Mín. Chuva", "Dif. Chuva"]
     ]
 
     for mat in materiais:
@@ -1280,21 +1299,39 @@ def exportar_pdf():
             str(mat.quantidade - mat.estoque_minimo_chuva),
         ])
 
-    table = Table(data, repeatRows=1)
+    col_widths = [
+        90 * mm,
+        40 * mm,
+        25 * mm,
+        30 * mm,
+        30 * mm,
+        30 * mm,
+        30 * mm,
+    ]
+
+    table = Table(data, repeatRows=1, colWidths=col_widths)
+
     table.setStyle(TableStyle([
         ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#ff7b00")),
         ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
         ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
         ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
         ("FONTNAME", (0, 1), (-1, -1), "Helvetica"),
-        ("FONTSIZE", (0, 0), (-1, -1), 8),
-        ("BOTTOMPADDING", (0, 0), (-1, 0), 6),
-        ("GRID", (0, 0), (-1, -1), 0.25, colors.grey),
+        ("FONTSIZE", (0, 0), (-1, 0), 10),
+        ("FONTSIZE", (0, 1), (-1, -1), 9), 
+
+        ("TOPPADDING", (0, 0), (-1, -1), 6),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+
+        ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
     ]))
+
     elements.append(table)
     doc.build(elements)
 
     buffer.seek(0)
+
     if not materiais:
         flash("Não há materiais para exportar com o filtro aplicado.", "info")
 
